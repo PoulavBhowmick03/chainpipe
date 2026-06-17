@@ -5,9 +5,9 @@ import MockDataBanner from '@/components/MockDataBanner'
 import StatsBar from '@/components/StatsBar'
 
 const CONTRACTS = {
-  SkillRegistry: '0x37041F257Bf8f1E201497Dc0BCDa1ae0d8317992',
-  x402Escrow:    '0x1d550b555B3a2e124ef611b55965848d6be233a2',
-  BazaarListings:'0xaB5a52C30D769A7Eae1474857A6180E71765CBAF',
+  SkillRegistry: '26Xf7wEPJbG6EJ5kfAXbkot75ekSWdvpJH2rws1DEaEF',
+  x402Escrow:    'Ec48mwadrna8FC5rJ24K5R5fMVCBFBzhbbeFkf6skiYq',
+  BazaarListings:'HnnH4asvgvAqyBnZKD6SVPMHEwTPTEBq2ZYU995j4Jt3',
 }
 
 function truncAddr(a: string) {
@@ -89,7 +89,7 @@ export default function HomePage() {
             <div style={{ marginBottom: 32 }}>
               <span className="pill accent" style={{ fontFamily: 'var(--f-mono-2)', fontWeight: 500 }}>
                 <span className="dot" style={{ width: 8, height: 8 }} />
-                Live on Mantle Mainnet
+                Live on Solana devnet
               </span>
             </div>
 
@@ -106,7 +106,7 @@ export default function HomePage() {
             </h1>
 
             <p style={{ fontSize: 20, lineHeight: 1.5, color: 'var(--lf-ink-2)', maxWidth: 640, margin: '0 0 40px' }}>
-              LedgerForge is the first reputation-native agent service marketplace on Mantle.
+              LedgerForge is the first reputation-native agent service marketplace on Solana.
               Discover, pay for, and rate AI agent services with on-chain reputation that compounds automatically on every execution.
             </p>
 
@@ -154,9 +154,9 @@ export default function HomePage() {
           <div className="timeline">
             {[
               { n: '01', t: 'Discover', d: 'Agent browses the Bazaar. Skills are ranked by on-chain reputation, not marketing.' },
-              { n: '02', t: 'Pay', d: 'Signs an EIP-712 payment proof. The x402 facilitator settles USDC on Mantle in ~2 seconds.' },
+              { n: '02', t: 'Pay', d: 'Signs an ed25519 payment proof. The x402 facilitator settles USDC on Solana in ~400ms.' },
               { n: '03', t: 'Execute', d: 'Skill runs and returns output. The facilitator releases payment from escrow and writes reputation on-chain.' },
-              { n: '04', t: 'Reputation', d: 'Score is written to the ERC-8004 registry on Mantle. Permanent. No edits, no take-backs.' },
+              { n: '04', t: 'Reputation', d: 'Score is written to the on-chain skill registry on Solana. Permanent. No edits, no take-backs.' },
             ].map((s) => (
               <div className="timeline-step" key={s.n}>
                 <span className="num t-mono">{s.n}</span>
@@ -175,7 +175,7 @@ export default function HomePage() {
               icon={<IconLock />}
               kicker="x402 PAYMENT RAIL"
               title="HTTP-native payments"
-              body="The first x402 facilitator on Mantle. Agents pay with EIP-712 signed USDC. Settlement in ~2 seconds. No accounts, no API keys."
+              body="The first x402 facilitator on Solana. Agents pay with ed25519 signed USDC. Settlement in ~400ms. No accounts, no API keys."
               footer={<span style={{ color: 'var(--lf-ink-3)' }}>0.2% facilitator fee</span>}
             />
             <FeatureCard
@@ -183,7 +183,7 @@ export default function HomePage() {
               kicker="ERC-8004 REPUTATION"
               title="Automatic trust scoring"
               body="Every skill execution writes a score on-chain. Reputation compounds with every settled job. No self-reporting. No paid rankings."
-              footer={<span style={{ color: 'var(--lf-green)' }}>● Live on Mantle mainnet</span>}
+              footer={<span style={{ color: 'var(--lf-green)' }}>● Live on Solana devnet</span>}
             />
             <FeatureCard
               icon={<IconVault />}
@@ -220,9 +220,9 @@ export default function HomePage() {
           display: 'flex', justifyContent: 'space-between', maxWidth: 1200, margin: '64px auto 0',
           fontFamily: 'var(--f-mono)', fontSize: 12, color: 'var(--lf-ink-3)', flexWrap: 'wrap', gap: 16,
         }}>
-          <span>SkillRegistry: <a href={`https://mantlescan.xyz/address/${CONTRACTS.SkillRegistry}`} target="_blank" rel="noopener noreferrer" style={{ color: 'white', opacity: 0.7 }}>{truncAddr(CONTRACTS.SkillRegistry)} ↗</a></span>
-          <span>x402Escrow: <a href={`https://mantlescan.xyz/address/${CONTRACTS.x402Escrow}`} target="_blank" rel="noopener noreferrer" style={{ color: 'white', opacity: 0.7 }}>{truncAddr(CONTRACTS.x402Escrow)} ↗</a></span>
-          <span>BazaarListings: <a href={`https://mantlescan.xyz/address/${CONTRACTS.BazaarListings}`} target="_blank" rel="noopener noreferrer" style={{ color: 'white', opacity: 0.7 }}>{truncAddr(CONTRACTS.BazaarListings)} ↗</a></span>
+          <span>SkillRegistry: <a href={`https://explorer.solana.com/address/${CONTRACTS.SkillRegistry}?cluster=devnet`} target="_blank" rel="noopener noreferrer" style={{ color: 'white', opacity: 0.7 }}>{truncAddr(CONTRACTS.SkillRegistry)} ↗</a></span>
+          <span>x402Escrow: <a href={`https://explorer.solana.com/address/${CONTRACTS.x402Escrow}?cluster=devnet`} target="_blank" rel="noopener noreferrer" style={{ color: 'white', opacity: 0.7 }}>{truncAddr(CONTRACTS.x402Escrow)} ↗</a></span>
+          <span>BazaarListings: <a href={`https://explorer.solana.com/address/${CONTRACTS.BazaarListings}?cluster=devnet`} target="_blank" rel="noopener noreferrer" style={{ color: 'white', opacity: 0.7 }}>{truncAddr(CONTRACTS.BazaarListings)} ↗</a></span>
         </div>
       </section>
     </div>

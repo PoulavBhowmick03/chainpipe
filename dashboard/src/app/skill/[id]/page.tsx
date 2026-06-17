@@ -419,7 +419,7 @@ export default function SkillDetailPage() {
               )}
               {hasHistory && (
                 <div style={{ marginTop: 16, fontFamily: 'var(--f-mono)', fontSize: 12, color: 'var(--lf-accent)' }}>
-                  {skill.jobs.toLocaleString()} on-chain reputation writes · <a href={`https://mantlescan.xyz/address/${CONTRACTS.SkillRegistry}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--lf-accent)' }}>view on mantlescan ↗</a>
+                  {skill.jobs.toLocaleString()} on-chain reputation writes · <a href={`https://explorer.solana.com/address/${CONTRACTS.SkillRegistry}?cluster=devnet`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--lf-accent)' }}>view on Solana Explorer ↗</a>
                 </div>
               )}
             </section>
@@ -454,7 +454,7 @@ export default function SkillDetailPage() {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 20, fontSize: 12 }}>
                 <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#2775CA', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 9 }}>$</span>
-                <span style={{ color: 'var(--lf-ink-2)' }}>Payable in USDC on Mantle</span>
+                <span style={{ color: 'var(--lf-ink-2)' }}>Payable in USDC on Solana</span>
               </div>
 
               <div style={{ background: 'var(--lf-surface-2)', border: '1px solid var(--lf-border)', borderRadius: 6, padding: 20, display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
@@ -480,14 +480,14 @@ export default function SkillDetailPage() {
               </button>
 
               <div style={{ marginTop: 14, fontSize: 11, color: 'var(--lf-ink-3)', textAlign: 'center', lineHeight: 1.5 }}>
-                Payment settles on Mantle mainnet in ~2s<br />
+                Payment settles on Solana devnet in ~400ms<br />
                 Powered by LedgerForge x402
               </div>
 
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--lf-border)', fontSize: 12, color: 'var(--lf-ink-3)', display: 'flex', justifyContent: 'space-between' }}>
                 <span>View contract</span>
-                <a target="_blank" rel="noopener noreferrer" href={`https://mantlescan.xyz/address/${CONTRACTS.SkillRegistry}`} style={{ color: 'var(--lf-ink-2)' }}>
-                  mantlescan ↗
+                <a target="_blank" rel="noopener noreferrer" href={`https://explorer.solana.com/address/${CONTRACTS.SkillRegistry}?cluster=devnet`} style={{ color: 'var(--lf-ink-2)' }}>
+                  Solana Explorer ↗
                 </a>
               </div>
             </div>
@@ -518,5 +518,5 @@ export default function SkillDetailPage() {
 }
 
 const CONTRACTS = {
-  SkillRegistry: '0x37041F257Bf8f1E201497Dc0BCDa1ae0d8317992',
+  SkillRegistry: '26Xf7wEPJbG6EJ5kfAXbkot75ekSWdvpJH2rws1DEaEF',
 }
