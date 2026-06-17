@@ -20,3 +20,20 @@ Config PDAs (initialized; authority/operator = `5cpcXjLZHhntiqhNNX1Yay7SghhcALsQ
 
 Build + deploy: `cd solana && cargo build-sbf --arch v3 && bash scripts/deploy-devnet.sh`
 (idempotent — skips already-deployed programs, then runs `init-devnet.mjs`).
+
+## Executed end-to-end flow (live devnet proof)
+
+Full loop run via `facilitator/scripts/e2e-devnet.mjs` against the deployed programs
+(fresh test SPL mint, 6 dp; amount 1.0 token; fee 20 bps):
+
+| Step | Result | Tx (explorer.solana.com, devnet) |
+|---|---|---|
+| `register_skill` | skill #1781719935 registered | `646qkyi5UPTzvbnWBeMFzUJieHAvcYEbzQ6jzbYriqK5ZkyXddsycekmNxu6uit2DHay2iCLwT7nibLcYqDYecZb` |
+| `create_job` | consumer deposited 1,000,000 into job-PDA vault | `2JkC4pdkiorpjxC7SEibkNhWNZP4j1ML1xDmQ6pNgbDviMBBe28tnBJvxQRKy97GVa3Cw1cVJFahFmifTE8R6dEd` |
+| `complete_job` | provider received **998,000**, operator fee **2,000** (= 20 bps) | `vBpa3vghJt8XzNHx7nGXDfsiS2dPAKmKGc542z8vYhi9P1Gw9rFnMKXYjSXV5SxiWhpRA8WHikbDLC5GJtigaK2` |
+| `record_job_completion` | reputation → **total_jobs=1, score=85** (facilitator-gated) | `4LriJunkAfFSNNKuk5BWngsZUzgcAJnPvojA9bFTuKWUbV2KErW5zM9prt2Ru9BBhVNUr4XZ2FLKcuj9UTXARXMs` |
+
+Reproduce: `cd facilitator && node scripts/e2e-devnet.mjs` (uses the funded local
+deployer as operator/facilitator; mints a throwaway SPL token for the demand side).
+This proves the escrow deposit → PDA-signed payout+fee release → on-chain reputation
+write all execute correctly on the live contracts.
