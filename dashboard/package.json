@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ishitaaaaw/x402-mantle": "^0.1.0",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-react": "^0.15.35",
     "@solana/wallet-adapter-react-ui": "^0.9.35",
@@ -18,8 +17,7 @@
     "next": "^15.3.0",
     "react": "^19.0.0",
     "react-chartjs-2": "^5.2.0",
-    "react-dom": "^19.0.0",
-    "viem": "^2.21.0"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

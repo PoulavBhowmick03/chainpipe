@@ -174,13 +174,13 @@ function SubText({ step }: { step: StepState }) {
     case 'queued':
       return <div style={subStyle}>queued</div>
     case 'running':
-      return <div style={{ ...subStyle, color: 'var(--lf-accent-2)' }}>signing in MetaMask...</div>
+      return <div style={{ ...subStyle, color: 'var(--lf-accent-2)' }}>signing message…</div>
     case 'done':
       if (step.settlement) {
         return (
           <div style={subStyle}>
-            jobId <span style={{ color: 'var(--lf-ink-2)' }}>{step.settlement.jobId}</span>{' '}
-            · {step.settlement.completeJobTx?.slice(0, 12)}…
+            jobId <span style={{ color: 'var(--lf-ink-2)' }}>{step.settlement.jobId}</span>
+            {step.settlement.settlementSignature ? ` · ${step.settlement.settlementSignature.slice(0, 12)}…` : ''}
           </div>
         )
       }
@@ -198,11 +198,11 @@ function SubText({ step }: { step: StepState }) {
 
 function StepActions({ step }: { step: StepState }) {
   if (step.status !== 'done' || !step.settlement) return null
-  const tx = step.settlement.completeJobTx
-  if (!tx) return null
+  const url = step.settlement.explorerUrl
+  if (!url) return null
   return (
     <a
-      href={`https://mantlescan.xyz/tx/${tx}`}
+      href={url}
       target="_blank"
       rel="noopener noreferrer"
       style={{

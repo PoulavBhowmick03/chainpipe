@@ -37,14 +37,17 @@ no EIP-712.
 
 ## Remaining ⏳
 
-- **Dashboard full UI port (partially done — builds green).** `SolanaWalletProvider` is
-  now wired into `app/layout.tsx`, and `dashboard/src/solana/useSolanaSkills.ts` reads
-  live skills from the deployed program. `next build` passes. **Still EVM-flavored:** only
-  two files use the EVM SDK — `agent-demo/runner.ts` and `components/PaymentModal.tsx`
-  (kept on the installable `@ishitaaaaw/x402-mantle` + viem so the build stays green).
-  Remaining: render `useSolanaSkills` in the Bazaar page, and port those two components to
-  `useWallet()`/`useConnection()` + `signMessage` over `canonicalPaymentMessage` (replacing
-  EIP-712 `signTypedData`). Once ported, drop viem + x402-mantle.
+- **Dashboard — ✅ now 100% Solana-native.** `WalletContext` is a wallet-adapter shim,
+  `PaymentModal` signs ed25519 via `signMessage` over the canonical message, the list page
+  registers via the Solana facilitator, and `useSolanaSkills` reads live skills from the
+  deployed program. **viem, `@ishitaaaaw/x402-mantle`, and all `window.ethereum` usage are
+  removed**; `next build` passes (8/8).
+  - *One deliberate simplification:* the `/agent-demo` page is **replay-only** — it shows a
+    recorded walk over each agent's skill steps linked to the deployed Solana programs.
+    A live **in-browser** run is deferred because it needs the consumer `create_job`
+    deposit (vault creation + SPL transfer) signed via wallet-adapter — that flow is proven
+    in `facilitator/scripts/e2e-devnet.mjs` and should be folded into the SDK as a
+    `createJob()` helper, then wired into the agent-demo for a true in-browser live run.
 - **Consumer deposit flow.** `e2e-devnet.mjs` implements it end-to-end (consumer creates
   the job-PDA vault token account + deposits via `create_job`); fold this into the SDK as
   a reusable `createJob()` helper for the dashboard.
