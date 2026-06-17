@@ -6,7 +6,7 @@ step — do not deploy to mainnet from automation.
 ## 0. Prerequisites
 
 - Rust + Solana CLI (Agave) `solana --version` (tested: 2.3.8)
-- `cargo build-sbf` (ships with the Solana toolchain)
+- `cargo build-sbf --arch v3` (ships with the Solana toolchain)
 - Anchor CLI (optional, for `anchor keys sync` / IDL)
 - Node 20+ / npm
 
@@ -14,7 +14,7 @@ step — do not deploy to mainnet from automation.
 
 ```bash
 cd solana
-cargo build-sbf            # → target/deploy/{skill_registry,x402_escrow,bazaar_listings}.so
+cargo build-sbf --arch v3            # → target/deploy/{skill_registry,x402_escrow,bazaar_listings}.so
 ```
 
 The committed `Cargo.lock` pins several transitive crates to pre-`edition2024` /
@@ -30,7 +30,7 @@ not delete it.
 ```bash
 # Option A (Anchor CLI):
 anchor keys sync          # rewrites declare_id! + Anchor.toml to match target/deploy/*.json
-cargo build-sbf           # rebuild so the embedded IDs match
+cargo build-sbf --arch v3           # rebuild so the embedded IDs match
 
 # Option B (manual): print each keypair's pubkey and paste into declare_id!/Anchor.toml
 solana address -k target/deploy/skill_registry-keypair.json
