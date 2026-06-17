@@ -1,17 +1,15 @@
 //! BazaarListings — Anchor port of the EVM `BazaarListings.sol`.
 //!
 //! EVM → Solana mapping:
-//! - listing display metadata mapping → one PDA `Listing` account per skillId
+//! - listing display metadata mapping → one PDA `Listing` account per skill_id
 //!   (seeds = [b"listing", skill_id.to_le_bytes()]).
 //! - one-time listing fee in cUSD     → SPL `transfer` of `fee_amount` of `fee_mint`
-//!   into the treasury token account on `create_listing` (implemented in task #6).
+//!   into the treasury token account on `create_listing`.
 //! - reference to SkillRegistry by id  → `skill_id` field (cross-program reads are
-//!   resolved client-side / via CPI in task #6).
-//!
-//! NOTE: scaffold (task #5). `create_listing` / `update_listing` bodies and the SPL
-//! fee transfer are implemented in task #6.
+//!   resolved client-side).
 
 use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 declare_id!("HnnH4asvgvAqyBnZKD6SVPMHEwTPTEBq2ZYU995j4Jt3");
 
@@ -36,6 +34,59 @@ pub mod bazaar_listings {
         cfg.fee_amount = fee_amount;
         cfg.treasury = treasury;
         cfg.bump = ctx.bumps.config;
+        Ok(())
+    }
+
+    /// Create a listing for a skill, paying the one-time fee into the treasury.
+    pub fn create_listing(
+        ctx: Context<CreateListing>,
+        skill_id: u64,
+        name: String,
+        description: String,
+        tier: u8,
+    ) -> Result<()> {
+        require!(name.len() <= MAX_NAME_LEN, BazaarError::NameTooLong);
+        require!(description.len() <= MAX_DESC_LEN, BazaarError::DescTooLong);
+
+        let fee = ctx.accounts.config.fee_amount;
+        if fee > 0 {
+            token::transfer(
+                CpiContext::new(
+                    ctx.accounts.token_program.to_account_info(),
+                    Transfer {
+                        from: ctx.accounts.payer_token.to_account_info(),
+                        to: ctx.accounts.treasury_token.to_account_info(),
+                        authority: ctx.accounts.owner.to_account_info(),
+                    },
+                ),
+                fee,
+            )?;
+        }
+
+        let listing = &mut ctx.accounts.listing;
+        listing.skill_id = skill_id;
+        listing.owner = ctx.accounts.owner.key();
+        listing.tier = tier;
+        listing.fee_paid = fee > 0;
+        listing.name = name;
+        listing.description = description;
+        listing.bump = ctx.bumps.listing;
+        Ok(())
+    }
+
+    /// Update listing metadata. Only the listing owner.
+    pub fn update_listing(
+        ctx: Context<UpdateListing>,
+        name: String,
+        description: String,
+        tier: u8,
+    ) -> Result<()> {
+        require!(name.len() <= MAX_NAME_LEN, BazaarError::NameTooLong);
+        require!(description.len() <= MAX_DESC_LEN, BazaarError::DescTooLong);
+        let listing = &mut ctx.accounts.listing;
+        listing.name = name;
+        listing.description = description;
+        listing.tier = tier;
         Ok(())
     }
 }
@@ -80,10 +131,63 @@ pub struct Initialize<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+#[instruction(skill_id: u64)]
+pub struct CreateListing<'info> {
+    #[account(seeds = [b"config"], bump = config.bump)]
+    pub config: Account<'info, BazaarConfig>,
+    #[account(
+        init,
+        payer = owner,
+        space = 8 + Listing::INIT_SPACE,
+        seeds = [b"listing", skill_id.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub listing: Account<'info, Listing>,
+    #[account(
+        mut,
+        constraint = payer_token.mint == config.fee_mint @ BazaarError::MintMismatch,
+        constraint = payer_token.owner == owner.key() @ BazaarError::WrongOwner
+    )]
+    pub payer_token: Account<'info, TokenAccount>,
+    #[account(
+        mut,
+        constraint = treasury_token.key() == config.treasury @ BazaarError::WrongTreasury
+    )]
+    pub treasury_token: Account<'info, TokenAccount>,
+    pub fee_mint: Account<'info, Mint>,
+    #[account(mut)]
+    pub owner: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateListing<'info> {
+    #[account(
+        mut,
+        seeds = [b"listing", listing.skill_id.to_le_bytes().as_ref()],
+        bump = listing.bump,
+        has_one = owner @ BazaarError::NotOwner
+    )]
+    pub listing: Account<'info, Listing>,
+    pub owner: Signer<'info>,
+}
+
 #[error_code]
 pub enum BazaarError {
     #[msg("Listing fee not paid")]
     FeeNotPaid,
     #[msg("Name string too long")]
     NameTooLong,
+    #[msg("Description string too long")]
+    DescTooLong,
+    #[msg("Only the listing owner may call this")]
+    NotOwner,
+    #[msg("Token account mint mismatch")]
+    MintMismatch,
+    #[msg("Token account owner mismatch")]
+    WrongOwner,
+    #[msg("Treasury token account mismatch")]
+    WrongTreasury,
 }
