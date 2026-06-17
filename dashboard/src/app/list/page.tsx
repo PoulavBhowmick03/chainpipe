@@ -4,11 +4,11 @@ import Link from 'next/link'
 import type { Tier } from '@/lib/types'
 import TierBadge from '@/components/TierBadge'
 import SkillCard from '@/components/SkillCard'
-import AddressChip from '@/components/AddressChip'
+import { useWallet } from '@/context/WalletContext'
 
-const MANTLE_CHAIN_ID = '0x1388'
-const OPERATOR = '0xC0296012Cfbb0e6DF5dA7158B65Dbc46DD9650e0'
-const SKILL_REGISTRY = '0x37041F257Bf8f1E201497Dc0BCDa1ae0d8317992'
+const CLUSTER = process.env.NEXT_PUBLIC_SOLANA_CLUSTER ?? 'devnet'
+const OPERATOR = '5cpcXjLZHhntiqhNNX1Yay7SghhcALsQcwH2WJCs3VUm'
+const SKILL_REGISTRY = '26Xf7wEPJbG6EJ5kfAXbkot75ekSWdvpJH2rws1DEaEF'
 
 type FormState = {
   name: string; version: string; description: string
@@ -24,8 +24,8 @@ const INITIAL: FormState = {
 
 const TIER_FEATURES: Record<Tier, { price: string; features: string[] }> = {
   FREE: { price: '$0 / month', features: ['Basic listing', 'No verified badge', 'Community ranked'] },
-  BASIC: { price: '10 USDe / month', features: ['✓ Verified badge', '✓ Priority in search', 'Standard placement'] },
-  PRO: { price: '50 USDe / month', features: ['✓ Everything in Basic', '✓ Top placement', '✓ Analytics dashboard'] },
+  BASIC: { price: '10 USDC / month', features: ['✓ Verified badge', '✓ Priority in search', 'Standard placement'] },
+  PRO: { price: '50 USDC / month', features: ['✓ Everything in Basic', '✓ Top placement', '✓ Analytics dashboard'] },
 }
 
 function Field({ label, help, children }: { label: string; help?: string; children: React.ReactNode }) {
@@ -48,11 +48,11 @@ function SummaryRow({ k, v, last }: { k: string; v: React.ReactNode; last?: bool
 }
 
 export default function ListPage() {
+  const { account, connect } = useWallet()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormState>(INITIAL)
-  const [account, setAccount] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [result, setResult] = useState<{ skillId: string; txHash: string } | null>(null)
+  const [result, setResult] = useState<{ skillId: string; signature: string } | null>(null)
   const [error, setError] = useState('')
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
@@ -65,27 +65,6 @@ export default function ListPage() {
     : step === 2
     ? form.price !== ''
     : !!account
-
-  async function connectWallet() {
-    setError('')
-    if (!window.ethereum) { setError('No Ethereum wallet detected.'); return }
-    try {
-      const accounts = (await window.ethereum.request({ method: 'eth_requestAccounts' })) as string[]
-      setAccount(accounts[0])
-      try {
-        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: MANTLE_CHAIN_ID }] })
-      } catch (sw: unknown) {
-        if ((sw as { code?: number }).code === 4902) {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{ chainId: MANTLE_CHAIN_ID, chainName: 'Mantle', nativeCurrency: { name: 'MNT', symbol: 'MNT', decimals: 18 }, rpcUrls: ['https://rpc.mantle.xyz'], blockExplorerUrls: ['https://mantlescan.xyz'] }],
-          })
-        }
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to connect wallet.')
-    }
-  }
 
   async function handleSubmit() {
     if (!account) { setError('Connect your wallet first.'); return }
@@ -103,7 +82,7 @@ export default function ListPage() {
         const body = (await res.json()) as { error?: string }
         throw new Error(body.error ?? `HTTP ${res.status}`)
       }
-      const data = (await res.json()) as { skillId: string; txHash: string }
+      const data = (await res.json()) as { skillId: string; signature: string }
       setResult(data)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Registration failed.')
@@ -122,7 +101,7 @@ export default function ListPage() {
                 <path className="path" d="M5 12l5 5L20 7" />
               </svg>
             </div>
-            <div className="t-label" style={{ marginBottom: 8 }}>Registered on Mantle</div>
+            <div className="t-label" style={{ marginBottom: 8 }}>Registered on Solana</div>
             <h1 className="t-display" style={{ fontSize: 36, margin: '0 0 16px', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
               Your skill is live in the Bazaar.
             </h1>
@@ -135,13 +114,15 @@ export default function ListPage() {
                 <span className="t-mono" style={{ fontSize: 14 }}>#{result.skillId}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span className="t-label">Settlement tx</span>
-                <AddressChip address={result.txHash} />
+                <span className="t-label">Register tx</span>
+                <a href={`https://explorer.solana.com/tx/${result.signature}?cluster=${CLUSTER}`} target="_blank" rel="noopener noreferrer" className="t-mono" style={{ fontSize: 12, color: 'var(--lf-accent)' }}>
+                  {result.signature.slice(0, 8)}… ↗
+                </a>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
               <Link href="/bazaar" className="btn btn-primary btn-lg">View in Bazaar →</Link>
-              <button className="btn btn-ghost btn-lg" onClick={() => { setResult(null); setStep(1); setForm(INITIAL); setAccount(null) }}>
+              <button className="btn btn-ghost btn-lg" onClick={() => { setResult(null); setStep(1); setForm(INITIAL) }}>
                 List another
               </button>
             </div>
@@ -214,7 +195,7 @@ export default function ListPage() {
             {step === 1 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                 <Field label="Skill name">
-                  <input className="input mono" placeholder="e.g. byreal-pool-analysis" value={form.name} onChange={(e) => set('name', e.target.value)} />
+                  <input className="input mono" placeholder="e.g. defi-yield-scout" value={form.name} onChange={(e) => set('name', e.target.value)} />
                 </Field>
                 <Field label="Version">
                   <input className="input mono" placeholder="1.0.0 (semver)" value={form.version} onChange={(e) => set('version', e.target.value)} />
@@ -258,7 +239,7 @@ export default function ListPage() {
                     <div className={`toggle ${form.escrow ? 'on' : ''}`} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 2 }}>Require escrow for calls over $10</div>
-                      <div style={{ fontSize: 12, color: 'var(--lf-ink-3)' }}>Payment held in x402Escrow.sol, released after verified completion.</div>
+                      <div style={{ fontSize: 12, color: 'var(--lf-ink-3)' }}>Payment held in the x402_escrow program, released after verified completion.</div>
                     </div>
                   </div>
                 </Field>
@@ -295,11 +276,11 @@ export default function ListPage() {
                   {account ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', border: '1px solid var(--lf-border)', borderRadius: 6, background: 'var(--lf-surface-2)' }}>
                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--lf-green)' }} />
-                      <span style={{ fontFamily: 'var(--f-mono)', fontSize: 13 }}>{account.slice(0, 6)}...{account.slice(-4)}</span>
-                      <span style={{ fontSize: 11, color: 'var(--lf-ink-3)', marginLeft: 'auto' }}>Mantle Mainnet</span>
+                      <span style={{ fontFamily: 'var(--f-mono)', fontSize: 13 }}>{account.slice(0, 4)}...{account.slice(-4)}</span>
+                      <span style={{ fontSize: 11, color: 'var(--lf-ink-3)', marginLeft: 'auto' }}>Solana {CLUSTER}</span>
                     </div>
                   ) : (
-                    <button className="btn btn-outline btn-full btn-lg" onClick={connectWallet}>
+                    <button className="btn btn-outline btn-full btn-lg" onClick={() => { void connect() }}>
                       Connect wallet to register
                     </button>
                   )}
@@ -314,8 +295,8 @@ export default function ListPage() {
                       <SummaryRow k="Tier" v={<TierBadge tier={form.tier} />} />
                       <SummaryRow k="Price per call" v={`${form.price || '0'} USDC`} />
                       <SummaryRow k="Escrow" v={form.escrow ? 'Enabled (jobs > $10)' : 'Off'} />
-                      <SummaryRow k="Registry" v={<AddressChip address={SKILL_REGISTRY} />} />
-                      <SummaryRow k="Estimated gas" v="~0.0008 MNT" last />
+                      <SummaryRow k="Registry" v={<span className="t-mono" style={{ fontSize: 11 }}>{SKILL_REGISTRY.slice(0, 4)}…{SKILL_REGISTRY.slice(-4)}</span>} />
+                      <SummaryRow k="Estimated fee" v="~0.000005 SOL" last />
                     </tbody>
                   </table>
                 </div>
