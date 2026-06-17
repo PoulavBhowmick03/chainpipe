@@ -103,24 +103,37 @@ analog to the EVM EIP-712 flow.
 
 ---
 
-## Why this is a fit for Solana / Superteam
+## Differentiation — the missing layer above the x402 rail
 
-| Dimension | Fit |
-|---|---|
-| **Payments / stablecoins** | Per-execution USDC settlement at sub-cent fees is the core product. |
-| **DevTools** | The `@poulav/x402-solana` SDK + Bazaar API let any dev monetize an agent skill in minutes. |
-| **On-chain reputation** | ~400ms slots make per-job reputation writes (not just per-listing) economical. |
-| **Agent infra** | Built specifically for autonomous agents transacting continuously. |
+Existing x402 tooling solves **payment facilitation** and **MCP integration**. None of
+them make *who to trust* an on-chain fact. That's the gap LedgerForge fills.
 
-**How this differs from the existing x402 stack.** Corbits, PayAI, and MCPay provide the
-HTTP-402 payment rail and a facilitator — the *transport* for an agent to pay for a call.
-LedgerForge is complementary: on top of that rail it adds an **on-chain, verifiable skill
-registry** and a **post-settlement reputation primitive** written by the same gated
-settlement path. Reputation is derived from provable execution history (every settled job
-bumps `total_jobs`/`score` on the skill's PDA), so a hiring agent can **query and compose
-reputation directly from chain state** — no trust in an off-chain reputation oracle, no
-self-reported ratings. The rail moves money; LedgerForge makes *who to trust* a
-first-class, composable on-chain fact.
+| | Corbits / PayAI / MCPay | **LedgerForge** |
+|---|---|---|
+| HTTP-402 payment rail + facilitator | ✅ | ✅ (ed25519-gated settlement) |
+| MCP / agent integration | ✅ | ✅ (SDK) |
+| **On-chain skill identity & discovery** | ✕ | ✅ `skill_registry` PDA per skill |
+| **Post-settlement reputation accrual** | ✕ | ✅ facilitator-gated, every settled job bumps `total_jobs`/`score` |
+| **Composable, oracle-free trust** | ✕ | ✅ hiring agents read reputation straight from chain state |
+
+> Existing x402 tooling solves the payment rail and MCP integration. LedgerForge adds the
+> missing **on-chain skill registry** and **facilitator-gated reputation accrual** so hiring
+> agents can discover providers and accumulate verifiable track records after every settled
+> job — reframing the product from "another x402 implementation" into the **reputation +
+> discovery primitive that rides existing payment rails**.
+
+**Why Solana, why now.** x402 already settles tens of millions of micropayment
+transactions on Solana, with agent-to-agent payments the fastest-growing slice.
+Sub-cent fees and ~400 ms slots are what make **high-frequency agent-hiring loops**
+(pay → execute → write reputation, repeated continuously) economically viable here first —
+per-execution reputation writes simply aren't affordable on slower/costlier chains. The
+trust + discovery gap that pure payment facilitators leave open is exactly where
+agent volume is already appearing, so this is infrastructure for a live market, not a
+speculative one.
+
+> Portability note: the same contract suite is also deployed + verified on **Celo mainnet**
+> (prior validation of the EVM design); the Solana implementation is the focus and exploits
+> Solana's fee/latency economics and x402 momentum directly.
 
 ---
 
