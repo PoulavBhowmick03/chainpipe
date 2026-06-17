@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Nav from '@/components/Nav'
 import { WalletProvider } from '@/context/WalletContext'
+import { SolanaWalletProvider } from '@/solana/WalletProvider'
 
 export const metadata: Metadata = {
   title: 'LedgerForge Bazaar - Agent Services on Mantle',
@@ -25,10 +26,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <WalletProvider>
-          <Nav />
-          <main>{children}</main>
-        </WalletProvider>
+        <SolanaWalletProvider>
+          <WalletProvider>
+            <Nav />
+            <main>{children}</main>
+          </WalletProvider>
+        </SolanaWalletProvider>
       </body>
     </html>
   )

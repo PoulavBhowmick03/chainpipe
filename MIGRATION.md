@@ -37,18 +37,22 @@ no EIP-712.
 
 ## Remaining ⏳
 
-- **Dashboard full UI port (largest item).** The existing components are still EVM/viem
-  (`WalletContext`, `PaymentModal`, `useBrowserWalletClient`, `PreflightBanner`,
-  agent-demo). Wire `SolanaWalletProvider` into `app/layout.tsx`, replace MetaMask/viem
-  with `useWallet()`/`useConnection()`, and swap EIP-712 `signTypedData` for
-  `signMessage` over `canonicalPaymentMessage`. `viem` stays in deps until this is done.
-- **Consumer deposit flow.** Add a `create_job` helper (SDK + dashboard) so the consumer
-  creates the vault token account (owned by the job PDA) and deposits before the
-  facilitator's `complete_job`. The facilitator side is implemented.
-- **Indexer.** Still EVM/viem; needs a Solana rewrite (poll program accounts / parse
-  logs) to feed the Bazaar. Not yet started.
-- **Devnet deploy + end-to-end test.** Gated on a funded devnet key — see `DEPLOY.md`.
-  Then backfill deployed program IDs and replace README "pending" notes with explorer links.
+- **Dashboard full UI port (partially done — builds green).** `SolanaWalletProvider` is
+  now wired into `app/layout.tsx`, and `dashboard/src/solana/useSolanaSkills.ts` reads
+  live skills from the deployed program. `next build` passes. **Still EVM-flavored:** only
+  two files use the EVM SDK — `agent-demo/runner.ts` and `components/PaymentModal.tsx`
+  (kept on the installable `@ishitaaaaw/x402-mantle` + viem so the build stays green).
+  Remaining: render `useSolanaSkills` in the Bazaar page, and port those two components to
+  `useWallet()`/`useConnection()` + `signMessage` over `canonicalPaymentMessage` (replacing
+  EIP-712 `signTypedData`). Once ported, drop viem + x402-mantle.
+- **Consumer deposit flow.** `e2e-devnet.mjs` implements it end-to-end (consumer creates
+  the job-PDA vault token account + deposits via `create_job`); fold this into the SDK as
+  a reusable `createJob()` helper for the dashboard.
+- **Indexer.** ✅ minimal Solana indexer added (`solana/scripts/indexer.mjs`): decodes
+  Skill + Listing PDAs via `getProgramAccounts`. The legacy EVM `indexer/` dir is
+  superseded for Solana. Next: run it as a service feeding the Bazaar API.
+- **Devnet deploy + end-to-end test.** ✅ Done — see `DEPLOYED.md` (program IDs, config
+  PDAs, executed-flow tx signatures). Tests: `cd solana && npm test` (10/10).
 - **`anchor test` on localnet.** Add TS integration tests under `solana/tests/`.
 - **`token::transfer` → `transfer_checked`** in the programs (deprecation; correctness).
 - **ERC-8004.** No equivalent on Solana; reputation is local-only on the `Skill` PDA.
