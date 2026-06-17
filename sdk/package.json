@@ -1,7 +1,7 @@
 {
-  "name": "@ishitaaaaw/x402-mantle",
+  "name": "@ishitaaaaw/x402-solana",
   "version": "0.1.0",
-  "description": "TypeScript SDK for the LedgerForge x402 payment rail on Mantle Network — discover, pay for, and execute on-chain agent skills.",
+  "description": "TypeScript SDK for the LedgerForge x402 payment rail on Solana — discover, pay for, and execute on-chain agent skills.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,17 +18,16 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "example": "tsx examples/quickstart.ts",
     "prepublishOnly": "tsc"
   },
   "keywords": [
     "x402",
-    "mantle",
-    "erc-8004",
+    "solana",
+    "anchor",
     "agent",
     "payments",
     "stablecoin",
-    "viem"
+    "spl-token"
   ],
   "engines": {
     "node": ">=20"
@@ -40,10 +39,10 @@
     "directory": "sdk"
   },
   "dependencies": {
-    "viem": "^2.x"
-  },
-  "peerDependencies": {
-    "viem": "^2.x"
+    "@solana/web3.js": "^1.95.0",
+    "@solana/spl-token": "^0.4.8",
+    "bs58": "^6.0.0",
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

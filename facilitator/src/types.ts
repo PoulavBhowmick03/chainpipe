@@ -1,64 +1,49 @@
-export interface X402PaymentDetails {
-  scheme: "exact";
-  network: `eip155:${number}`;
+export interface SolanaPaymentDetails {
+  scheme: "solana-ed25519";
+  cluster: string;
   maxAmountRequired: string;
   resource: string;
   description: string;
-  mimeType: string;
-  payTo: string;
+  payTo: string; // provider base58
   maxTimeoutSeconds: number;
-  asset: `0x${string}`;
+  asset: string; // SPL mint base58
   skillId: number;
-  extra?: {
-    name: string;
-    version: string;
-  };
 }
 
-export interface X402PaymentProof {
-  scheme: "exact";
-  network: "eip155:5000";
-  payload: {
-    signature: `0x${string}`;
-    authorization: {
-      from: `0x${string}`;
-      to: `0x${string}`;
-      amount: string;
-      token: `0x${string}`;
-      skillId: number;
-      nonce: number;
-      validBefore: number;
-    };
-  };
+export interface PaymentAuthorization {
+  consumer: string;
+  provider: string;
+  mint: string;
+  amount: string;
+  skillId: number;
+  jobId: number;
+  nonce: number;
+  validBefore: number;
+}
+
+export interface SolanaPaymentProof {
+  scheme: "solana-ed25519";
+  cluster: string;
+  authorization: PaymentAuthorization;
+  signature: string; // ed25519 detached signature, base58
   reputationScore?: number;
 }
 
-export interface FacilitateRequest {
-  paymentDetails: X402PaymentDetails;
-  paymentProof: X402PaymentProof;
-}
-
 export interface SettlementResult {
-  settlementTxHash: `0x${string}`;
-  pullTxHash: `0x${string}`;
-  createJobTxHash: `0x${string}`;
-  completeJobTxHash: `0x${string}`;
-  escrowJobId: string;
-  skillRegistryRepTxHash?: `0x${string}`;
-  erc8004FeedbackTxHash?: `0x${string}`;
+  settlementSignature: string;
+  completeJobSignature: string;
+  jobId: number;
+  reputationSignature?: string;
   reputationScore: number;
 }
 
 export interface FacilitateResponse {
   success: boolean;
-  settlementTxHash?: `0x${string}`;
+  settlementSignature?: string;
   accessToken?: string;
-  escrowJobId?: string;
-  pullTxHash?: `0x${string}`;
-  createJobTxHash?: `0x${string}`;
-  completeJobTxHash?: `0x${string}`;
-  skillRegistryRepTxHash?: `0x${string}`;
-  erc8004FeedbackTxHash?: `0x${string}`;
+  jobId?: number;
+  completeJobSignature?: string;
+  reputationSignature?: string;
   reputationScore?: number;
   error?: string;
 }

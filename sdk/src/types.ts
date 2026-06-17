@@ -1,22 +1,21 @@
-import type { Address, Hex, PrivateKeyAccount, WalletClient } from "viem";
+import type { Keypair } from "@solana/web3.js";
 
 export type BazaarTier = "FREE" | "BASIC" | "PRO";
 
+/** base58-encoded public key */
+export type Base58 = string;
+
 export interface SkillListing {
   skillId: number;
-  owner: Address;
+  provider: Base58;
   name: string;
-  version: string;
   endpoint: string;
-  metadataURI: string;
-  erc8004AgentId: number;
-  registeredAt: number;
+  paymentMint: Base58;
+  pricePerCall: string;
   totalJobs: number;
-  averageScore: number;
+  score: number;
   tier: BazaarTier;
-  tierPaidUntil: number;
   active: boolean;
-  lastUpdated: number;
 }
 
 export interface ListSkillsFilter {
@@ -26,50 +25,46 @@ export interface ListSkillsFilter {
 }
 
 export interface PaymentChallenge {
-  scheme: "exact";
-  network: `eip155:${number}`;
+  scheme: "solana-ed25519";
+  cluster: string;
   maxAmountRequired: string;
   resource: string;
   description: string;
-  mimeType: string;
-  payTo: Address;
-  maxTimeoutSeconds: number;
-  asset: Address;
+  payTo: Base58; // provider
+  asset: Base58; // SPL mint
   skillId: number;
-  extra?: { name: string; version: string };
+  maxTimeoutSeconds: number;
 }
 
+/** Exact-amount authorization the consumer signs with ed25519. */
 export interface PaymentAuthorization {
-  from: Address;
-  to: Address;
-  amount: string;
-  token: Address;
+  consumer: Base58;
+  provider: Base58;
+  mint: Base58;
+  amount: string; // u64 as decimal string
   skillId: number;
+  jobId: number;
   nonce: number;
-  validBefore: number;
+  validBefore: number; // unix seconds
 }
 
 export interface PaymentProof {
-  scheme: "exact";
-  network: `eip155:${number}`;
-  payload: {
-    signature: Hex;
-    authorization: PaymentAuthorization;
-  };
+  scheme: "solana-ed25519";
+  cluster: string;
+  authorization: PaymentAuthorization;
+  signature: Base58; // ed25519 detached signature, base58
   reputationScore?: number;
 }
 
 export interface SettlementReceipt {
   success: boolean;
-  settlementTxHash: Hex;
+  settlementSignature: string;
   accessToken: string;
   explorerUrl: string;
-  escrowJobId?: string;
-  pullTxHash?: Hex;
-  createJobTxHash?: Hex;
-  completeJobTxHash?: Hex;
-  skillRegistryRepTxHash?: Hex;
-  erc8004FeedbackTxHash?: Hex;
+  jobId?: number;
+  createJobSignature?: string;
+  completeJobSignature?: string;
+  reputationSignature?: string;
   reputationScore?: number;
 }
 
@@ -80,21 +75,15 @@ export interface InvokeResult<T = unknown> {
   receipt: SettlementReceipt;
 }
 
-export type SignerInput =
-  | { privateKey: Hex; account?: never; walletClient?: never }
-  | { account: PrivateKeyAccount; privateKey?: never; walletClient?: never }
-  | { walletClient: WalletClient; account?: never; privateKey?: never };
-
-export type LedgerForgeConfig = Partial<SignerInput> & {
+export interface LedgerForgeConfig {
   bazaarUrl?: string;
   facilitatorUrl?: string;
   rpcUrl?: string;
-  chainId?: number;
-  skillRegistry?: Address;
-  operatorAddress?: Address;
-  paymentTokens?: Record<string, Address>;
-  explorerUrl?: string;
-};
+  cluster?: string;
+  /** consumer signer — pass a Keypair or its 64-byte secret key */
+  keypair?: Keypair;
+  secretKey?: Uint8Array;
+}
 
 export interface CallSkillOptions {
   method?: "GET" | "POST";
@@ -104,9 +93,9 @@ export interface CallSkillOptions {
 }
 
 export interface InvokeOptions extends CallSkillOptions {
-  recipient?: Address;
-  token?: Address | "USDC" | "USDe";
+  recipient?: Base58;
   amount?: bigint | number | string;
+  jobId?: number;
   validForSeconds?: number;
   reputationScore?: number;
 }

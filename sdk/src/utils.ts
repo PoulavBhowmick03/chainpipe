@@ -1,13 +1,16 @@
-import { formatUnits as viemFormatUnits, getAddress, type Address } from "viem";
+import type { PaymentAuthorization } from "./types.js";
 
 const DEFAULT_USDC_DECIMALS = 6;
 
-export function formatTokenAmount(amount: bigint | string | number, decimals: number = DEFAULT_USDC_DECIMALS): string {
-  return viemFormatUnits(BigInt(amount), decimals);
-}
-
-export function checksumAddress(address: string): Address {
-  return getAddress(address);
+export function formatTokenAmount(
+  amount: bigint | string | number,
+  decimals: number = DEFAULT_USDC_DECIMALS,
+): string {
+  const v = BigInt(amount);
+  const base = 10n ** BigInt(decimals);
+  const whole = v / base;
+  const frac = (v % base).toString().padStart(decimals, "0").replace(/0+$/, "");
+  return frac ? `${whole}.${frac}` : `${whole}`;
 }
 
 export function buildQuery(record: Record<string, string | number | boolean>): string {
@@ -18,22 +21,37 @@ export function buildQuery(record: Record<string, string | number | boolean>): s
   return params.toString();
 }
 
-export function explorerTxUrl(txHash: string, explorerBase: string): string {
-  return `${explorerBase.replace(/\/$/, "")}/tx/${txHash}`;
+export function explorerTxUrl(signature: string, cluster: string): string {
+  return `https://explorer.solana.com/tx/${signature}?cluster=${cluster}`;
 }
 
-const TOKEN_DECIMALS: Record<string, number> = {
-  USDC: 6,
-  USDe: 18,
-};
-
-export function decimalsForSymbol(symbol: string): number {
-  return TOKEN_DECIMALS[symbol] ?? DEFAULT_USDC_DECIMALS;
+export function explorerAddressUrl(address: string, cluster: string): string {
+  return `https://explorer.solana.com/address/${address}?cluster=${cluster}`;
 }
 
-export function isValidPaymentToken(token: string, paymentTokens: Record<string, Address>): boolean {
-  const checksummed = getAddress(token);
-  return Object.values(paymentTokens).some((addr) => getAddress(addr) === checksummed);
+/**
+ * Canonical, deterministic byte encoding of a payment authorization. Both the SDK
+ * (signing) and the facilitator (verifying) MUST produce identical bytes — newline-
+ * delimited fixed field order, UTF-8. Replaces the EVM EIP-712 typed-data hash.
+ */
+export function canonicalPaymentMessage(
+  auth: PaymentAuthorization,
+  domain: string,
+  version: string,
+): Uint8Array {
+  const lines = [
+    domain,
+    version,
+    auth.consumer,
+    auth.provider,
+    auth.mint,
+    auth.amount,
+    String(auth.skillId),
+    String(auth.jobId),
+    String(auth.nonce),
+    String(auth.validBefore),
+  ];
+  return new TextEncoder().encode(lines.join("\n"));
 }
 
 export class LedgerForgeError extends Error {

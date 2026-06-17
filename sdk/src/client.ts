@@ -1,23 +1,8 @@
-import {
-  createPublicClient,
-  createWalletClient,
-  http,
-  maxUint256,
-  parseUnits,
-  type Address,
-  type Hex,
-  type PrivateKeyAccount,
-  type PublicClient,
-  type WalletClient,
-} from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { mantle } from "viem/chains";
-import {
-  DEFAULTS,
-  PAYMENT_DOMAIN_NAME,
-  PAYMENT_DOMAIN_VERSION,
-  PAYMENT_TYPES,
-} from "./constants.js";
+import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import nacl from "tweetnacl";
+import bs58 from "bs58";
+import { DEFAULTS, PAYMENT_DOMAIN, PAYMENT_VERSION } from "./constants.js";
+import { canonicalPaymentMessage, explorerTxUrl, LedgerForgeError } from "./utils.js";
 import type {
   CallSkillOptions,
   InvokeOptions,
@@ -30,98 +15,38 @@ import type {
   SettlementReceipt,
   SkillListing,
 } from "./types.js";
-import {
-  LedgerForgeError,
-  buildQuery,
-  checksumAddress,
-  decimalsForSymbol,
-  explorerTxUrl,
-} from "./utils.js";
 
-const DEFAULT_EXPLORER = "https://mantlescan.xyz";
-
-const ERC20_ABI = [
-  {
-    type: "function",
-    name: "approve",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "spender", type: "address" },
-      { name: "amount", type: "uint256" },
-    ],
-    outputs: [{ type: "bool" }],
-  },
-  {
-    type: "function",
-    name: "allowance",
-    stateMutability: "view",
-    inputs: [
-      { name: "owner", type: "address" },
-      { name: "spender", type: "address" },
-    ],
-    outputs: [{ type: "uint256" }],
-  },
-  {
-    type: "function",
-    name: "balanceOf",
-    stateMutability: "view",
-    inputs: [{ name: "account", type: "address" }],
-    outputs: [{ type: "uint256" }],
-  },
-] as const;
-
+/**
+ * LedgerForge SDK client (Solana). Discovers skills via the Bazaar, signs an
+ * ed25519 payment authorization, and settles through the facilitator + x402_escrow.
+ */
 export class LedgerForgeClient {
   readonly bazaarUrl: string;
   readonly facilitatorUrl: string;
-  readonly rpcUrl: string;
-  readonly chainId: number;
-  readonly skillRegistry: Address;
-  readonly operatorAddress: Address;
-  readonly paymentTokens: Record<string, Address>;
-  readonly explorerUrl: string;
+  readonly cluster: string;
+  readonly connection: Connection;
 
-  #account?: PrivateKeyAccount;
-  #walletClient?: WalletClient;
-  #publicClient: PublicClient;
+  #keypair?: Keypair;
 
   constructor(config: LedgerForgeConfig = {}) {
     this.bazaarUrl = (config.bazaarUrl ?? DEFAULTS.bazaarUrl).replace(/\/$/, "");
     this.facilitatorUrl = (config.facilitatorUrl ?? DEFAULTS.facilitatorUrl).replace(/\/$/, "");
-    this.rpcUrl = config.rpcUrl ?? DEFAULTS.rpcUrl;
-    this.chainId = config.chainId ?? DEFAULTS.chainId;
-    this.skillRegistry = checksumAddress(config.skillRegistry ?? DEFAULTS.skillRegistry);
-    this.operatorAddress = checksumAddress(config.operatorAddress ?? DEFAULTS.operatorAddress);
-    this.paymentTokens = config.paymentTokens ?? { ...DEFAULTS.tokens };
-    this.explorerUrl = config.explorerUrl ?? DEFAULT_EXPLORER;
+    this.cluster = config.cluster ?? DEFAULTS.cluster;
+    this.connection = new Connection(config.rpcUrl ?? DEFAULTS.rpcUrl, "confirmed");
 
-    if (config.privateKey) {
-      this.#account = privateKeyToAccount(config.privateKey);
-    } else if (config.account) {
-      this.#account = config.account;
+    if (config.keypair) {
+      this.#keypair = config.keypair;
+    } else if (config.secretKey) {
+      this.#keypair = Keypair.fromSecretKey(config.secretKey);
     }
-
-    if (config.walletClient) {
-      this.#walletClient = config.walletClient;
-    } else if (this.#account) {
-      this.#walletClient = createWalletClient({
-        account: this.#account,
-        chain: mantle,
-        transport: http(this.rpcUrl),
-      });
-    }
-
-    this.#publicClient = createPublicClient({
-      chain: mantle,
-      transport: http(this.rpcUrl),
-    });
   }
 
   get hasSigner(): boolean {
-    return Boolean(this.#walletClient);
+    return Boolean(this.#keypair);
   }
 
-  get address(): Address | undefined {
-    return this.#account?.address ?? (this.#walletClient?.account?.address as Address | undefined);
+  get publicKey(): PublicKey | undefined {
+    return this.#keypair?.publicKey;
   }
 
   async listSkills(filter: ListSkillsFilter = {}): Promise<SkillListing[]> {
@@ -132,18 +57,16 @@ export class LedgerForgeClient {
 
     const response = await fetch(url);
     if (!response.ok) {
-      throw new LedgerForgeError("BAZAAR_ERROR", `Bazaar /skills returned ${response.status}: ${await response.text()}`);
+      throw new LedgerForgeError("BAZAAR_ERROR", `Bazaar /skills returned ${response.status}`);
     }
-
     const body = (await response.json()) as { skills?: SkillListing[] } | SkillListing[];
     return Array.isArray(body) ? body : body.skills ?? [];
   }
 
   async getSkill(skillId: number): Promise<SkillListing> {
-    const url = new URL(`/skills/${skillId}`, this.bazaarUrl);
-    const response = await fetch(url);
+    const response = await fetch(new URL(`/skills/${skillId}`, this.bazaarUrl));
     if (response.status === 404) {
-      throw new LedgerForgeError("SKILL_NOT_FOUND", `Skill ${skillId} not found in bazaar`);
+      throw new LedgerForgeError("SKILL_NOT_FOUND", `Skill ${skillId} not found`);
     }
     if (!response.ok) {
       throw new LedgerForgeError("BAZAAR_ERROR", `Bazaar /skills/${skillId} returned ${response.status}`);
@@ -153,11 +76,7 @@ export class LedgerForgeClient {
 
   async getPaymentChallenge(
     skillId: number,
-    overrides: {
-      resource?: string;
-      amount?: string | bigint | number;
-      asset?: Address;
-    } = {},
+    overrides: { resource?: string; amount?: string | bigint | number; asset?: string } = {},
   ): Promise<PaymentChallenge> {
     const url = new URL("/payment-details", this.facilitatorUrl);
     url.searchParams.set("skillId", String(skillId));
@@ -167,280 +86,101 @@ export class LedgerForgeClient {
 
     const response = await fetch(url);
     if (!response.ok) {
-      throw new LedgerForgeError(
-        "FACILITATOR_ERROR",
-        `Facilitator /payment-details returned ${response.status}: ${await response.text()}`,
-      );
+      throw new LedgerForgeError("FACILITATOR_ERROR", `/payment-details returned ${response.status}`);
     }
     return (await response.json()) as PaymentChallenge;
   }
 
-  // signs the facilitator's eip-712 challenge
-  async signPayment(
+  /** Sign the facilitator's challenge with the consumer's ed25519 key. */
+  signPayment(
     challenge: PaymentChallenge,
-    options: {
-      recipient: Address;
-      amount?: bigint | string | number;
-      validForSeconds?: number;
-    },
-  ): Promise<PaymentProof> {
-    const walletClient = this.#walletClient;
-    const account = this.#account ?? (walletClient?.account as PrivateKeyAccount | undefined);
-    if (!walletClient || !account) {
-      throw new LedgerForgeError(
-        "NO_SIGNER",
-        "No signer configured. Pass privateKey, account, or walletClient to the constructor.",
-      );
+    options: { recipient: string; amount?: bigint | string | number; jobId?: number; validForSeconds?: number },
+  ): PaymentProof {
+    const keypair = this.#keypair;
+    if (!keypair) {
+      throw new LedgerForgeError("NO_SIGNER", "No signer configured. Pass keypair or secretKey.");
     }
 
-    const amount = BigInt(options.amount ?? challenge.maxAmountRequired);
-    const validBefore = Math.floor(Date.now() / 1000) + (options.validForSeconds ?? 300);
-    const nonce = Date.now();
-
+    const nowSec = Math.floor(Date.now() / 1000);
     const authorization: PaymentAuthorization = {
-      from: account.address,
-      to: checksumAddress(options.recipient),
-      amount: amount.toString(),
-      token: checksumAddress(challenge.asset),
+      consumer: keypair.publicKey.toBase58(),
+      provider: options.recipient,
+      mint: challenge.asset,
+      amount: BigInt(options.amount ?? challenge.maxAmountRequired).toString(),
       skillId: challenge.skillId,
-      nonce,
-      validBefore,
+      jobId: options.jobId ?? nowSec,
+      nonce: Date.now(),
+      validBefore: nowSec + (options.validForSeconds ?? 300),
     };
 
-    const signature = (await walletClient.signTypedData({
-      account,
-      domain: {
-        name: PAYMENT_DOMAIN_NAME,
-        version: PAYMENT_DOMAIN_VERSION,
-        chainId: this.chainId,
-        verifyingContract: this.skillRegistry,
-      },
-      types: PAYMENT_TYPES,
-      primaryType: "Payment",
-      message: {
-        from: authorization.from,
-        to: authorization.to,
-        amount,
-        token: authorization.token,
-        skillId: BigInt(challenge.skillId),
-        nonce: BigInt(nonce),
-        validBefore: BigInt(validBefore),
-      },
-    })) as Hex;
+    const message = canonicalPaymentMessage(authorization, PAYMENT_DOMAIN, PAYMENT_VERSION);
+    const signature = nacl.sign.detached(message, keypair.secretKey);
 
     return {
-      scheme: "exact",
-      network: `eip155:${this.chainId}` as `eip155:${number}`,
-      payload: { signature, authorization },
+      scheme: "solana-ed25519",
+      cluster: this.cluster,
+      authorization,
+      signature: bs58.encode(signature),
     };
   }
 
-  async facilitate(challenge: PaymentChallenge, proof: PaymentProof): Promise<SettlementReceipt> {
+  /** Submit the signed proof to the facilitator for on-chain settlement. */
+  async facilitate(proof: PaymentProof): Promise<SettlementReceipt> {
     const response = await fetch(new URL("/facilitate", this.facilitatorUrl), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ paymentDetails: challenge, paymentProof: proof }),
+      body: JSON.stringify(proof),
     });
-
-    const body = (await response.json()) as {
-      success: boolean;
-      settlementTxHash?: Hex;
-      accessToken?: string;
-      escrowJobId?: string;
-      pullTxHash?: Hex;
-      createJobTxHash?: Hex;
-      completeJobTxHash?: Hex;
-      skillRegistryRepTxHash?: Hex;
-      erc8004FeedbackTxHash?: Hex;
-      reputationScore?: number;
-      error?: string;
-    };
-
-    if (!response.ok || !body.success || !body.settlementTxHash || !body.accessToken) {
-      throw new LedgerForgeError(
-        "SETTLEMENT_FAILED",
-        body.error ?? `Facilitator returned ${response.status}`,
-      );
+    if (!response.ok) {
+      throw new LedgerForgeError("SETTLEMENT_ERROR", `/facilitate returned ${response.status}: ${await response.text()}`);
     }
-
-    return {
-      success: true,
-      settlementTxHash: body.settlementTxHash,
-      accessToken: body.accessToken,
-      explorerUrl: explorerTxUrl(body.settlementTxHash, this.explorerUrl),
-      escrowJobId: body.escrowJobId,
-      pullTxHash: body.pullTxHash,
-      createJobTxHash: body.createJobTxHash,
-      completeJobTxHash: body.completeJobTxHash,
-      skillRegistryRepTxHash: body.skillRegistryRepTxHash,
-      erc8004FeedbackTxHash: body.erc8004FeedbackTxHash,
-      reputationScore: body.reputationScore,
-    };
+    const receipt = (await response.json()) as SettlementReceipt;
+    if (receipt.settlementSignature && !receipt.explorerUrl) {
+      receipt.explorerUrl = explorerTxUrl(receipt.settlementSignature, this.cluster);
+    }
+    return receipt;
   }
 
+  /** Call the skill endpoint with the settlement access token. */
   async callSkill<T = unknown>(
     endpoint: string,
     accessToken: string,
     options: CallSkillOptions = {},
   ): Promise<T> {
-    const method = options.method ?? (options.body ? "POST" : "GET");
+    const method = options.method ?? "GET";
     const url = new URL(endpoint);
     if (options.query) {
-      for (const [k, v] of Object.entries(options.query)) {
-        url.searchParams.set(k, String(v));
-      }
+      for (const [k, v] of Object.entries(options.query)) url.searchParams.set(k, String(v));
     }
-
-    const headers: Record<string, string> = {
-      authorization: `Bearer ${accessToken}`,
-      accept: "application/json",
-      ...(options.headers ?? {}),
-    };
-    if (options.body !== undefined) headers["content-type"] = "application/json";
-
     const response = await fetch(url, {
       method,
-      headers,
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        ...(options.body ? { "content-type": "application/json" } : {}),
+        ...options.headers,
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
     });
-
     if (!response.ok) {
-      throw new LedgerForgeError(
-        "SKILL_CALL_FAILED",
-        `Skill endpoint ${url.pathname} returned ${response.status}: ${await response.text().catch(() => "")}`,
-      );
+      throw new LedgerForgeError("SKILL_ERROR", `Skill ${endpoint} returned ${response.status}`);
     }
     return (await response.json()) as T;
   }
 
-  resolveTokenAddress(token: Address | "USDC" | "USDe"): Address {
-    if (token === "USDC") return this.paymentTokens.USDC;
-    if (token === "USDe") return this.paymentTokens.USDe;
-    return checksumAddress(token);
-  }
-
-  async getAllowance(token: Address | "USDC" | "USDe", owner?: Address): Promise<bigint> {
-    const tokenAddress = this.resolveTokenAddress(token);
-    const ownerAddress = owner ?? this.address;
-    if (!ownerAddress) {
-      throw new LedgerForgeError(
-        "NO_SIGNER",
-        "owner address required when no signer is configured",
-      );
-    }
-    return this.#publicClient.readContract({
-      address: tokenAddress,
-      abi: ERC20_ABI,
-      functionName: "allowance",
-      args: [ownerAddress, this.operatorAddress],
-    });
-  }
-
-  async getBalance(token: Address | "USDC" | "USDe", owner?: Address): Promise<bigint> {
-    const tokenAddress = this.resolveTokenAddress(token);
-    const ownerAddress = owner ?? this.address;
-    if (!ownerAddress) {
-      throw new LedgerForgeError(
-        "NO_SIGNER",
-        "owner address required when no signer is configured",
-      );
-    }
-    return this.#publicClient.readContract({
-      address: tokenAddress,
-      abi: ERC20_ABI,
-      functionName: "balanceOf",
-      args: [ownerAddress],
-    });
-  }
-
-  // approve once per token before paying skills
-  async approveOperator(
-    token: Address | "USDC" | "USDe",
-    amount: bigint | "max" = "max",
-  ): Promise<{ txHash: Hex; explorerUrl: string; approvedAmount: bigint }> {
-    const walletClient = this.#walletClient;
-    const account = this.#account ?? (walletClient?.account as PrivateKeyAccount | undefined);
-    if (!walletClient || !account) {
-      throw new LedgerForgeError("NO_SIGNER", "No signer configured. Pass privateKey, account, or walletClient.");
-    }
-
-    const tokenAddress = this.resolveTokenAddress(token);
-    const approvedAmount = amount === "max" ? maxUint256 : amount;
-
-    const txHash = await walletClient.writeContract({
-      account,
-      chain: mantle,
-      address: tokenAddress,
-      abi: ERC20_ABI,
-      functionName: "approve",
-      args: [this.operatorAddress, approvedAmount],
-    });
-
-    await this.#publicClient.waitForTransactionReceipt({ hash: txHash });
-
-    return {
-      txHash,
-      explorerUrl: explorerTxUrl(txHash, this.explorerUrl),
-      approvedAmount,
-    };
-  }
-
-  async invoke<T = unknown>(skillId: number, options: InvokeOptions = {}): Promise<InvokeResult<T>> {
+  /** Full flow: discover → challenge → sign → settle → call. */
+  async invokeSkill<T = unknown>(skillId: number, options: InvokeOptions = {}): Promise<InvokeResult<T>> {
     const skill = await this.getSkill(skillId);
-
-    const resolvedToken = this.resolveToken(options.token, options.amount);
-    const challenge = await this.getPaymentChallenge(skillId, {
-      resource: skill.endpoint,
-      amount: resolvedToken.amount,
-      asset: resolvedToken.address,
-    });
-
-    const proof = await this.signPayment(challenge, {
-      recipient: options.recipient ?? skill.owner,
-      amount: resolvedToken.amount,
+    const challenge = await this.getPaymentChallenge(skillId, { amount: options.amount });
+    const proof = this.signPayment(challenge, {
+      recipient: options.recipient ?? challenge.payTo ?? skill.provider,
+      amount: options.amount,
+      jobId: options.jobId,
       validForSeconds: options.validForSeconds,
     });
+    if (options.reputationScore !== undefined) proof.reputationScore = options.reputationScore;
 
-    const receipt = await this.facilitate(challenge, proof);
-
-    const output = await this.callSkill<T>(skill.endpoint, receipt.accessToken, {
-      method: options.method,
-      query: options.query,
-      body: options.body,
-      headers: options.headers,
-    });
-
+    const receipt = await this.facilitate(proof);
+    const output = await this.callSkill<T>(skill.endpoint, receipt.accessToken, options);
     return { skillId, skillName: skill.name, output, receipt };
-  }
-
-  private resolveToken(
-    token: Address | "USDC" | "USDe" | undefined,
-    amount: bigint | number | string | undefined,
-  ): { address: Address; amount: bigint } {
-    let address: Address;
-    let symbol: string | undefined;
-
-    if (!token || token === "USDC") {
-      address = this.paymentTokens.USDC;
-      symbol = "USDC";
-    } else if (token === "USDe") {
-      address = this.paymentTokens.USDe;
-      symbol = "USDe";
-    } else {
-      address = checksumAddress(token);
-    }
-
-    let amountBigInt: bigint;
-    if (amount === undefined) {
-      amountBigInt = 0n;
-    } else if (typeof amount === "bigint") {
-      amountBigInt = amount;
-    } else if (typeof amount === "string" && amount.includes(".")) {
-      amountBigInt = parseUnits(amount, decimalsForSymbol(symbol ?? "USDC"));
-    } else {
-      amountBigInt = BigInt(amount);
-    }
-
-    return { address, amount: amountBigInt };
   }
 }

@@ -1,34 +1,33 @@
-import type { Address } from "viem";
+import { PublicKey } from "@solana/web3.js";
 
-export const MANTLE_MAINNET_CHAIN_ID = 5000;
-export const MANTLE_MAINNET_RPC = "https://rpc.mantle.xyz";
+export const SOLANA_CLUSTER = "devnet";
+export const DEVNET_RPC = "https://api.devnet.solana.com";
+
+// Program IDs (match declare_id! in solana/programs/*).
+export const PROGRAM_IDS = {
+  skillRegistry: new PublicKey("26Xf7wEPJbG6EJ5kfAXbkot75ekSWdvpJH2rws1DEaEF"),
+  x402Escrow: new PublicKey("Ec48mwadrna8FC5rJ24K5R5fMVCBFBzhbbeFkf6skiYq"),
+  bazaarListings: new PublicKey("HnnH4asvgvAqyBnZKD6SVPMHEwTPTEBq2ZYU995j4Jt3"),
+} as const;
+
+// Circle devnet USDC mint (verify against current devnet before mainnet — see DEPLOY.md).
+export const TOKENS = {
+  USDC: new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"),
+} as const;
 
 export const DEFAULTS = {
   bazaarUrl: "https://ledgerforge-indexer.fly.dev",
   facilitatorUrl: "https://ledgerforge-facilitator.fly.dev",
-  rpcUrl: MANTLE_MAINNET_RPC,
-  chainId: MANTLE_MAINNET_CHAIN_ID,
-  skillRegistry: "0x37041F257Bf8f1E201497Dc0BCDa1ae0d8317992" as Address,
-  bazaarListings: "0xaB5a52C30D769A7Eae1474857A6180E71765CBAF" as Address,
-  x402Escrow: "0x1d550b555B3a2e124ef611b55965848d6be233a2" as Address,
-  operatorAddress: "0xC0296012Cfbb0e6DF5dA7158B65Dbc46DD9650e0" as Address,
-  tokens: {
-    USDC: "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9" as Address,
-    USDe: "0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34" as Address,
-  },
+  rpcUrl: DEVNET_RPC,
+  cluster: SOLANA_CLUSTER,
 } as const;
 
-export const PAYMENT_DOMAIN_NAME = "LedgerForge";
-export const PAYMENT_DOMAIN_VERSION = "1";
+// ed25519 payment-authorization domain (replaces the EVM EIP-712 domain).
+export const PAYMENT_DOMAIN = "LedgerForge-Solana";
+export const PAYMENT_VERSION = "1";
 
-export const PAYMENT_TYPES = {
-  Payment: [
-    { name: "from", type: "address" },
-    { name: "to", type: "address" },
-    { name: "amount", type: "uint256" },
-    { name: "token", type: "address" },
-    { name: "skillId", type: "uint256" },
-    { name: "nonce", type: "uint256" },
-    { name: "validBefore", type: "uint256" },
-  ],
-} as const;
+// PDA seed prefixes (match the Anchor programs).
+export const SEED_CONFIG = "config";
+export const SEED_JOB = "job";
+export const SEED_SKILL = "skill";
+export const SEED_LISTING = "listing";
