@@ -1,5 +1,16 @@
 # AGENTS.md — LedgerForge Build Bible
 
+> **⚠️ This repo is the SOLANA port of LedgerForge.** The runbook below is the legacy
+> Mantle/EVM reference, kept for architectural context while it is ported. For the
+> current Solana system use:
+> - [`README.md`](./README.md) — Solana overview + differentiation
+> - [`DEPLOYED.md`](./DEPLOYED.md) — live **devnet** program IDs, config PDAs, and the
+>   executed-flow tx signatures (register → deposit → settle → reputation)
+> - [`DEPLOY.md`](./DEPLOY.md) — devnet build/deploy runbook (`cargo build-sbf --arch v3`)
+> - [`MIGRATION.md`](./MIGRATION.md) — EVM→Solana mapping + what remains
+> - Programs: `solana/programs/*` · SDK: `sdk/` (`@ishitaaaaw/x402-solana`) ·
+>   Facilitator: `facilitator/` (ed25519) · Tests: `solana/tests` (`cd solana && npm test`)
+
 > This file is the authoritative reference for any AI agent or contributor working in this repo.
 > Keep it up to date whenever addresses, env vars, or decisions change.
 

@@ -41,9 +41,12 @@ Three Anchor programs (Rust → SBF), built with `cargo build-sbf`:
 | `x402_escrow` | Per-job PDA + SPL vault. `create_job` (consumer deposits), `complete_job` (PDA-signed payout → provider, fee → operator), `refund_job`. |
 | `bazaar_listings` | One PDA per listing; `create_listing` pays a one-time SPL fee to the treasury. |
 
-> **Deployment status: ⏳ pending devnet deploy.** Program IDs are in `Anchor.toml` /
-> `declare_id!`; deployed addresses + explorer links are filled after `DEPLOY.md`. We do
-> not ship fake addresses — `cargo build-sbf` compiles all three programs now.
+> **✅ Live on devnet — and the full loop is proven on-chain.** All three programs are
+> deployed + initialized, and a complete `register_skill → create_job (SPL deposit) →
+> complete_job (payout + 20-bps fee) → record_job_completion (reputation)` cycle has been
+> executed with published tx signatures. Program IDs, config PDAs, and the executed-flow
+> transaction links are in [`DEPLOYED.md`](./DEPLOYED.md). Reproduce: `cd facilitator &&
+> node scripts/e2e-devnet.mjs`. Tested: `cd solana && npm test` (10/10).
 
 **Off-chain:** a TypeScript **facilitator** (verifies ed25519 payment proofs, releases
 escrow via `complete_job`, writes reputation) and the **`@ishitaaaaw/x402-solana` SDK**
@@ -108,6 +111,16 @@ analog to the EVM EIP-712 flow.
 | **DevTools** | The `@ishitaaaaw/x402-solana` SDK + Bazaar API let any dev monetize an agent skill in minutes. |
 | **On-chain reputation** | ~400ms slots make per-job reputation writes (not just per-listing) economical. |
 | **Agent infra** | Built specifically for autonomous agents transacting continuously. |
+
+**How this differs from the existing x402 stack.** Corbits, PayAI, and MCPay provide the
+HTTP-402 payment rail and a facilitator — the *transport* for an agent to pay for a call.
+LedgerForge is complementary: on top of that rail it adds an **on-chain, verifiable skill
+registry** and a **post-settlement reputation primitive** written by the same gated
+settlement path. Reputation is derived from provable execution history (every settled job
+bumps `total_jobs`/`score` on the skill's PDA), so a hiring agent can **query and compose
+reputation directly from chain state** — no trust in an off-chain reputation oracle, no
+self-reported ratings. The rail moves money; LedgerForge makes *who to trust* a
+first-class, composable on-chain fact.
 
 ---
 
