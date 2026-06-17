@@ -1,16 +1,10 @@
 'use client'
-import { createContext, useContext, useState, useCallback } from 'react'
-
-declare global {
-  interface Window {
-    ethereum?: {
-      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
-      on: (event: string, handler: (...args: unknown[]) => void) => void
-    }
-  }
-}
-
-const MANTLE_CHAIN_ID = '0x1388'
+// Solana-native wallet context. Keeps the same { account, connecting, error, connect,
+// disconnect } shape the rest of the app already consumes, but backs it with the Solana
+// wallet-adapter (Phantom/Solflare/Backpack). `account` is the base58 public key.
+import { createContext, useContext, useMemo } from 'react'
+import { useWallet as useAdapterWallet } from '@solana/wallet-adapter-react'
+import { useWalletModal } from '@solana/wallet-adapter-react-ui'
 
 interface WalletContextType {
   account: string | null
@@ -26,52 +20,18 @@ const WalletContext = createContext<WalletContextType>({
 })
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-  const [account, setAccount] = useState<string | null>(null)
-  const [connecting, setConnecting] = useState(false)
-  const [error, setError] = useState('')
+  const { publicKey, connecting, disconnect: adapterDisconnect } = useAdapterWallet()
+  const { setVisible } = useWalletModal()
 
-  const connect = useCallback(async () => {
-    setError('')
-    if (!window.ethereum) {
-      setError('No Ethereum wallet detected. Install MetaMask or a compatible wallet.')
-      return
-    }
-    setConnecting(true)
-    try {
-      const accounts = (await window.ethereum.request({ method: 'eth_requestAccounts' })) as string[]
-      setAccount(accounts[0])
-      try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: MANTLE_CHAIN_ID }],
-        })
-      } catch (sw: unknown) {
-        if ((sw as { code?: number }).code === 4902) {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: MANTLE_CHAIN_ID, chainName: 'Mantle',
-              nativeCurrency: { name: 'MNT', symbol: 'MNT', decimals: 18 },
-              rpcUrls: ['https://rpc.mantle.xyz'],
-              blockExplorerUrls: ['https://mantlescan.xyz'],
-            }],
-          })
-        }
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Connection failed.')
-    } finally {
-      setConnecting(false)
-    }
-  }, [])
+  const value = useMemo<WalletContextType>(() => ({
+    account: publicKey ? publicKey.toBase58() : null,
+    connecting,
+    error: '',
+    connect: async () => { setVisible(true) },
+    disconnect: () => { void adapterDisconnect() },
+  }), [publicKey, connecting, setVisible, adapterDisconnect])
 
-  const disconnect = useCallback(() => { setAccount(null); setError('') }, [])
-
-  return (
-    <WalletContext.Provider value={{ account, connecting, error, connect, disconnect }}>
-      {children}
-    </WalletContext.Provider>
-  )
+  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>
 }
 
 export function useWallet() {
