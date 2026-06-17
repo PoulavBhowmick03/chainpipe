@@ -1,5 +1,5 @@
 {
-  "name": "@ishitaaaaw/x402-solana",
+  "name": "@poulav/x402-solana",
   "version": "0.1.0",
   "description": "TypeScript SDK for the LedgerForge x402 payment rail on Solana — discover, pay for, and execute on-chain agent skills.",
   "type": "module",

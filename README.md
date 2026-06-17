@@ -49,7 +49,7 @@ Three Anchor programs (Rust → SBF), built with `cargo build-sbf`:
 > node scripts/e2e-devnet.mjs`. Tested: `cd solana && npm test` (10/10).
 
 **Off-chain:** a TypeScript **facilitator** (verifies ed25519 payment proofs, releases
-escrow via `complete_job`, writes reputation) and the **`@ishitaaaaw/x402-solana` SDK**
+escrow via `complete_job`, writes reputation) and the **`@poulav/x402-solana` SDK**
 (`@solana/web3.js`, ed25519-signed payment authorizations). Both `tsc`-clean.
 
 ### Trust model (honest)
@@ -81,11 +81,11 @@ Deploy to devnet: see [`DEPLOY.md`](./DEPLOY.md) (fund a key via `solana airdrop
 ### SDK usage
 
 ```bash
-npm install @ishitaaaaw/x402-solana
+npm install @poulav/x402-solana
 ```
 
 ```typescript
-import { LedgerForgeClient } from "@ishitaaaaw/x402-solana";
+import { LedgerForgeClient } from "@poulav/x402-solana";
 import { Keypair } from "@solana/web3.js";
 
 const client = new LedgerForgeClient({
@@ -108,7 +108,7 @@ analog to the EVM EIP-712 flow.
 | Dimension | Fit |
 |---|---|
 | **Payments / stablecoins** | Per-execution USDC settlement at sub-cent fees is the core product. |
-| **DevTools** | The `@ishitaaaaw/x402-solana` SDK + Bazaar API let any dev monetize an agent skill in minutes. |
+| **DevTools** | The `@poulav/x402-solana` SDK + Bazaar API let any dev monetize an agent skill in minutes. |
 | **On-chain reputation** | ~400ms slots make per-job reputation writes (not just per-listing) economical. |
 | **Agent infra** | Built specifically for autonomous agents transacting continuously. |
 

@@ -8,7 +8,7 @@
 >   executed-flow tx signatures (register → deposit → settle → reputation)
 > - [`DEPLOY.md`](./DEPLOY.md) — devnet build/deploy runbook (`cargo build-sbf --arch v3`)
 > - [`MIGRATION.md`](./MIGRATION.md) — EVM→Solana mapping + what remains
-> - Programs: `solana/programs/*` · SDK: `sdk/` (`@ishitaaaaw/x402-solana`) ·
+> - Programs: `solana/programs/*` · SDK: `sdk/` (`@poulav/x402-solana`) ·
 >   Facilitator: `facilitator/` (ed25519) · Tests: `solana/tests` (`cd solana && npm test`)
 
 > This file is the authoritative reference for any AI agent or contributor working in this repo.
