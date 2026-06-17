@@ -1,0 +1,25 @@
+[toolchain]
+
+[features]
+resolver = true
+skip-lint = false
+
+[programs.localnet]
+skill_registry = "26Xf7wEPJbG6EJ5kfAXbkot75ekSWdvpJH2rws1DEaEF"
+x402_escrow = "Ec48mwadrna8FC5rJ24K5R5fMVCBFBzhbbeFkf6skiYq"
+bazaar_listings = "HnnH4asvgvAqyBnZKD6SVPMHEwTPTEBq2ZYU995j4Jt3"
+
+[programs.devnet]
+skill_registry = "26Xf7wEPJbG6EJ5kfAXbkot75ekSWdvpJH2rws1DEaEF"
+x402_escrow = "Ec48mwadrna8FC5rJ24K5R5fMVCBFBzhbbeFkf6skiYq"
+bazaar_listings = "HnnH4asvgvAqyBnZKD6SVPMHEwTPTEBq2ZYU995j4Jt3"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "Localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

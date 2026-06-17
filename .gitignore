@@ -62,3 +62,9 @@ agents/scout-runs/
 agents/perps-coach-runs/
 agents/spawn-auditor-runs/
 .vercel
+
+# Solana / Anchor
+solana/target/
+solana/.anchor/
+test-ledger/
+**/*.rs.bk

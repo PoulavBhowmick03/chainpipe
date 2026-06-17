@@ -1,0 +1,24 @@
+[package]
+name = "x402_escrow"
+version = "0.1.0"
+description = "LedgerForge x402Escrow — Anchor port of the EVM x402Escrow"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "x402_escrow"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = "0.31.1"
+# Minimal features: plain SPL token only. Avoids spl-token-2022 → solana-zk-sdk,
+# whose confidential-transfer crypto deps require edition2024 (unbuildable on the
+# platform-tools 1.84 cargo). We don't use token-2022 / confidential transfers.
+anchor-spl = { version = "0.31.1", default-features = false, features = ["token"] }
