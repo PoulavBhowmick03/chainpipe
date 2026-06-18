@@ -90,7 +90,7 @@ Update these as you go:
 - [x] **Phase 6** — Facilitator service (Express) — builds clean; /health verified live on devnet (POST /complete,/expire exercised in Phase 9 e2e)
 - [x] **Phase 7** — Indexer — builds + polls devnet + persists store.json; non-zero counts validated after Phase 10 seed
 - [x] **Phase 8** — Next.js 15 dashboard (100% Solana-native, wallet-adapter) — next build 0 errors, 8 routes, zero EVM imports (see BLOCKERS.md D5)
-- [ ] **Phase 9** — E2E devnet script (full loop with real tx signatures)
+- [x] **Phase 9** — E2E devnet script (full loop with real tx signatures) — runs clean; stake×3 tiers → pipeline → settle+fee+rep → tier-gated claim → expire+slash+failure+refund
 - [ ] **Phase 10** — Seed script + README + DEPLOYED.md finalization
 
 ---
