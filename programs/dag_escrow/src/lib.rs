@@ -35,6 +35,15 @@ pub mod dag_escrow {
         Ok(())
     }
 
+    /// Operator rotates the facilitator authority (key rotation / decentralization).
+    pub fn set_facilitator_authority(
+        ctx: Context<SetFacilitatorAuthority>,
+        new_authority: Pubkey,
+    ) -> Result<()> {
+        ctx.accounts.pipeline_config.facilitator_authority = new_authority;
+        Ok(())
+    }
+
     /// Create a DAG pipeline, lock the full budget into a vault, and create one
     /// PipelineNode account per node (passed as remaining_accounts in order).
     pub fn create_pipeline<'info>(
@@ -212,7 +221,12 @@ pub mod dag_escrow {
 
     /// Facilitator settles a claimed node: pays the agent (minus fee), pays the
     /// operator fee, decrements the open-job counter, and writes reputation.
-    pub fn complete_node(ctx: Context<CompleteNode>, node_index: u8, score_delta: i16) -> Result<()> {
+    pub fn complete_node(
+        ctx: Context<CompleteNode>,
+        node_index: u8,
+        score_delta: i16,
+        result_hash: [u8; 32],
+    ) -> Result<()> {
         require!(
             ctx.accounts.facilitator.key() == ctx.accounts.pipeline_config.facilitator_authority,
             DagError::UnauthorizedFacilitator
@@ -327,6 +341,7 @@ pub mod dag_escrow {
             agent: agent_key,
             paid: to_agent,
             fee,
+            result_hash,
         });
         Ok(())
     }
@@ -680,6 +695,13 @@ pub struct PipelineNode {
 }
 
 #[derive(Accounts)]
+pub struct SetFacilitatorAuthority<'info> {
+    #[account(mut, seeds = [b"pipeline_config"], bump = pipeline_config.bump, has_one = operator)]
+    pub pipeline_config: Account<'info, PipelineConfig>,
+    pub operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(
         init,
@@ -906,6 +928,8 @@ pub struct NodeSettled {
     pub agent: Pubkey,
     pub paid: u64,
     pub fee: u64,
+    /// Agent-committed commitment to the delivered output (proof-of-delivery step).
+    pub result_hash: [u8; 32],
 }
 
 #[event]

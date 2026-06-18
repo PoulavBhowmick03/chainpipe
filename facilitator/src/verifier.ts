@@ -10,9 +10,15 @@ export interface CompletionVerification {
   jobId?: Uint8Array;
 }
 
-/** Message an agent signs to authorize settlement of one node. */
-export function completionMessage(pipeline: PublicKey, nodeIndex: number, jobId: Uint8Array): Uint8Array {
-  return Uint8Array.from([...pipeline.toBytes(), nodeIndex & 0xff, ...jobId]);
+/** Message an agent signs to authorize settlement of one node and commit to a
+ *  result hash (proof-of-delivery commitment). */
+export function completionMessage(
+  pipeline: PublicKey,
+  nodeIndex: number,
+  jobId: Uint8Array,
+  resultHash: Uint8Array
+): Uint8Array {
+  return Uint8Array.from([...pipeline.toBytes(), nodeIndex & 0xff, ...jobId, ...resultHash]);
 }
 
 /**
@@ -26,6 +32,7 @@ export async function verifyCompletion(
   pipeline: PublicKey,
   nodeIndex: number,
   agentSignature: Uint8Array,
+  resultHash: Uint8Array,
   addresses: ChainPipeAddresses
 ): Promise<CompletionVerification> {
   const p = await getPipeline(connection, pipeline, addresses);
@@ -36,7 +43,7 @@ export async function verifyCompletion(
 
   const agent = node.agent;
   const jobId = Uint8Array.from(node.jobId);
-  const msg = completionMessage(pipeline, nodeIndex, jobId);
+  const msg = completionMessage(pipeline, nodeIndex, jobId, resultHash);
   const sigOk = nacl.sign.detached.verify(msg, agentSignature, agent.toBytes());
   if (!sigOk) return { ok: false, reason: "invalid agent signature" };
 

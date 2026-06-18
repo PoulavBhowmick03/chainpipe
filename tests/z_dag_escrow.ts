@@ -175,7 +175,7 @@ describe("dag_escrow (integration)", () => {
   ) {
     const agentAta = getAssociatedTokenAddressSync(mint, agent);
     await de.methods
-      .completeNode(idx, scoreDelta)
+      .completeNode(idx, scoreDelta, Array(32).fill(0))
       .accountsPartial({
         pipelineConfig: pipelineConfigPda,
         pipeline,

@@ -104,13 +104,14 @@ export async function completeNode(
   agent: PublicKey,
   scoreDelta: number,
   operatorTreasury: PublicKey,
-  addresses: ChainPipeAddresses
+  addresses: ChainPipeAddresses,
+  resultHash: Uint8Array = new Uint8Array(32)
 ): Promise<{ signature: TransactionSignature }> {
   const { dag } = loadPrograms(connection, addresses, facilitator);
   const node = await dag.account.pipelineNode.fetch(nodePda(addresses, pipeline, nodeIndex));
   const jobId = Uint8Array.from(node.jobId);
   const signature = await dag.methods
-    .completeNode(nodeIndex, scoreDelta)
+    .completeNode(nodeIndex, scoreDelta, Array.from(resultHash))
     .accountsPartial({
       pipelineConfig: pipelineConfigPda(addresses),
       pipeline,

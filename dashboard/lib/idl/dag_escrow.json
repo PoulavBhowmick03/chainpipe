@@ -556,6 +556,15 @@
         {
           "name": "score_delta",
           "type": "i16"
+        },
+        {
+          "name": "result_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
         }
       ]
     },
@@ -1128,6 +1137,65 @@
           "type": "pubkey"
         }
       ]
+    },
+    {
+      "name": "set_facilitator_authority",
+      "docs": [
+        "Operator rotates the facilitator authority (key rotation / decentralization)."
+      ],
+      "discriminator": [
+        24,
+        106,
+        236,
+        146,
+        17,
+        110,
+        10,
+        170
+      ],
+      "accounts": [
+        {
+          "name": "pipeline_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "pipeline_config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_authority",
+          "type": "pubkey"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -1512,6 +1580,18 @@
           {
             "name": "fee",
             "type": "u64"
+          },
+          {
+            "name": "result_hash",
+            "docs": [
+              "Agent-committed commitment to the delivered output (proof-of-delivery step)."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           }
         ]
       }

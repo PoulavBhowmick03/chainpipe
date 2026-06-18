@@ -562,6 +562,15 @@ export type DagEscrow = {
         {
           "name": "scoreDelta",
           "type": "i16"
+        },
+        {
+          "name": "resultHash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
         }
       ]
     },
@@ -1134,6 +1143,65 @@ export type DagEscrow = {
           "type": "pubkey"
         }
       ]
+    },
+    {
+      "name": "setFacilitatorAuthority",
+      "docs": [
+        "Operator rotates the facilitator authority (key rotation / decentralization)."
+      ],
+      "discriminator": [
+        24,
+        106,
+        236,
+        146,
+        17,
+        110,
+        10,
+        170
+      ],
+      "accounts": [
+        {
+          "name": "pipelineConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "pipelineConfig"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "newAuthority",
+          "type": "pubkey"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -1518,6 +1586,18 @@ export type DagEscrow = {
           {
             "name": "fee",
             "type": "u64"
+          },
+          {
+            "name": "resultHash",
+            "docs": [
+              "Agent-committed commitment to the delivered output (proof-of-delivery step)."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           }
         ]
       }

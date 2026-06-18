@@ -11,11 +11,19 @@ primary_region = "iad"
   auto_start_machines = true
   min_machines_running = 1
 
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"
+    method = "get"
+    path = "/health"
+
 [env]
   PORT = "8080"
   SOLANA_RPC_URL = "https://api.devnet.solana.com"
   OPERATOR_PUBKEY = "5cpcXjLZHhntiqhNNX1Yay7SghhcALsQcwH2WJCs3VUm"
   CHAINPIPE_USDC_MINT = "8BPRrfsXT3FZUvxW5v5ctq8Q5moZinNu7eFR4gtFPxz1"
+  FAUCET_ENABLED = "true"
 
 [[vm]]
   size = "shared-cpu-1x"

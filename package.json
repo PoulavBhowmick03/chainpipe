@@ -13,7 +13,8 @@
     "build:facilitator": "cd facilitator && npm run build",
     "build:dashboard": "cd dashboard && next build",
     "e2e": "npx tsx scripts/e2e-devnet.mts",
-    "seed": "npx tsx scripts/seed-devnet.mts"
+    "seed": "npx tsx scripts/seed-devnet.mts",
+    "test:units": "node --test tests/units/*.test.mjs"
   },
   "overrides": {
     "react": "18.3.1",

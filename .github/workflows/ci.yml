@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "pivot/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  web:
+    name: TypeScript build + unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install --no-audit --no-fund
+      - run: npm run build:sdk
+      - run: npm --workspace @chainpipe/facilitator run build
+      - run: npm --workspace @chainpipe/indexer run build
+      - run: npm run test:units
+      - name: Dashboard build
+        run: npm --workspace @chainpipe/dashboard run build
+        env:
+          NEXT_PUBLIC_RPC_URL: https://api.devnet.solana.com
+
+  programs:
+    name: Anchor programs build (SBPF)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Solana toolchain
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Build programs (SBPF v3)
+        run: |
+          cargo build-sbf --arch v3 --manifest-path programs/reputation_bridge/Cargo.toml
+          cargo build-sbf --arch v3 --manifest-path programs/bonded_registry/Cargo.toml
+          cargo build-sbf --arch v3 --manifest-path programs/dag_escrow/Cargo.toml

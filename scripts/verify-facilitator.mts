@@ -39,8 +39,13 @@ function loadKeypair(p: string): Keypair {
   return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(p.replace(/^~/, homedir()), "utf-8"))));
 }
 
-function completionMessage(pipeline: PublicKey, nodeIndex: number, jobId: Uint8Array): Uint8Array {
-  return Uint8Array.from([...pipeline.toBytes(), nodeIndex & 0xff, ...jobId]);
+function completionMessage(
+  pipeline: PublicKey,
+  nodeIndex: number,
+  jobId: Uint8Array,
+  resultHash: Uint8Array = new Uint8Array(32)
+): Uint8Array {
+  return Uint8Array.from([...pipeline.toBytes(), nodeIndex & 0xff, ...jobId, ...resultHash]);
 }
 
 async function main() {

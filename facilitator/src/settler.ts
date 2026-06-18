@@ -10,7 +10,8 @@ export function settleNode(
   agent: PublicKey,
   scoreDelta: number,
   operatorTreasury: PublicKey,
-  addresses: ChainPipeAddresses
+  addresses: ChainPipeAddresses,
+  resultHash: Uint8Array = new Uint8Array(32)
 ): Promise<{ signature: TransactionSignature }> {
   return completeNode(
     connection,
@@ -20,7 +21,8 @@ export function settleNode(
     agent,
     scoreDelta,
     operatorTreasury,
-    addresses
+    addresses,
+    resultHash
   );
 }
 

@@ -60,6 +60,9 @@ app.get("/health", async (_req: Request, res: Response) => {
 // an agent. The facilitator holds this mint's authority (devnet only).
 app.post("/faucet", async (req: Request, res: Response) => {
   try {
+    if ((process.env.FAUCET_ENABLED ?? "true") !== "true") {
+      return res.status(403).json({ error: "faucet disabled" });
+    }
     const { owner, amount } = req.body ?? {};
     if (!owner) return res.status(400).json({ error: "owner required" });
     const ownerPk = new PublicKey(owner);
@@ -97,12 +100,15 @@ app.post("/faucet", async (req: Request, res: Response) => {
 
 app.post("/complete", async (req: Request, res: Response) => {
   try {
-    const { pipelinePda, nodeIndex, agentSignature } = req.body ?? {};
+    const { pipelinePda, nodeIndex, agentSignature, resultHash } = req.body ?? {};
     if (!pipelinePda || nodeIndex === undefined || !agentSignature) {
       return res.status(400).json({ error: "pipelinePda, nodeIndex, agentSignature required" });
     }
     const pipeline = new PublicKey(pipelinePda);
     const idx = Number(nodeIndex);
+    // Optional proof-of-delivery commitment (base64/hex/byte-array); zeros if absent.
+    const resultHashBytes = new Uint8Array(32);
+    if (resultHash) resultHashBytes.set(decodeSignature(resultHash).slice(0, 32));
 
     // Replay guard first: if the node's job_id is already recorded on-chain (or
     // seen in-memory), reject as a replay before any other validation.
@@ -120,6 +126,7 @@ app.post("/complete", async (req: Request, res: Response) => {
       pipeline,
       idx,
       decodeSignature(agentSignature),
+      resultHashBytes,
       cfg.addresses
     );
     if (!v.ok || !v.node || !v.agent || !v.jobId) {
@@ -141,7 +148,8 @@ app.post("/complete", async (req: Request, res: Response) => {
       v.agent,
       delta,
       cfg.operatorTreasury,
-      cfg.addresses
+      cfg.addresses,
+      resultHashBytes
     );
     replay.markRecorded(v.jobId);
 
