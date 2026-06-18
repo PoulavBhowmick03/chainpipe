@@ -16,8 +16,11 @@ export function Providers({ children }: { children: ReactNode }) {
     []
   );
   return (
+    // No autoConnect: wallet detection (and any native-app deep-link permission
+    // prompt the wallet libraries trigger) only runs when the user explicitly
+    // clicks "Connect", instead of probing for wallet apps on page load.
     <ConnectionProvider endpoint={RPC_URL}>
-      <WalletProvider wallets={wallets} autoConnect>
+      <WalletProvider wallets={wallets}>
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
