@@ -69,6 +69,13 @@ falls back to the single root `@types/react@18`. Also alias `pino-pretty: false`
 in `next.config.mjs` (optional logger pulled by a Solana transitive dep). If a
 future `npm install` reintroduces nested `@types/react@19`, re-remove them.
 
+### D6 — Public devnet RPC rate limits (Phases 9–10)
+`api.devnet.solana.com` aggressively 429s bursts of RPC calls, which broke the
+e2e/seed scripts mid-run. **Fix:** both scripts throttle between operations
+(`E2E_THROTTLE_MS`, default 2500ms). For faster/more reliable runs, set
+`SOLANA_RPC_URL` to a dedicated RPC endpoint. The scripts otherwise complete and
+produce real, confirmed transactions.
+
 ## Open blockers
 
-(none)
+(none — all 10 phases complete)

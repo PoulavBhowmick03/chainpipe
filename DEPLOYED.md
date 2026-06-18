@@ -48,6 +48,25 @@ slash stake, mutate open-job counters, or write reputation.
 - Tier 2 minimum: 100_000_000 (100 USDC)
 - Tier 3 minimum: 1_000_000_000 (1000 USDC)
 
+## Seeded demo state (`scripts/seed-devnet.mts`)
+
+Test mint: `8BPRrfsXT3FZUvxW5v5ctq8Q5moZinNu7eFR4gtFPxz1`
+(point the indexer/dashboard at it via `CHAINPIPE_USDC_MINT` / `NEXT_PUBLIC_USDC_MINT`).
+
+| Agent | Skill | Tier | Address |
+|-------|-------|------|---------|
+| 0 | code-gen | 1 | `8EwfKQ3G4tPUqHNXHLrQrJDbNZrXULZe6NPhnWpBEp7D` |
+| 1 | data-fetch | 2 | `6ie5sKfhhGJtahrGduKt1gzGhQb8n53tcDgPA4T3hYBj` |
+| 2 | report-synthesis | 3 | `5wgZQQYGzAYqYeQUGWW4Ygi47i5EC1m9N8wp6JfDGRME` |
+| 3 | api-proxy | 2 | `7D6umQf7GVf8rzHurGqWbZDqkN7753WeQEHcwJ4c5DXc` |
+| 4 | nlp-summarization | 1 | `8tpxtAtQs3AwN9WbH2xz5QbVGF6RqkBKMtMABPbZNZjS` |
+
+| Pipeline | Status | Address |
+|----------|--------|---------|
+| 1 | Completed | `6H8xWmGz7Gr7QZrERWktWQXFoVpR5X2gLqZL2ZR16uSs` |
+| 2 | Active | `4pFdQSBSkhBR8Sjw5XNLDwsMxsmSuAAFx5s9Ezmd7vZa` |
+| 3 | PartiallyRefunded | `7LqDXqWtpW4RTvyhJ9x5spWzxHfuLLmmp6Ld4g7zaKiu` |
+
 ## Reproduce
 
 ```bash
