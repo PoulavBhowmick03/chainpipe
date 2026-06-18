@@ -24,7 +24,10 @@ export interface FacilitatorConfig {
 export function loadConfig(): FacilitatorConfig {
   const rpc = process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
   const connection = new Connection(rpc, "confirmed");
-  const facilitator = loadKeypair(process.env.FACILITATOR_KEYPAIR ?? "./keys/facilitator.json");
+  // Prefer an inline secret (Fly secret) so the keypair never lives in the image.
+  const facilitator = process.env.FACILITATOR_KEYPAIR_JSON
+    ? Keypair.fromSecretKey(Uint8Array.from(JSON.parse(process.env.FACILITATOR_KEYPAIR_JSON)))
+    : loadKeypair(process.env.FACILITATOR_KEYPAIR ?? "./keys/facilitator.json");
   const operator = new PublicKey(
     process.env.OPERATOR_PUBKEY ?? "5cpcXjLZHhntiqhNNX1Yay7SghhcALsQcwH2WJCs3VUm"
   );

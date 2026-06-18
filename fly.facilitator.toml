@@ -1,0 +1,22 @@
+app = "chainpipe-facilitator"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile.facilitator"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+[env]
+  PORT = "8080"
+  SOLANA_RPC_URL = "https://api.devnet.solana.com"
+  OPERATOR_PUBKEY = "5cpcXjLZHhntiqhNNX1Yay7SghhcALsQcwH2WJCs3VUm"
+  CHAINPIPE_USDC_MINT = "8BPRrfsXT3FZUvxW5v5ctq8Q5moZinNu7eFR4gtFPxz1"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

@@ -1,0 +1,17 @@
+**/node_modules
+node_modules
+target
+**/.next
+.next
+out
+**/dist
+.git
+.vercel
+keys
+dashboard
+indexer/data
+*.log
+.env
+.env.*
+**/.env
+**/.env.*

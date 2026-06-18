@@ -1,0 +1,19 @@
+# ChainPipe facilitator — built from the repo root so the workspace SDK resolves.
+FROM node:20-slim
+WORKDIR /app
+
+COPY package.json tsconfig.json ./
+COPY sdk ./sdk
+COPY facilitator ./facilitator
+
+# Trim the workspace to just what this service needs (skip dashboard/indexer).
+RUN node -e "const p=require('./package.json');p.workspaces=['sdk','facilitator'];require('fs').writeFileSync('package.json',JSON.stringify(p,null,2))"
+
+RUN npm install --no-audit --no-fund
+RUN npm --workspace @chainpipe/solana run build \
+ && npm --workspace @chainpipe/facilitator run build
+
+ENV NODE_ENV=production
+ENV PORT=8080
+EXPOSE 8080
+CMD ["node", "facilitator/dist/server.js"]

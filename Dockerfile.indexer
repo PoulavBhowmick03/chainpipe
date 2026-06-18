@@ -1,0 +1,19 @@
+# ChainPipe indexer — built from the repo root so the workspace SDK resolves.
+FROM node:20-slim
+WORKDIR /app
+
+COPY package.json tsconfig.json ./
+COPY sdk ./sdk
+COPY indexer ./indexer
+
+# Trim the workspace to just what this service needs (skip dashboard/facilitator).
+RUN node -e "const p=require('./package.json');p.workspaces=['sdk','indexer'];require('fs').writeFileSync('package.json',JSON.stringify(p,null,2))"
+
+RUN npm install --no-audit --no-fund
+RUN npm --workspace @chainpipe/solana run build \
+ && npm --workspace @chainpipe/indexer run build
+
+ENV NODE_ENV=production
+ENV INDEXER_PORT=8080
+EXPOSE 8080
+CMD ["node", "indexer/dist/api.js"]
