@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { getPipeline, type PipelineRecord } from "@/lib/indexer";
 import { usdc, shortKey, statusKey } from "@/lib/format";
 import { NodeStatusBadge } from "@/components/NodeStatusBadge";
+import { DagGraph } from "@/components/DagGraph";
 import { explorerAddr } from "@/lib/chainpipe";
 
 export default function PipelinePage() {
@@ -58,6 +59,9 @@ export default function PipelinePage() {
 
       <section>
         <h2 className="text-lg font-semibold mb-3">DAG</h2>
+        <div className="mb-4">
+          <DagGraph nodes={pipeline.nodes} />
+        </div>
         <div className="flex flex-col gap-3">
           {pipeline.nodes.map((n) => {
             const deps = depList(n.dependencyMask);
