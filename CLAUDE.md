@@ -2,7 +2,7 @@
 
 **What we are building:** A two-primitive Solana protocol that provides:
 1. **DAG Pipeline Escrow** — atomic multi-job payment settlement across chains of cooperating AI agents with cascading refunds on failure
-2. **Bonded Agent Registry** — staking-for-trust layer where agents put capital at risk, with facilitator-gated reputation writes to the official Solana 8004 Agent Registry (ATOM interface)
+2. **Bonded Agent Registry** — staking-for-trust layer where agents put capital at risk, with facilitator-gated reputation writes via ChainPipe's own `reputation_bridge` program, **designed to be composable with** the official Solana 8004 / ATOM registry (the `record_completion` schema mirrors 8004 so a CPI upgrade path exists — this is a forward integration, not a live tie-in)
 
 **Why it exists:** Every existing x402 facilitator (Dexter, PayAI, MCPay) settles individual job-level payments with no atomicity across pipelines. The official 8004 registry has un-gated attestation — anyone can write reputation with no proof a job occurred. ChainPipe closes both gaps.
 

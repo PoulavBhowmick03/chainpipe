@@ -6,6 +6,17 @@
 > facilitator + an indexer + a Next.js 15 dashboard. See [`DEPLOYED.md`](./DEPLOYED.md)
 > for live program IDs and [`BLOCKERS.md`](./BLOCKERS.md) for build/deploy notes.
 
+> **Status: devnet prototype.** Core flows are implemented, tested, and live, but
+> trust is currently centralized and value is play-money. Read
+> [`SECURITY.md`](./SECURITY.md) for the trust model and
+> [`AUDIT.md`](./AUDIT.md) for an honest production-readiness review. The
+> `reputation_bridge` program is ChainPipe's own; it is **designed to be composable
+> with** the official Solana 8004 / ATOM registry (forward integration, not a live
+> tie-in).
+>
+> **Live:** dashboard https://chainpipe.vercel.app · indexer
+> https://chainpipe-indexer.fly.dev · facilitator https://chainpipe-facilitator.fly.dev
+
 ---
 
 ## What
@@ -34,6 +45,20 @@ account/PDA model gives every pipeline, node, stake, and reputation record its o
 verifiable on-chain account.
 
 ## Architecture
+
+```mermaid
+flowchart LR
+  C[Consumer] -->|create_pipeline\nlock USDC| DE[dag_escrow]
+  A[Agent] -->|stake_and_register| BR[bonded_registry]
+  A -->|claim_node| DE
+  F[Facilitator] -->|complete_node / expire_node| DE
+  DE -->|"increment/decrement open_jobs,\nslash_stake (signed by dag_authority PDA)"| BR
+  DE -->|"record_completion / record_failure\n(signed by dag_authority PDA)"| RB[reputation_bridge]
+  RB -.->|composable-by-design| EightK[(Solana 8004 / ATOM registry)]
+  IDX[Indexer] -. polls .-> DE & BR & RB
+  UI[Dashboard] --> IDX
+  UI --> F
+```
 
 ```
             stake / slash / open-jobs (CPI)              record_completion / record_failure (CPI)
