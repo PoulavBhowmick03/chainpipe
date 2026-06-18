@@ -9,7 +9,7 @@ import {
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import BN from "bn.js";
-import { pipelinePda, nodePda, vaultAta } from "@chainpipe/solana";
+import { pipelinePda, nodePda, vaultAta } from "@/lib/sdk";
 import { buildPrograms, ADDRESSES, explorerTx } from "@/lib/chainpipe";
 
 interface DraftNode {

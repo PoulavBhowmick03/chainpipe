@@ -10,7 +10,7 @@ import {
   type BondedRegistry,
   type DagEscrow,
   type ReputationBridge,
-} from "@chainpipe/solana";
+} from "@/lib/sdk";
 
 export const ADDRESSES: ChainPipeAddresses = {
   ...DEVNET_ADDRESSES,

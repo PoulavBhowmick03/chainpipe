@@ -9,7 +9,7 @@ import {
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import BN from "bn.js";
-import { agentStakePda, vaultAta } from "@chainpipe/solana";
+import { agentStakePda, vaultAta } from "@/lib/sdk";
 import { buildPrograms, ADDRESSES, explorerTx } from "@/lib/chainpipe";
 import { usdc, tierLabel } from "@/lib/format";
 

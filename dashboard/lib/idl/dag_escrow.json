@@ -1,0 +1,1769 @@
+{
+  "address": "3FqvkzppD4ciwkGLrcNoTHUCeHwNbWtot18CkrBdXiJd",
+  "metadata": {
+    "name": "dag_escrow",
+    "version": "0.1.0",
+    "spec": "0.1.0"
+  },
+  "instructions": [
+    {
+      "name": "cancel_pipeline",
+      "docs": [
+        "Consumer cancels a pipeline that has no claimed/settled nodes, recovering",
+        "the full vault. Node accounts (remaining_accounts) are closed to consumer."
+      ],
+      "discriminator": [
+        183,
+        254,
+        33,
+        72,
+        36,
+        118,
+        101,
+        58
+      ],
+      "accounts": [
+        {
+          "name": "pipeline",
+          "writable": true
+        },
+        {
+          "name": "consumer",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "pipeline"
+          ]
+        },
+        {
+          "name": "stake_mint"
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pipeline"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stake_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "consumer_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "consumer"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stake_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_node",
+      "docs": [
+        "An agent claims a node once all dependencies are settled and its tier is",
+        "sufficient. CPIs into bonded_registry to increment the open-job counter."
+      ],
+      "discriminator": [
+        174,
+        6,
+        2,
+        112,
+        101,
+        127,
+        211,
+        53
+      ],
+      "accounts": [
+        {
+          "name": "pipeline_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pipeline",
+          "writable": true
+        },
+        {
+          "name": "node",
+          "writable": true
+        },
+        {
+          "name": "agent",
+          "signer": true
+        },
+        {
+          "name": "agent_stake",
+          "writable": true
+        },
+        {
+          "name": "registry_config"
+        },
+        {
+          "name": "dag_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  97,
+                  103,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "bonded_registry_program",
+          "address": "26AB6S5crQAkhfx928bnWSHfpQE6wp2Sdt4afFtk7crq"
+        }
+      ],
+      "args": [
+        {
+          "name": "node_index",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "complete_node",
+      "docs": [
+        "Facilitator settles a claimed node: pays the agent (minus fee), pays the",
+        "operator fee, decrements the open-job counter, and writes reputation."
+      ],
+      "discriminator": [
+        21,
+        239,
+        8,
+        243,
+        214,
+        77,
+        140,
+        38
+      ],
+      "accounts": [
+        {
+          "name": "pipeline_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pipeline",
+          "writable": true
+        },
+        {
+          "name": "node",
+          "writable": true
+        },
+        {
+          "name": "facilitator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pipeline"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stake_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "stake_mint"
+        },
+        {
+          "name": "agent"
+        },
+        {
+          "name": "agent_token_account",
+          "writable": true
+        },
+        {
+          "name": "operator_treasury",
+          "writable": true
+        },
+        {
+          "name": "dag_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  97,
+                  103,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry_config",
+          "writable": true
+        },
+        {
+          "name": "agent_stake",
+          "writable": true
+        },
+        {
+          "name": "bonded_registry_program",
+          "address": "26AB6S5crQAkhfx928bnWSHfpQE6wp2Sdt4afFtk7crq"
+        },
+        {
+          "name": "bridge_config",
+          "writable": true
+        },
+        {
+          "name": "agent_reputation",
+          "writable": true
+        },
+        {
+          "name": "job_record",
+          "writable": true
+        },
+        {
+          "name": "reputation_bridge_program",
+          "address": "6RRfs1Ho1bJ3JWXSy3xVth4BTGHWwVwum74ph2LRWWsf"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "node_index",
+          "type": "u8"
+        },
+        {
+          "name": "score_delta",
+          "type": "i16"
+        }
+      ]
+    },
+    {
+      "name": "create_pipeline",
+      "docs": [
+        "Create a DAG pipeline, lock the full budget into a vault, and create one",
+        "PipelineNode account per node (passed as remaining_accounts in order)."
+      ],
+      "discriminator": [
+        2,
+        163,
+        168,
+        112,
+        105,
+        112,
+        10,
+        96
+      ],
+      "accounts": [
+        {
+          "name": "pipeline",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "consumer"
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "consumer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "stake_mint"
+        },
+        {
+          "name": "consumer_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "consumer"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stake_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pipeline"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stake_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "node_configs",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "NodeConfig"
+              }
+            }
+          }
+        },
+        {
+          "name": "nonce",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "expire_node",
+      "docs": [
+        "Permissionless expiry of an overdue node. Cascades expiry to all",
+        "downstream (still-pending) nodes and refunds the consumer in one tx.",
+        "If the target node was claimed, slashes its agent and records a failure."
+      ],
+      "discriminator": [
+        78,
+        77,
+        194,
+        111,
+        100,
+        41,
+        18,
+        81
+      ],
+      "accounts": [
+        {
+          "name": "pipeline_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pipeline",
+          "writable": true
+        },
+        {
+          "name": "node",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pipeline"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stake_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "stake_mint"
+        },
+        {
+          "name": "consumer_token_account",
+          "writable": true
+        },
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dag_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  97,
+                  103,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry_config",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "agent_stake",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "agent_stake_vault",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "bonded_registry_program",
+          "optional": true,
+          "address": "26AB6S5crQAkhfx928bnWSHfpQE6wp2Sdt4afFtk7crq"
+        },
+        {
+          "name": "bridge_config",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "agent_reputation",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "job_record",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "agent",
+          "optional": true
+        },
+        {
+          "name": "reputation_bridge_program",
+          "optional": true,
+          "address": "6RRfs1Ho1bJ3JWXSy3xVth4BTGHWwVwum74ph2LRWWsf"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "node_index",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "docs": [
+        "One-time operator setup. Stores the fee, the facilitator authority",
+        "(permitted to settle nodes) and the canonical dag_authority PDA bump."
+      ],
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "pipeline_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "fee_bps",
+          "type": "u16"
+        },
+        {
+          "name": "facilitator_authority",
+          "type": "pubkey"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "AgentStake",
+      "discriminator": [
+        47,
+        68,
+        130,
+        227,
+        185,
+        4,
+        183,
+        36
+      ]
+    },
+    {
+      "name": "Pipeline",
+      "discriminator": [
+        30,
+        82,
+        16,
+        218,
+        196,
+        77,
+        115,
+        224
+      ]
+    },
+    {
+      "name": "PipelineConfig",
+      "discriminator": [
+        82,
+        0,
+        165,
+        26,
+        38,
+        212,
+        212,
+        44
+      ]
+    },
+    {
+      "name": "PipelineNode",
+      "discriminator": [
+        235,
+        28,
+        28,
+        46,
+        101,
+        113,
+        181,
+        161
+      ]
+    },
+    {
+      "name": "RegistryConfig",
+      "discriminator": [
+        23,
+        118,
+        10,
+        246,
+        173,
+        231,
+        243,
+        156
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "NodeClaimed",
+      "discriminator": [
+        242,
+        185,
+        53,
+        19,
+        17,
+        105,
+        132,
+        177
+      ]
+    },
+    {
+      "name": "NodeExpired",
+      "discriminator": [
+        75,
+        227,
+        154,
+        33,
+        140,
+        82,
+        129,
+        156
+      ]
+    },
+    {
+      "name": "NodeSettled",
+      "discriminator": [
+        163,
+        173,
+        13,
+        69,
+        159,
+        11,
+        66,
+        26
+      ]
+    },
+    {
+      "name": "PipelineCancelled",
+      "discriminator": [
+        232,
+        3,
+        54,
+        70,
+        49,
+        138,
+        214,
+        63
+      ]
+    },
+    {
+      "name": "PipelineCreated",
+      "discriminator": [
+        131,
+        255,
+        216,
+        35,
+        51,
+        51,
+        137,
+        139
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidFeeBps",
+      "msg": "Fee BPS exceeds 100%"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidNodeCount",
+      "msg": "Node count must be between 1 and 16"
+    },
+    {
+      "code": 6002,
+      "name": "NodeAccountMismatch",
+      "msg": "Number of node accounts does not match node configs"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidDag",
+      "msg": "Dependency graph contains a cycle or forward edge"
+    },
+    {
+      "code": 6004,
+      "name": "EmptyPipeline",
+      "msg": "Pipeline allocation must be greater than zero"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidNodeAccount",
+      "msg": "Provided node account does not match expected PDA"
+    },
+    {
+      "code": 6006,
+      "name": "PipelineNotActive",
+      "msg": "Pipeline is not active"
+    },
+    {
+      "code": 6007,
+      "name": "NodeNotClaimable",
+      "msg": "Node is not in a claimable state"
+    },
+    {
+      "code": 6008,
+      "name": "DependenciesNotMet",
+      "msg": "Node dependencies are not all settled"
+    },
+    {
+      "code": 6009,
+      "name": "AgentMismatch",
+      "msg": "Agent does not match the stake account"
+    },
+    {
+      "code": 6010,
+      "name": "TierInsufficient",
+      "msg": "Agent tier is insufficient for this node"
+    },
+    {
+      "code": 6011,
+      "name": "UnauthorizedFacilitator",
+      "msg": "Caller is not the configured facilitator"
+    },
+    {
+      "code": 6012,
+      "name": "NodeNotClaimed",
+      "msg": "Node is not claimed"
+    },
+    {
+      "code": 6013,
+      "name": "NodeNotExpirable",
+      "msg": "Node cannot be expired in its current state"
+    },
+    {
+      "code": 6014,
+      "name": "DeadlineNotPassed",
+      "msg": "Node deadline has not passed"
+    },
+    {
+      "code": 6015,
+      "name": "MissingSlashAccounts",
+      "msg": "Missing accounts required to slash a claimed node"
+    },
+    {
+      "code": 6016,
+      "name": "InvalidTreasury",
+      "msg": "Operator treasury account has wrong owner"
+    },
+    {
+      "code": 6017,
+      "name": "InvalidConsumerAccount",
+      "msg": "Consumer token account has wrong owner"
+    },
+    {
+      "code": 6018,
+      "name": "PipelineHasActivity",
+      "msg": "Pipeline has claimed or settled nodes"
+    },
+    {
+      "code": 6019,
+      "name": "MathOverflow",
+      "msg": "Math overflow"
+    }
+  ],
+  "types": [
+    {
+      "name": "AgentStake",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "stake_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "stake_amount",
+            "type": "u64"
+          },
+          {
+            "name": "tier",
+            "type": "u8"
+          },
+          {
+            "name": "open_jobs",
+            "type": "u32"
+          },
+          {
+            "name": "total_settled",
+            "type": "u32"
+          },
+          {
+            "name": "total_slashed",
+            "type": "u32"
+          },
+          {
+            "name": "unstake_requested_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NodeClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pipeline",
+            "type": "pubkey"
+          },
+          {
+            "name": "node_index",
+            "type": "u8"
+          },
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "job_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "NodeConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "allocation_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "deadline_slots_from_now",
+            "type": "u64"
+          },
+          {
+            "name": "dependency_mask",
+            "type": "u64"
+          },
+          {
+            "name": "required_tier",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NodeExpired",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pipeline",
+            "type": "pubkey"
+          },
+          {
+            "name": "node_index",
+            "type": "u8"
+          },
+          {
+            "name": "refund_amount",
+            "type": "u64"
+          },
+          {
+            "name": "slashed",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NodeSettled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pipeline",
+            "type": "pubkey"
+          },
+          {
+            "name": "node_index",
+            "type": "u8"
+          },
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "paid",
+            "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NodeStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Claimed"
+          },
+          {
+            "name": "Settled"
+          },
+          {
+            "name": "Expired"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Pipeline",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "consumer",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_nodes",
+            "type": "u8"
+          },
+          {
+            "name": "total_usdc_locked",
+            "type": "u64"
+          },
+          {
+            "name": "nodes_settled",
+            "type": "u8"
+          },
+          {
+            "name": "nodes_expired",
+            "type": "u8"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "PipelineStatus"
+              }
+            }
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "stake_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "settled_mask",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PipelineCancelled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pipeline",
+            "type": "pubkey"
+          },
+          {
+            "name": "refund_amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PipelineConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "facilitator_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "dag_authority_bump",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PipelineCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pipeline",
+            "type": "pubkey"
+          },
+          {
+            "name": "consumer",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_nodes",
+            "type": "u8"
+          },
+          {
+            "name": "total_usdc_locked",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PipelineNode",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pipeline",
+            "type": "pubkey"
+          },
+          {
+            "name": "node_index",
+            "type": "u8"
+          },
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "allocation_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "deadline_slot",
+            "type": "u64"
+          },
+          {
+            "name": "dependency_mask",
+            "type": "u64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "NodeStatus"
+              }
+            }
+          },
+          {
+            "name": "settled_at_slot",
+            "type": "u64"
+          },
+          {
+            "name": "job_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "required_tier",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PipelineStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Completed"
+          },
+          {
+            "name": "PartiallyRefunded"
+          },
+          {
+            "name": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RegistryConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "dag_escrow_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "slash_bps",
+            "type": "u16"
+          },
+          {
+            "name": "cooldown_slots",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}
