@@ -23,6 +23,30 @@ the toolchain that actually exists.
 
 ---
 
+### D2 — Devnet deploy: SBPFv3 + standalone CPI-dep builds (Phase 4)
+**Issue A (SBPF version):** `anchor build` / default `cargo build-sbf` emit SBPFv0
+(`e_flags=0`). Devnet has activated SIMD-0178/0189/0377 (SBPFv3
+deployment+execution) and deprecated v0 deployment, so v0 deploys fail with
+"Detected sbpf_version ... not enabled". v1 produced a local "Entrypoint out of
+bounds" with this CLI. **Fix:** build with `cargo build-sbf --arch v3`.
+
+**Issue B (empty CPI-dependency .so):** Building the whole workspace at once
+unifies Cargo features. Because `dag_escrow` depends on `bonded_registry` and
+`reputation_bridge` with `features=["cpi"]` (→ `no-entrypoint`), the standalone
+`.so` for those two crates is emitted WITHOUT an entrypoint (~544 bytes) and
+fails to deploy ("invalid file header"). **Fix:** build each CPI-dependency
+program with its own `--manifest-path` so feature unification doesn't strip the
+entrypoint. `dag_escrow` (the leaf) builds fine in either mode.
+
+**Issue C (stray buffers):** Failed deploys leave buffer accounts holding SOL.
+Recover with `solana program show --buffers --url devnet` + `solana program
+close <buffer> --url devnet`.
+
+### D3 — `BN` import under ESM/tsx (Phase 4)
+`import { BN } from "@coral-xyz/anchor"` is not a valid ESM named export and
+`anchor.BN` was undefined at runtime. Import from `bn.js` directly:
+`import BN from "bn.js"`.
+
 ## Open blockers
 
 (none)

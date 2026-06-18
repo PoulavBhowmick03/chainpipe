@@ -85,7 +85,7 @@ Update these as you go:
 - [x] **Phase 1** — `bonded_registry` Anchor program + tests
 - [x] **Phase 2** — `dag_escrow` Anchor program + tests
 - [x] **Phase 3** — `reputation_bridge` Anchor program + tests (built before Phase 2: dag_escrow CPIs into it)
-- [ ] **Phase 4** — Deploy all 3 programs to devnet, populate DEPLOYED.md
+- [x] **Phase 4** — Deploy all 3 programs to devnet, populate DEPLOYED.md (SBPFv3; see BLOCKERS.md D2)
 - [ ] **Phase 5** — TypeScript SDK (`@chainpipe/solana`)
 - [ ] **Phase 6** — Facilitator service (Express)
 - [ ] **Phase 7** — Indexer
