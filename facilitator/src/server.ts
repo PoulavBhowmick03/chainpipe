@@ -58,6 +58,17 @@ app.post("/complete", async (req: Request, res: Response) => {
     const pipeline = new PublicKey(pipelinePda);
     const idx = Number(nodeIndex);
 
+    // Replay guard first: if the node's job_id is already recorded on-chain (or
+    // seen in-memory), reject as a replay before any other validation.
+    const pre = await getPipeline(cfg.connection, pipeline, cfg.addresses);
+    const preNode = pre?.nodes[idx];
+    if (preNode) {
+      const jid = Uint8Array.from(preNode.jobId);
+      if (await replay.isReplay(jid)) {
+        return res.status(409).json({ error: "job already recorded (replay)" });
+      }
+    }
+
     const v = await verifyCompletion(
       cfg.connection,
       pipeline,
