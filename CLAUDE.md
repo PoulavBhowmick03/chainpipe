@@ -82,7 +82,7 @@ BLOCKERS.md
 Update these as you go:
 
 - [x] **Phase 0** — Repo scaffold, Anchor workspace init, env setup
-- [ ] **Phase 1** — `bonded_registry` Anchor program + tests
+- [x] **Phase 1** — `bonded_registry` Anchor program + tests
 - [ ] **Phase 2** — `dag_escrow` Anchor program + tests
 - [ ] **Phase 3** — `reputation_bridge` Anchor program + tests
 - [ ] **Phase 4** — Deploy all 3 programs to devnet, populate DEPLOYED.md
@@ -232,6 +232,12 @@ from LedgerForge). Toolchain corrected to Anchor 0.31.1 (see BLOCKERS.md D1).
 ---
 
 ## PHASE 1: `bonded_registry` Anchor Program
+
+**STATUS: [x] DONE** — 12/12 tests passing (`tests/bonded_registry.ts`). Note:
+slash/open-job CPI auth is gated on `config.dag_escrow_authority` (a stored
+Pubkey set by the operator to dag_escrow's signer PDA), and `initialize` takes
+that authority as a 3rd arg — a small extension of the spec needed to make the
+caller-auth check testable in isolation.
 
 ### What it does
 
