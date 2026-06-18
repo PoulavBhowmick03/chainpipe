@@ -48,6 +48,17 @@ slash stake, mutate open-job counters, or write reputation.
 - Tier 2 minimum: 100_000_000 (100 USDC)
 - Tier 3 minimum: 1_000_000_000 (1000 USDC)
 
+## Upgrades & changes (post-audit)
+
+- **dag_escrow upgraded** (devnet, same program ID) — added `set_facilitator_authority`
+  (operator key rotation) and a `result_hash` arg on `complete_node` (proof-of-delivery
+  commitment, emitted in `NodeSettled`). Upgrade tx:
+  `4gZGV94jsksdMtFmZrDCzTMgjhGQKPVWDetx2LYdT3nFhMohiVufFVgBXonBNL7m53UoGhZyPmLc19Qkz15xvsUr`
+- **Mint authority** of the seeded mint moved from operator → facilitator (`DoNf…`)
+  so the `/faucet` route can mint test USDC without exposing the operator key.
+- Facilitator `/faucet` is **env-gated** (`FAUCET_ENABLED`, default on for devnet).
+- Indexer now uses a **Fly volume** (`/data/store.json`) for durable storage.
+
 ## Live services
 
 | Component | URL | Host |

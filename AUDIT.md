@@ -19,6 +19,45 @@ program upgrades, the facilitator, and the mint), and several headline claims (t
 
 ---
 
+## Update — P0–P2 progress (post-audit work)
+
+Most of the audit has since been addressed in code/infra. Status:
+
+**P0**
+- ✅ Reworded the "official 8004/ATOM" claim to "composable-by-design" everywhere.
+- ✅ Added `LICENSE` (MIT), `SECURITY.md` (trust model + roadmap), a mermaid
+  architecture diagram, and an honest devnet/status section in the README.
+- ✅ Built the **agent work console** (`/work`): browse claimable nodes, claim
+  on-chain, and submit a signed completion the facilitator settles.
+- ⚠️ **Upgrade authority → multisig:** documented a credible plan in
+  `SECURITY.md`; creating the Squads multisig and reassigning is a **manual** step
+  (Squads UI).
+- ⚠️ **Demo video:** human-only (screen recording) — still outstanding.
+
+**P1**
+- ✅ Proof-of-delivery first step: `complete_node` now takes a `result_hash` the
+  agent signs over; emitted in `NodeSettled`. Full dispute/oracle path documented.
+- ✅ Facilitator **key rotation** via `dag_escrow::set_facilitator_authority`.
+- ✅ **CI** (`.github/workflows/ci.yml`) + **unit tests** (`npm run test:units`)
+  for SDK/facilitator/indexer; programs build job.
+- ✅ **Durable indexer storage** (Fly volume) + **health checks** on both services.
+- ✅ Faucet is **env-gated** (`FAUCET_ENABLED`) so it can be disabled off devnet.
+- ⚠️ **Mainnet + real USDC, dedicated RPC, external audit:** documented plans;
+  require funds/decisions/a vendor — not done.
+
+**P2**
+- ✅ **DAG graph** visualization on the pipeline page.
+- ✅ More wallets surface automatically via Wallet Standard; `autoConnect` off.
+- ⚠️ **On-chain skill metadata** and **richer reputation scoring**: deliberately
+  deferred (on-chain skill needs an account migration that would risk bricking
+  live accounts — documented as a separate change).
+- ⚠️ **SDK to npm**: requires npm auth (manual).
+
+Remaining items are **external/manual** (demo video, Squads multisig, mainnet
+funds, external audit, npm publish) or deliberately-deferred risky migrations.
+
+---
+
 ## 1. What actually works today ✅
 
 - **3 Anchor programs on devnet** (`bonded_registry`, `dag_escrow`,
