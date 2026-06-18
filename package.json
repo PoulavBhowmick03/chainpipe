@@ -1,5 +1,5 @@
 {
-  "name": "chainpipe-solana",
+  "name": "chainpipe",
   "private": true,
   "workspaces": [
     "sdk",
