@@ -56,6 +56,19 @@ codebase. The SDK therefore standardizes on web3.js v1 + @coral-xyz/anchor 0.31
 for a coherent, working stack. Addresses remain configurable via
 `ChainPipeAddresses` (the IDL `address` is overridden at construction).
 
+### D5 — Dashboard React/types version pinning (Phase 8)
+`next build` initially failed two ways: (1) `react-dom/client` not found because a
+transitive `react-dom@16.14.0` hoisted to the workspace root next to `next`;
+(2) `ConnectionProvider cannot be used as a JSX component` because several
+`@solana/wallet-adapter*` packages bundle a nested `@types/react@19`
+(`ReactNode | Promise<ReactNode>`) that clashes with the dashboard's React 18.
+**Fix:** root `overrides` pin `react`/`react-dom`/`@types/react`/`@types/react-dom`
+to 18.x, and the nested `@types/react@19` copies under
+`node_modules/@solana*/.../node_modules/@types/react` are removed so resolution
+falls back to the single root `@types/react@18`. Also alias `pino-pretty: false`
+in `next.config.mjs` (optional logger pulled by a Solana transitive dep). If a
+future `npm install` reintroduces nested `@types/react@19`, re-remove them.
+
 ## Open blockers
 
 (none)
