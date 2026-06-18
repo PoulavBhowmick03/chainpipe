@@ -1,6 +1,6 @@
-//! BazaarListings — Anchor port of the EVM `BazaarListings.sol`.
+//! BazaarListings — Anchor Solana implementation of the `bazaar_listings`.
 //!
-//! EVM → Solana mapping:
+//! Account model:
 //! - listing display metadata mapping → one PDA `Listing` account per skill_id
 //!   (seeds = [b"listing", skill_id.to_le_bytes()]).
 //! - one-time listing fee in cUSD     → SPL `transfer` of `fee_amount` of `fee_mint`

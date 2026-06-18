@@ -22,7 +22,7 @@ export const DEFAULTS = {
   cluster: SOLANA_CLUSTER,
 } as const;
 
-// ed25519 payment-authorization domain (replaces the EVM EIP-712 domain).
+// ed25519 payment-authorization domain (replaces the Solana ed25519 domain).
 export const PAYMENT_DOMAIN = "LedgerForge-Solana";
 export const PAYMENT_VERSION = "1";
 

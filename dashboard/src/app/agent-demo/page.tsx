@@ -19,7 +19,7 @@ import PerpsDecisionCard from '@/components/agent-demo/PerpsDecisionCard'
 import SpawnDecisionCard from '@/components/agent-demo/SpawnDecisionCard'
 import SettlementChain from '@/components/agent-demo/SettlementChain'
 
-// USDC has 6 decimals; small local formatter (avoids a viem dependency).
+// USDC has 6 decimals; small local formatter.
 const fmtUsdc = (v: bigint) => (Number(v) / 1e6).toFixed(2)
 
 type AgentId = 'scout' | 'perps-coach' | 'spawn-auditor'
@@ -69,7 +69,7 @@ function AgentRunner({ agentId, spec }: { agentId: AgentId; spec: AgentSpec<unkn
         liveDisabled
         liveLabel="Live run → use scripts/e2e-devnet.mjs"
         running={running}
-        onRunLive={() => { /* live in-browser settlement needs the consumer create_job deposit flow — see MIGRATION.md */ }}
+        onRunLive={() => { /* live in-browser settlement needs the consumer create_job deposit flow — see ARCHITECTURE.md */ }}
         onRunReplay={() => {
           reset()
           const raw = RAW_SPECS[agentId] as unknown as AgentSpec<unknown>

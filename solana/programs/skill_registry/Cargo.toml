@@ -1,7 +1,7 @@
 [package]
 name = "skill_registry"
 version = "0.1.0"
-description = "LedgerForge SkillRegistry — Anchor port of the EVM SkillRegistry"
+description = "LedgerForge SkillRegistry — Anchor Solana implementation of the SkillRegistry"
 edition = "2021"
 
 [lib]

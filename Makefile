@@ -15,13 +15,13 @@ dev:
 	@echo "$(CYAN)→ Starting dashboard on http://localhost:3000$(RESET)"
 	cd dashboard && npm run dev
 
-## Start dashboard + all local skill servers (port 3005 mantle, 3003 spawn)
+## Start dashboard + all local skill servers (port 3005 solana, 3003 spawn)
 skills:
 	@echo "$(CYAN)→ Starting dashboard + skill servers$(RESET)"
 	@mkdir -p .logs
-	cd agents && npm run mantle-server > ../.logs/mantle-skills.log 2>&1 & echo $$! > ../.logs/mantle-skills.pid
+	cd agents && npm run solana-server > ../.logs/solana-skills.log 2>&1 & echo $$! > ../.logs/solana-skills.pid
 	cd agents && npm run spawn-server  > ../.logs/spawn-skills.log  2>&1 & echo $$! > ../.logs/spawn-skills.pid
-	@echo "$(CYAN)  Mantle skills → http://localhost:3005/health$(RESET)"
+	@echo "$(CYAN)  Solana skills → http://localhost:3005/health$(RESET)"
 	@echo "$(CYAN)  Spawn  skills → http://localhost:3003/health$(RESET)"
 	@echo "$(CYAN)  Logs in .logs/ — run 'make stop' to kill skill servers$(RESET)"
 	cd dashboard && npm run dev

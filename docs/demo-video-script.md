@@ -4,7 +4,7 @@
 **One-take, screen-recorded.** No talking head, no music, no slide deck. The product carries the demo.
 **Recording setup:**
 - Terminal in iTerm at 18pt font, ~120×30, in `~/Developer/ledgerforge/agents/`
-- Browser tabs preloaded in this order: `https://www.npmjs.com/package/@ishitaaaaw/x402-mantle`, `https://mantlescan.xyz/address/0x1d550b555B3a2e124ef611b55965848d6be233a2`, `https://mantlescan.xyz/address/0x8004BAa17C55a88189AE136b182e5fdA19dE9b63`
+- Browser tabs preloaded in this order: `https://www.npmjs.com/package/@ishitaaaaw/x402-solana`, `https://explorer.solana.com/address/0x1d550b555B3a2e124ef611b55965848d6be233a2`, `https://explorer.solana.com/address/0x8004BAa17C55a88189AE136b182e5fdA19dE9b63`
 - Editor (VS Code) with Markdown preview, ready to open the latest digests from `agents/scout-runs/`, `agents/perps-coach-runs/`, and `agents/spawn-auditor-runs/`
 - A snippet ready to paste/show: a short SDK code sample (see Shot 6)
 
@@ -22,7 +22,7 @@ The narration is written to be read straight from this page. Pauses are marked `
 
 > "Agents need something different: per-call payments, signed authorization with no stored credentials, on-chain proof of every transaction, and reputation that follows the agent across platforms. That's x402, the emerging standard for HTTP-native payments."
 
-> "LedgerForge is the production rail for x402 on Mantle. To prove it works, I'm not going to run one agent. I'm going to run three, in three different domains, all on the same SDK."
+> "LedgerForge is the production rail for x402 on Solana. To prove it works, I'm not going to run one agent. I'm going to run three, in three different domains, all on the same SDK."
 
 ---
 
@@ -46,19 +46,19 @@ The narration is written to be read straight from this page. Pauses are marked `
 
 **Say (across the run):**
 
-> "Pre-flight passes. Five paid skills in sequence: Byreal top pools, Aave V3 rates, token prices, gas oracle, and, if it decides to rotate, a swap preview."
+> "Pre-flight passes. Five paid skills in sequence: Orca top pools, marginfi rates, token prices, gas oracle, and, if it decides to rotate, a swap preview."
 
 [As each `✓` lands, brief tag-line:]
 
-> "Byreal top pools. Job ID: [read off screen]. Aave V3 USDC supply. Token prices. Gas oracle."
+> "Orca top pools. Job ID: [read off screen]. marginfi USDC supply. Token prices. Gas oracle."
 
 [Decision line: speak slowly]
 
-> "Top Byreal pool at [read percent]. Aave USDC at [read percent]. Huge delta. The agent recommends ENTER_POOL with eighty-five percent confidence. So it pays for one more skill: Byreal swap preview, to model the trade."
+> "Top Orca pool at [read percent]. marginfi USDC at [read percent]. Huge delta. The agent recommends ENTER_POOL with eighty-five percent confidence. So it pays for one more skill: Orca swap preview, to model the trade."
 
 [Fifth `✓` lands:]
 
-> "Five settlements, twenty-five Mantle transactions, two minutes, twenty-five cents. That's Act One."
+> "Five settlements, twenty-five Solana transactions, two minutes, twenty-five cents. That's Act One."
 
 ---
 
@@ -68,7 +68,7 @@ The narration is written to be read straight from this page. Pauses are marked `
 
 **Say (across the run):**
 
-> "Second agent, different domain entirely. The Perps Coach scans three open Byreal perps positions: BTC long, ETH long, SOL long. Then it issues a coaching recommendation for each: hold, reduce, take profit, or avoid."
+> "Second agent, different domain entirely. The Perps Coach scans three open Orca perps positions: BTC long, ETH long, SOL long. Then it issues a coaching recommendation for each: hold, reduce, take profit, or avoid."
 
 [As paid signals settle:]
 
@@ -76,7 +76,7 @@ The narration is written to be read straight from this page. Pauses are marked `
 
 [Decision table prints:]
 
-> "Per-position decisions. Different verdicts per coin based on real Byreal signals. Same payment rail, completely different use case."
+> "Per-position decisions. Different verdicts per coin based on real Orca signals. Same payment rail, completely different use case."
 
 ---
 
@@ -100,17 +100,17 @@ The narration is written to be read straight from this page. Pauses are marked `
 
 **Say:**
 
-> "Every run writes a markdown digest. TL;DR at top. Decision. Reasoning. Then the proof: every settlement with paste-able mantlescan links."
+> "Every run writes a markdown digest. TL;DR at top. Decision. Reasoning. Then the proof: every settlement with paste-able Solana Explorer links."
 
 [Click the first `completeJob` link.]
 
 > "Verify on-chain. Escrow contract paying the provider 0.0499 USDC, twenty-basis-point fee, skill ID in the event log. Real x402 settlement."
 
-[Back to digest, click any ERC-8004 feedback link.]
+[Back to digest, click any on-chain reputation feedback link.]
 
-> "And the reputation writes: every paid call updates the provider's portable reputation on the canonical ERC-8004 registry."
+> "And the reputation writes: every paid call updates the provider's portable reputation on the canonical on-chain reputation registry."
 
-[Stay on the mantlescan tab a beat.]
+[Stay on the Solana Explorer tab a beat.]
 
 > "And I'll be straight about the trust model: today one facilitator settles these jobs — that's the v1 trade-off, decentralizing it is the roadmap. But it's not 'trust me.' The skill servers refuse to run paid work unless they independently verify this exact settlement on-chain, and every step you're looking at is a public event anyone can audit. Trusted operator, verifiable receipts."
 
@@ -118,7 +118,7 @@ The narration is written to be read straight from this page. Pauses are marked `
 
 ## Shot 7: The SDK as a product (3:40-4:10)
 
-**On screen:** the **npm package page**: https://www.npmjs.com/package/@ishitaaaaw/x402-mantle
+**On screen:** the **npm package page**: https://www.npmjs.com/package/@ishitaaaaw/x402-solana
 
 **Say:**
 
@@ -127,7 +127,7 @@ The narration is written to be read straight from this page. Pauses are marked `
 [Switch to editor showing this snippet:]
 
 ```ts
-import { LedgerForgeClient } from "@ishitaaaaw/x402-mantle";
+import { LedgerForgeClient } from "@ishitaaaaw/x402-solana";
 
 const client = new LedgerForgeClient({ privateKey });
 const skills = await client.listSkills({ minScore: 80 });
@@ -138,17 +138,17 @@ const { output, receipt } = await client.invoke(skills[0].skillId, {
 console.log(receipt.escrowJobId, receipt.completeJobTxHash);
 ```
 
-> "`listSkills` returns reputation-ranked services. `invoke` does the EIP-712 signing, the escrow custody, the settlement, and the reputation write in a single async call. Anyone with a Mantle wallet can build an autonomous agent that pays or earns through this rail."
+> "`listSkills` returns reputation-ranked services. `invoke` does the ed25519 signing, the escrow custody, the settlement, and the reputation write in a single async call. Anyone with a Solana wallet can build an autonomous agent that pays or earns through this rail."
 
 ---
 
-## Shot 8: ERC-8004 + close (4:10-4:30)
+## Shot 8: on-chain reputation + close (4:10-4:30)
 
-**On screen:** mantlescan tab on the ERC-8004 Reputation Registry contract page (`0x8004BAa1…`). Let the address sit on screen.
+**On screen:** Solana Explorer tab on the on-chain reputation Reputation Registry contract page (`0x8004BAa1…`). Let the address sit on screen.
 
 **Say:**
 
-> "Every settlement writes to ERC-8004, the canonical reputation standard. A skill's track record isn't locked to LedgerForge. Any other ERC-8004 marketplace can read the same reputation. We're not building a silo. We're building rails."
+> "Every settlement writes to on-chain reputation, the canonical reputation standard. A skill's track record isn't locked to LedgerForge. Any other on-chain reputation marketplace can read the same reputation. We're not building a silo. We're building rails."
 
 > "When a thousand agents pay a thousand skills every day across this rail, that's an economy. We're shipping it. LedgerForge."
 
@@ -158,7 +158,7 @@ console.log(receipt.escrowJobId, receipt.completeJobTxHash);
 
 ## Things to do BEFORE recording
 
-1. **Top up the consumer wallet.** Three agents in one take ≈ ~0.75 USDC + ~0.15 MNT. Have ≥2 USDC and ≥0.3 MNT or you'll abort mid-recording.
+1. **Top up the consumer wallet.** Three agents in one take ≈ ~0.75 USDC + ~0.15 SOL. Have ≥2 USDC and ≥0.3 SOL or you'll abort mid-recording.
 2. **Verify all three live URLs.** Run `npm run demos:dry-run` once an hour before recording. This confirms wiring and warms the Fly cold-start on each skill server.
 3. **Pre-fetch every browser tab.** Cold-starts during the recording look unprofessional.
 4. **Pre-pick a Scout digest as a "safe" digest.** If perps-coach or spawn-auditor produces a weird-looking output (e.g. all HOLD), Shot 6 should open the Scout digest. It has the richest narrative.
@@ -180,7 +180,7 @@ If editing pushes past 4:45:
 2. Or drop **Shot 4 (Perps Coach)** if Spawn fits the AI DevTools angle better for your panel.
 3. Compress Shot 3's narration further and let visuals carry it.
 
-The vision hook (Shot 1), the SDK shot (Shot 7), and the ERC-8004 close (Shot 8) are non-negotiable. Everything else can flex.
+The vision hook (Shot 1), the SDK shot (Shot 7), and the on-chain reputation close (Shot 8) are non-negotiable. Everything else can flex.
 
 ## Backup: pre-recorded runs
 
@@ -189,4 +189,4 @@ If you don't want to spend USDC on the take:
 - Run all three agents ahead of time, capture the terminal output for Shots 3-5.
 - Shot 6 reads a real digest file live.
 - Shots 7-8 are unchanged.
-- Judges still see real mainnet txs via mantlescan; only the terminal animation is pre-rendered.
+- Judges still see real devnet txs via Solana Explorer; only the terminal animation is pre-rendered.

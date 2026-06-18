@@ -48,11 +48,11 @@ const send = (ixs, signers) => retry(async () => {
 const cfg = (pid) => pda([Buffer.from("config")], pid);
 
 const SKILLS = [
-  { endpoint: "https://skills.ledgerforge.dev/defi-yield-scout", price: 250000, jobs: 6 },
-  { endpoint: "https://skills.ledgerforge.dev/perps-signal", price: 500000, jobs: 4 },
-  { endpoint: "https://skills.ledgerforge.dev/token-price-feed", price: 100000, jobs: 3 },
-  { endpoint: "https://skills.ledgerforge.dev/onchain-auditor", price: 750000, jobs: 1 },
-  { endpoint: "https://skills.ledgerforge.dev/sentiment-oracle", price: 300000, jobs: 0 },
+  { endpoint: "https://skills.ledgerforge.dev/kamino-yield-scout", price: 250000, jobs: 6 },
+  { endpoint: "https://skills.ledgerforge.dev/drift-perps-signals", price: 500000, jobs: 4 },
+  { endpoint: "https://skills.ledgerforge.dev/pyth-price-feed", price: 100000, jobs: 3 },
+  { endpoint: "https://skills.ledgerforge.dev/orca-pool-analysis", price: 750000, jobs: 1 },
+  { endpoint: "https://skills.ledgerforge.dev/jito-mev-monitor", price: 300000, jobs: 0 },
 ];
 
 (async () => {

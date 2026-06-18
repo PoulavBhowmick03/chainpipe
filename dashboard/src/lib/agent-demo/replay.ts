@@ -3,7 +3,7 @@
 // settlement to the deployed programs on Solana devnet. This avoids needing an
 // in-browser funded wallet. A full per-job replay (reading settled Job PDAs +
 // their tx signatures) is a follow-up once a Solana jobs-indexer HTTP API exists
-// — see MIGRATION.md.
+// — see ARCHITECTURE.md.
 
 import type { AgentEvent, SettlementSummary } from './events'
 import type { AgentSpec } from './specs'

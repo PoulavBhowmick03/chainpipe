@@ -1,12 +1,12 @@
-//! SkillRegistry — Anchor port of the EVM `SkillRegistry.sol`.
+//! SkillRegistry — Anchor Solana implementation of the `skill_registry`.
 //!
-//! EVM → Solana mapping:
+//! Account model:
 //! - `mapping(uint256 => Skill)`        → one PDA `Skill` account per skill_id
 //!   (seeds = [b"skill", skill_id.to_le_bytes()])
-//! - `owner` (Ownable)                  → `RegistryConfig.authority`
+//! - `owner` (PDA authority)                  → `RegistryConfig.authority`
 //! - allowed-facilitator set            → `RegistryConfig.facilitator` (single op, v1)
 //! - local reputation (totalJobs/score) → fields on the `Skill` PDA
-//! - external ERC-8004 identity call     → omitted (no canonical registry on Solana);
+//! - external on-chain reputation identity call     → omitted (no canonical registry on Solana);
 //!   reputation is local-only, matching the Celo graceful-fallback behaviour.
 
 use anchor_lang::prelude::*;
@@ -84,7 +84,7 @@ pub mod skill_registry {
     }
 
     /// Record a settled job for a skill. Only the configured facilitator. Mirrors the
-    /// EVM `recordJobCompletion`: bumps total_jobs and adds a score delta.
+    /// Solana `recordJobCompletion`: bumps total_jobs and adds a score delta.
     pub fn record_job_completion(ctx: Context<RecordJob>, score_delta: u64) -> Result<()> {
         require!(!ctx.accounts.config.paused, RegistryError::Paused);
         require!(ctx.accounts.skill.active, RegistryError::SkillInactive);

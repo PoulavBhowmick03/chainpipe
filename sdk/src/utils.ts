@@ -32,7 +32,7 @@ export function explorerAddressUrl(address: string, cluster: string): string {
 /**
  * Canonical, deterministic byte encoding of a payment authorization. Both the SDK
  * (signing) and the facilitator (verifying) MUST produce identical bytes — newline-
- * delimited fixed field order, UTF-8. Replaces the EVM EIP-712 typed-data hash.
+ * delimited fixed field order, UTF-8. Replaces the Solana ed25519 signed message.
  */
 export function canonicalPaymentMessage(
   auth: PaymentAuthorization,

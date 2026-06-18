@@ -1,7 +1,7 @@
-//! x402Escrow — Anchor port of the EVM `x402Escrow.sol`.
+//! x402Escrow — Anchor Solana implementation of the `x402_escrow`.
 //!
-//! EVM → Solana mapping:
-//! - ERC-20 `transferFrom` into the contract → SPL `transfer` into a per-job vault
+//! Account model:
+//! - SPL token transfer into the contract → SPL `transfer` into a per-job vault
 //!   token account whose authority is the `Job` PDA.
 //! - escrow `lock()` / `release()` by operator → `create_job` / `complete_job`,
 //!   gated on `EscrowConfig.operator` (the single facilitator, v1).

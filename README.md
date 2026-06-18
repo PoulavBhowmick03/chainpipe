@@ -1,11 +1,10 @@
-# LedgerForge — Solana
+# LedgerForge
 
-**The reputation-native agent service marketplace, built for Solana.**
+**The reputation-native agent service marketplace on Solana.**
 
-> This repository is the **Solana port** of LedgerForge (originally built on Mantle).
-> It targets **Solana devnet** today; mainnet-beta is a post-grant step. The contracts
-> are a ground-up **Anchor/Rust rewrite** (not a config change) — see
-> [`MIGRATION.md`](./MIGRATION.md) for the full mapping and [`DEPLOY.md`](./DEPLOY.md)
+> Live on **Solana devnet** (mainnet-beta next). Anchor/Rust programs + an x402 payment
+> rail + an on-chain skill registry with post-settlement reputation. See
+> [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the design and [`DEPLOY.md`](./DEPLOY.md)
 > for the devnet runbook.
 
 ---
@@ -99,7 +98,7 @@ console.log(result.receipt.explorerUrl); // explorer.solana.com
 ```
 
 The consumer signs an **ed25519** payment authorization (canonical message) — Solana's
-analog to the EVM EIP-712 flow.
+analog to the Solana ed25519 flow.
 
 ---
 
@@ -130,10 +129,6 @@ per-execution reputation writes simply aren't affordable on slower/costlier chai
 trust + discovery gap that pure payment facilitators leave open is exactly where
 agent volume is already appearing, so this is infrastructure for a live market, not a
 speculative one.
-
-> Portability note: the same contract suite is also deployed + verified on **Celo mainnet**
-> (prior validation of the EVM design); the Solana implementation is the focus and exploits
-> Solana's fee/latency economics and x402 momentum directly.
 
 ---
 

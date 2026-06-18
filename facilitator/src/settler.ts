@@ -31,7 +31,7 @@ export function settlePayment(
 
 /**
  * Solana settlement model: the consumer has already deposited into a job-PDA vault
- * via `create_job` (SDK/dashboard, consumer-signed — Solana has no ERC-20 pull/
+ * via `create_job` (SDK/dashboard, consumer-signed — Solana has no SPL token pull/
  * allowance). The facilitator (operator) verifies the ed25519 proof and releases the
  * vault by calling `complete_job`, then records reputation via `record_job_completion`.
  */

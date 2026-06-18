@@ -87,9 +87,9 @@ cd facilitator && npm install && npm run build && npm start
 cd sdk && npm install && npm run build
 ```
 
-## Payment flow on Solana (differs from EVM)
+## Payment flow on Solana (differs from Solana)
 
-Solana has no ERC-20 `approve`/`transferFrom` pull. The consumer **deposits** into a
+Solana has no SPL token `approve`/`transferFrom` pull. The consumer **deposits** into a
 job-PDA-owned vault via `create_job` (consumer-signed, from the SDK/dashboard), then
 the facilitator verifies the ed25519 proof and **releases** via `complete_job`.
 The consumer also creates the vault token account (owned by the job PDA) before
