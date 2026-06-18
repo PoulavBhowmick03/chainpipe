@@ -1,26 +1,26 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getStats, getAgents, getPipelines, type Stats, type AgentRecord, type PipelineRecord } from "@/lib/indexer";
 import { AgentCard } from "@/components/AgentCard";
 import { usdc, shortKey, statusKey } from "@/lib/format";
 
-export default function Home() {
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [agents, setAgents] = useState<AgentRecord[]>([]);
-  const [pipelines, setPipelines] = useState<PipelineRecord[]>([]);
-  const [offline, setOffline] = useState(false);
+// Server-rendered so the live indexer data is in the initial HTML (no wallet /
+// client JS required to see real numbers).
+export const dynamic = "force-dynamic";
 
-  useEffect(() => {
-    Promise.all([getStats(), getAgents(), getPipelines()])
-      .then(([s, a, p]) => {
-        setStats(s);
-        setAgents([...a].sort((x, y) => (y.reputation?.emaScore ?? 0) - (x.reputation?.emaScore ?? 0)).slice(0, 3));
-        setPipelines(p.slice(0, 5));
-      })
-      .catch(() => setOffline(true));
-  }, []);
+export default async function Home() {
+  let stats: Stats | null = null;
+  let agents: AgentRecord[] = [];
+  let pipelines: PipelineRecord[] = [];
+  let offline = false;
+  try {
+    [stats, agents, pipelines] = await Promise.all([getStats(), getAgents(), getPipelines()]);
+    agents = [...agents]
+      .sort((a, b) => (b.reputation?.emaScore ?? 0) - (a.reputation?.emaScore ?? 0))
+      .slice(0, 3);
+    pipelines = pipelines.slice(0, 5);
+  } catch {
+    offline = true;
+  }
 
   const stat = (label: string, value: string) => (
     <div className="card text-center">
@@ -40,14 +40,13 @@ export default function Home() {
         </p>
         <div className="flex gap-3 justify-center mt-6">
           <Link href="/pipeline/create" className="btn-primary">Create a pipeline</Link>
+          <Link href="/work" className="btn-ghost">Find work</Link>
           <Link href="/bazaar" className="btn-ghost">Browse the bazaar</Link>
         </div>
       </section>
 
       {offline && (
-        <p className="text-amber-300 text-sm text-center">
-          Indexer offline — start it with <code>npm --workspace @chainpipe/indexer start</code>.
-        </p>
+        <p className="text-amber-300 text-sm text-center">Indexer unreachable — showing empty state.</p>
       )}
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4">

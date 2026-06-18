@@ -7,8 +7,8 @@ import { usdc, shortKey, ema } from "@/lib/format";
 
 type SortKey = "score" | "stake" | "settled";
 
-export function BazaarTable() {
-  const [agents, setAgents] = useState<AgentRecord[] | null>(null);
+export function BazaarTable({ initialAgents }: { initialAgents?: AgentRecord[] }) {
+  const [agents, setAgents] = useState<AgentRecord[] | null>(initialAgents ?? null);
   const [error, setError] = useState<string | null>(null);
   const [minTier, setMinTier] = useState(0);
   const [minScore, setMinScore] = useState(0);
