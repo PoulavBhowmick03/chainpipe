@@ -48,6 +48,19 @@ slash stake, mutate open-job counters, or write reputation.
 - Tier 2 minimum: 100_000_000 (100 USDC)
 - Tier 3 minimum: 1_000_000_000 (1000 USDC)
 
+## Live services
+
+| Component | URL | Host |
+|-----------|-----|------|
+| Dashboard | https://chainpipe.vercel.app | Vercel |
+| Indexer | https://chainpipe-indexer.fly.dev (`/stats`, `/agents`, `/pipelines`) | Fly.io (`chainpipe-indexer`) |
+| Facilitator | https://chainpipe-facilitator.fly.dev (`/health`, `/complete`, `/expire`) | Fly.io (`chainpipe-facilitator`) |
+
+The dashboard reads `NEXT_PUBLIC_INDEXER_URL` / `NEXT_PUBLIC_FACILITATOR_URL` (set in
+Vercel) pointing at the Fly services. Both Fly apps run against devnet with
+`CHAINPIPE_USDC_MINT` set to the seeded mint. The facilitator's keypair is a Fly
+secret (`FACILITATOR_KEYPAIR_JSON`), never baked into the image.
+
 ## Seeded demo state (`scripts/seed-devnet.mts`)
 
 Test mint: `8BPRrfsXT3FZUvxW5v5ctq8Q5moZinNu7eFR4gtFPxz1`
