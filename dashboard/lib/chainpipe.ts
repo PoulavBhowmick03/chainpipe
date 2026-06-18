@@ -20,6 +20,8 @@ export const ADDRESSES: ChainPipeAddresses = {
 };
 
 export const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL ?? "https://api.devnet.solana.com";
+export const FACILITATOR_URL =
+  process.env.NEXT_PUBLIC_FACILITATOR_URL ?? "http://localhost:3001";
 
 function withAddress<T>(idl: unknown, address: string): T {
   return { ...(idl as Record<string, unknown>), address } as T;

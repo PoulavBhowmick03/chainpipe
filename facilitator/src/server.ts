@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { PublicKey } from "@solana/web3.js";
+import { getOrCreateAssociatedTokenAccount, mintTo } from "@solana/spl-token";
 import {
   getPipeline,
   getAgentStake,
@@ -25,6 +26,11 @@ app.use(cors({ origin: process.env.CORS_ORIGIN ?? true }));
 const limiter = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true });
 app.use(["/complete", "/expire"], limiter);
 
+const faucetLimiter = rateLimit({ windowMs: 60_000, limit: 6, standardHeaders: true });
+app.use(["/faucet"], faucetLimiter);
+
+const FAUCET_CAP = 1000 * 1_000_000; // 1000 test USDC per request
+
 function decodeSignature(s: string): Uint8Array {
   // Accept base64 (default) — falls back to comma-separated byte array.
   if (s.includes(",")) return Uint8Array.from(s.split(",").map((n) => Number(n)));
@@ -38,6 +44,7 @@ app.get("/health", async (_req: Request, res: Response) => {
       status: "ok",
       slot,
       facilitator: cfg.facilitator.publicKey.toBase58(),
+      usdcMint: cfg.addresses.usdcMint.toBase58(),
       programs: {
         bonded_registry: cfg.addresses.bondedRegistry.toBase58(),
         dag_escrow: cfg.addresses.dagEscrow.toBase58(),
@@ -46,6 +53,45 @@ app.get("/health", async (_req: Request, res: Response) => {
     });
   } catch (e) {
     res.status(500).json({ status: "error", error: String(e) });
+  }
+});
+
+// Devnet faucet: mint test stake-USDC to any wallet so it can self-register as
+// an agent. The facilitator holds this mint's authority (devnet only).
+app.post("/faucet", async (req: Request, res: Response) => {
+  try {
+    const { owner, amount } = req.body ?? {};
+    if (!owner) return res.status(400).json({ error: "owner required" });
+    const ownerPk = new PublicKey(owner);
+    const requested = Number(amount ?? 100);
+    if (!Number.isFinite(requested) || requested <= 0) {
+      return res.status(400).json({ error: "invalid amount" });
+    }
+    const amt = Math.min(Math.round(requested * 1_000_000), FAUCET_CAP);
+
+    const ata = await getOrCreateAssociatedTokenAccount(
+      cfg.connection,
+      cfg.facilitator,
+      cfg.addresses.usdcMint,
+      ownerPk
+    );
+    const signature = await mintTo(
+      cfg.connection,
+      cfg.facilitator,
+      cfg.addresses.usdcMint,
+      ata.address,
+      cfg.facilitator,
+      amt
+    );
+    res.json({
+      signature,
+      ata: ata.address.toBase58(),
+      mint: cfg.addresses.usdcMint.toBase58(),
+      amount: amt,
+      explorer: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+    });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
   }
 });
 
