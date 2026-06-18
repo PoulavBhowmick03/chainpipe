@@ -8,7 +8,7 @@ import { SOLANA_RPC } from "./config";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 /**
- * Solana wallet context — replaces the EVM `WalletContext` (MetaMask / viem).
+ * Solana wallet context — replaces the Solana `WalletContext` (MetaMask / viem).
  * Wallet Standard auto-detects Phantom / Solflare / Backpack, so the explicit
  * adapter list can stay empty. Wrap the app root with this in `app/layout.tsx`:
  *
@@ -16,7 +16,7 @@ import "@solana/wallet-adapter-react-ui/styles.css";
  *
  * Consumers use `useWallet()` / `useConnection()` from @solana/wallet-adapter-react
  * and sign the ed25519 payment authorization with `signMessage` (see SDK
- * canonicalPaymentMessage) instead of EIP-712 `signTypedData`.
+ * canonicalPaymentMessage) instead of ed25519 `signTypedData`.
  */
 export function SolanaWalletProvider({ children }: { children: ReactNode }) {
   const endpoint = useMemo(() => SOLANA_RPC, []);

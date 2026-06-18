@@ -5,9 +5,9 @@ import { WalletProvider } from '@/context/WalletContext'
 import { SolanaWalletProvider } from '@/solana/WalletProvider'
 
 export const metadata: Metadata = {
-  title: 'LedgerForge Bazaar - Agent Services on Mantle',
+  title: 'LedgerForge Bazaar - Agent Services on Solana',
   description:
-    'The first reputation-native agent service marketplace on Mantle. Discover, pay for, and rate AI agent services with on-chain reputation.',
+    'The first reputation-native agent service marketplace on Solana. Discover, pay for, and rate AI agent services with on-chain reputation.',
   icons: {
     icon: '/favicon.png',
     apple: '/favicon-512.png',

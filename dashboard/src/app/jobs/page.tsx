@@ -89,7 +89,7 @@ export default function JobsPage() {
               <LiveDot /> Polling every 15s
             </span>
             <span>
-              {visibleJobs.filter((j) => j.confirmed).length} confirmed job{visibleJobs.filter((j) => j.confirmed).length !== 1 ? 's' : ''} · ${totalVolume.toFixed(2)} USDC settled on Mantle
+              {visibleJobs.filter((j) => j.confirmed).length} confirmed job{visibleJobs.filter((j) => j.confirmed).length !== 1 ? 's' : ''} · ${totalVolume.toFixed(2)} USDC settled on Solana
             </span>
           </div>
         </div>
@@ -107,7 +107,7 @@ export default function JobsPage() {
                 display: 'flex', alignItems: 'center', gap: 8,
               }}>
                 <span>✓</span>
-                Confirmed on Mantle mainnet · block {blockNum.toLocaleString()}
+                Confirmed on Solana · block {blockNum.toLocaleString()}
               </div>
             )}
 
@@ -144,13 +144,13 @@ export default function JobsPage() {
                         : '2px solid transparent',
                     }}
                   >
-                    {/* Headline: full 5-leg ERC-8004 settlement chain */}
+                    {/* Headline: full 5-leg on-chain reputation settlement chain */}
                     <JobSettlementChain
                       pullTx={j.pullTx}
                       createJobTx={j.createJobTx}
                       completeJobTx={j.completeJobTx ?? j.settlementTx}
                       skillRegistryRepTx={j.skillRegistryRepTx}
-                      erc8004FeedbackTx={j.erc8004FeedbackTx}
+                      reputationFeedbackTx={j.reputationFeedbackTx}
                     />
 
                     {/* Metadata footer */}
@@ -224,7 +224,7 @@ export default function JobsPage() {
                 <span className="t-mono" style={{ fontSize: 14, color: 'var(--lf-ink-3)' }}>USDC</span>
               </div>
               <div style={{ fontSize: 12, color: 'var(--lf-ink-3)', marginTop: 8, fontFamily: 'var(--f-mono)' }}>
-                Total settled on Mantle
+                Total settled on Solana
               </div>
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--lf-border)', fontSize: 12, color: 'var(--lf-ink-2)', display: 'flex', justifyContent: 'space-between' }}>
                 <span>{visibleJobs.length} settlement{visibleJobs.length !== 1 ? 's' : ''}</span>
@@ -258,7 +258,7 @@ export default function JobsPage() {
                 <span className="t-label" style={{ margin: 0 }}>Network status</span>
               </div>
               <div style={{ fontFamily: 'var(--f-display)', fontSize: 16, marginBottom: 16 }}>
-                Mantle mainnet · live
+                Solana · live
               </div>
               <NetRow label="Facilitator" value="ledgerforge-facilitator.fly.dev" mono />
               <NetRow label="Indexer" value="ledgerforge-indexer.fly.dev" mono />

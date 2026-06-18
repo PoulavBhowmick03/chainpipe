@@ -134,6 +134,6 @@ export function decidePerps(
       ? `${reduceCount} position(s) flagged for risk reduction; lower exposure before continuing.`
       : takeProfitCount > 0
         ? `${takeProfitCount} position(s) approaching profit-taking language; consider trimming.`
-        : 'No positions contradicted by current Byreal signals; HOLD across the book.'
+        : 'No positions contradicted by current Orca signals; HOLD across the book.'
   return { positions: decisions, headline, confidence, reason }
 }

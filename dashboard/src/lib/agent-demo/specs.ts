@@ -41,36 +41,36 @@ export const SCOUT_SPEC: AgentSpec<ScoutDecision> = {
   id: "scout",
   title: "Scout",
   description:
-    "DeFi yield-rotation scout. Pays for live Byreal pool APR, Aave V3 USDC supply rate, token prices, and gas estimates, then recommends ENTER_POOL or STAY with a confidence score.",
+    "DeFi yield-rotation scout. Pays for live Orca pool APR, marginfi USDC supply rate, token prices, and gas estimates, then recommends ENTER_POOL or STAY with a confidence score.",
   pricePerCall: 50_000n, // 0.05 USDC
   steps: [
     {
       skillId: 6,
-      label: "byreal-top-pools",
+      label: "orca-pool-analysis",
       args: { query: { sortField: "apr24h", pageSize: "3" } },
     },
     {
       skillId: 12,
-      label: "aave-v3-rates",
+      label: "marginfi-rates",
       args: { query: { asset: "USDC" } },
     },
     {
       skillId: 14,
-      label: "token-price-feed",
-      args: { query: { tokens: "USDC,USDe" } },
+      label: "pyth-price-feed",
+      args: { query: { tokens: "USDC,USDC" } },
     },
     {
       skillId: 13,
-      label: "mantle-gas-oracle",
+      label: "pyth-price-feed",
       args: {},
     },
     {
       skillId: 7,
-      label: "byreal-swap-preview",
+      label: "jupiter-route-optimizer",
       args: {
         body: {
-          // Solana mint addresses — Byreal CLI requires a Solana wallet shape
-          // even when reading from EVM. The CLI generates a deterministic
+          // Solana mint addresses — Orca CLI requires a Solana wallet shape
+          // even when reading from Solana. The CLI generates a deterministic
           // demo wallet on its side when given a non-base58 placeholder, so
           // a sane default mint pair works for the demo.
           walletAddress: "9wFFAehUKbKfFLJBwgGsk7p5kQt8jrM8sPCkdrjL3Yfa",
@@ -88,7 +88,7 @@ export const SCOUT_SPEC: AgentSpec<ScoutDecision> = {
   decide: (outputs) =>
     decideScout({
       topPools: outputs[0],
-      aaveRates: outputs[1],
+      marginfiRates: outputs[1],
       gas: outputs[3],
     }),
   enrichDecision: (decision, outputs) => {
@@ -104,23 +104,23 @@ export const PERPS_COACH_SPEC: AgentSpec<PerpsDecision> = {
   id: "perps-coach",
   title: "Perps Coach",
   description:
-    "Scans your open Byreal perps positions and issues a per-position coaching recommendation: HOLD, REDUCE, TAKE_PROFIT, or AVOID. Pulls live signals for each coin, plus token prices and gas context.",
+    "Scans your open Orca perps positions and issues a per-position coaching recommendation: HOLD, REDUCE, TAKE_PROFIT, or AVOID. Pulls live signals for each coin, plus token prices and gas context.",
   pricePerCall: 50_000n,
   steps: [
-    // One byreal-perps-signals call per position. Default positions: BTC, ETH, SOL.
+    // One drift-perps-signals call per position. Default positions: BTC, ETH, SOL.
     ...DEFAULT_PERPS_POSITIONS.map((p) => ({
       skillId: 8,
-      label: `byreal-perps-signals ${p.coin}:${p.side}`,
+      label: `drift-perps-signals ${p.coin}:${p.side}`,
       args: { query: { coin: p.coin } },
     })),
     {
       skillId: 14,
-      label: "token-price-feed",
-      args: { query: { tokens: "USDC,USDe" } },
+      label: "pyth-price-feed",
+      args: { query: { tokens: "USDC,USDC" } },
     },
     {
       skillId: 13,
-      label: "mantle-gas-oracle",
+      label: "pyth-price-feed",
       args: {},
     },
   ],

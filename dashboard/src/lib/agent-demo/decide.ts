@@ -3,7 +3,7 @@
 // the browser uses fixed sensible defaults).
 
 import {
-  pickAaveSupplyApy,
+  pickmarginfiSupplyApy,
   pickGasUsd,
   pickPoolApr,
   type SwapPreviewDistilled,
@@ -16,7 +16,7 @@ export interface ScoutDecision {
   reason: string;
   confidence: number;
   topPoolApr?: number;
-  aaveSupplyApy?: number;
+  marginfiSupplyApy?: number;
   gasUsd?: number;
   /** Set when the runner has paid for the swap-preview step and decoded it. */
   swap?: SwapPreviewDistilled;
@@ -35,15 +35,15 @@ export const SCOUT_DEFAULTS: ScoutThresholds = {
 };
 
 export function decideScout(
-  inputs: { topPools: unknown; aaveRates: unknown; gas: unknown },
+  inputs: { topPools: unknown; marginfiRates: unknown; gas: unknown },
   thresholds: ScoutThresholds = SCOUT_DEFAULTS,
 ): ScoutDecision {
   const { apr: poolApr } = pickPoolApr(inputs.topPools);
-  const aaveApy = pickAaveSupplyApy(inputs.aaveRates);
+  const marginfiApy = pickmarginfiSupplyApy(inputs.marginfiRates);
   const gasUsd = pickGasUsd(inputs.gas, thresholds.fallbackMntPriceUsd);
 
   const apr = Number.isFinite(poolApr) ? poolApr : 0;
-  const apy = Number.isFinite(aaveApy) ? aaveApy : 0;
+  const apy = Number.isFinite(marginfiApy) ? marginfiApy : 0;
   const gas = Number.isFinite(gasUsd) ? gasUsd : 0;
   const delta = apr - apy;
 
@@ -52,16 +52,16 @@ export function decideScout(
     reason,
     confidence,
     topPoolApr: apr,
-    aaveSupplyApy: apy,
+    marginfiSupplyApy: apy,
     gasUsd: gas,
   });
 
   if (!Number.isFinite(poolApr) || apr === 0) {
-    return stay("Could not read a top-pool APR from byreal-top-pools.", 40);
+    return stay("Could not read a top-pool APR from orca-pool-analysis.", 40);
   }
   if (delta < thresholds.minAprDeltaPct) {
     return stay(
-      `Top Byreal APR (${apr.toFixed(2)}%) is only ${delta.toFixed(2)}pp above Aave USDC supply APY (${apy.toFixed(2)}%), below ${thresholds.minAprDeltaPct}pp threshold.`,
+      `Top Orca APR (${apr.toFixed(2)}%) is only ${delta.toFixed(2)}pp above marginfi USDC supply APY (${apy.toFixed(2)}%), below ${thresholds.minAprDeltaPct}pp threshold.`,
       72,
     );
   }
@@ -73,10 +73,10 @@ export function decideScout(
   }
   return {
     action: "ENTER_POOL",
-    reason: `Top Byreal pool yields ${apr.toFixed(2)}% vs Aave USDC ${apy.toFixed(2)}% (delta ${delta.toFixed(2)}pp). Gas ${gas.toFixed(2)} USD is negligible. Recommend rotating.`,
+    reason: `Top Orca pool yields ${apr.toFixed(2)}% vs marginfi USDC ${apy.toFixed(2)}% (delta ${delta.toFixed(2)}pp). Gas ${gas.toFixed(2)} USD is negligible. Recommend rotating.`,
     confidence: 85,
     topPoolApr: apr,
-    aaveSupplyApy: apy,
+    marginfiSupplyApy: apy,
     gasUsd: gas,
   };
 }

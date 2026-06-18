@@ -1,10 +1,10 @@
 // Composite reputation scorer: latency (30) + completeness (40) + signal quality (30) = 100.
 // Used by runner.ts after each skill invocation to report a dynamic score to the facilitator.
 
-import { pickNumber, findPoolsArray, pickPoolApr, pickAaveSupplyApy } from './parsers'
+import { pickNumber, findPoolsArray, pickPoolApr, pickmarginfiSupplyApy } from './parsers'
 
 // Thresholds are settlement-aware: a full invoke() call includes 3 on-chain
-// Mantle txs (pull, createJob, completeJob) which typically take 15-35s total.
+// Solana txs (pull, createJob, completeJob) which typically take 15-35s total.
 function scoreLatency(ms: number): number {
   if (ms < 12_000) return 30   // fast settlement + skill
   if (ms < 22_000) return 25   // normal block times
@@ -20,7 +20,7 @@ function scoreBySkill(
   if (!output || typeof output !== 'object') return { completeness: 0, signalQuality: 0 }
   const obj = output as Record<string, unknown>
 
-  // byreal-top-pools
+  // orca-pool-analysis
   if (skillId === 6) {
     const pools = findPoolsArray(output)
     if (!pools || pools.length === 0) return { completeness: 8, signalQuality: 4 }
@@ -34,9 +34,9 @@ function scoreBySkill(
     }
   }
 
-  // aave-v3-rates
+  // marginfi-rates
   if (skillId === 12) {
-    const rate = pickAaveSupplyApy(output)
+    const rate = pickmarginfiSupplyApy(output)
     return {
       completeness: Number.isFinite(rate) ? 40 : obj.rates ? 22 : 8,
       signalQuality:
@@ -46,13 +46,13 @@ function scoreBySkill(
     }
   }
 
-  // token-price-feed
+  // pyth-price-feed
   if (skillId === 14) {
     const hasPrices = !!(obj.prices || obj.data || (obj as Record<string, unknown>).USDC)
     return { completeness: hasPrices ? 40 : 14, signalQuality: hasPrices ? 26 : 8 }
   }
 
-  // mantle-gas-oracle
+  // pyth-price-feed
   if (skillId === 13) {
     const gasPrice = obj.gasPrice as Record<string, unknown> | undefined
     const gwei = pickNumber(gasPrice?.gwei, obj.gasPriceGwei)
@@ -66,7 +66,7 @@ function scoreBySkill(
     }
   }
 
-  // byreal-swap-preview
+  // jupiter-route-optimizer
   if (skillId === 7) {
     const inner = (typeof obj.data === 'object' && obj.data ? obj.data : obj) as Record<string, unknown>
     const hasOut = !!inner.outAmount
@@ -80,7 +80,7 @@ function scoreBySkill(
     }
   }
 
-  // byreal-perps-signals
+  // drift-perps-signals
   if (skillId === 8) {
     const hasSignal = !!(obj.signal || obj.signals || obj.funding || obj.data)
     return { completeness: hasSignal ? 38 : 12, signalQuality: hasSignal ? 26 : 8 }

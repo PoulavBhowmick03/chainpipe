@@ -93,7 +93,7 @@ export default function ScoutDecisionCard({ decision, pending }: Props) {
           }}
         >
           <SignalTile
-            label="Top Byreal APR (24h)"
+            label="Top Orca APR (24h)"
             value={
               decision.topPoolApr !== undefined
                 ? `${decision.topPoolApr.toFixed(2)}%`
@@ -101,10 +101,10 @@ export default function ScoutDecisionCard({ decision, pending }: Props) {
             }
           />
           <SignalTile
-            label="Aave V3 USDC supply"
+            label="marginfi USDC supply"
             value={
-              decision.aaveSupplyApy !== undefined
-                ? `${decision.aaveSupplyApy.toFixed(2)}%`
+              decision.marginfiSupplyApy !== undefined
+                ? `${decision.marginfiSupplyApy.toFixed(2)}%`
                 : '—'
             }
           />

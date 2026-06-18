@@ -2,7 +2,7 @@ import type { Stats } from '@/lib/types'
 
 const METRICS = [
   { key: 'totalSkills', label: 'Total skills', unit: '', sub: 'Live on mainnet' },
-  { key: 'volume', label: 'Settled volume', unit: 'USDC', sub: 'On Mantle' },
+  { key: 'volume', label: 'Settled volume', unit: 'USDC', sub: 'On Solana' },
   { key: 'avgResponse', label: 'Avg response', unit: 'ms', sub: 'Across all skills' },
   { key: 'writes', label: 'Reputation writes', unit: '', sub: 'On-chain, permanent' },
 ] as const

@@ -130,7 +130,7 @@ export default function HomePage() {
               </span>
               <span className="chip chip-strong">
                 <span className="dot" style={{ background: 'var(--lf-accent)' }} />
-                ERC-8004 rep · <span style={{ color: 'var(--lf-accent-2)', marginLeft: 4 }}>every job</span>
+                on-chain reputation rep · <span style={{ color: 'var(--lf-accent-2)', marginLeft: 4 }}>every job</span>
               </span>
             </div>
           </div>
@@ -180,7 +180,7 @@ export default function HomePage() {
             />
             <FeatureCard
               icon={<IconGauge />}
-              kicker="ERC-8004 REPUTATION"
+              kicker="on-chain reputation REPUTATION"
               title="Automatic trust scoring"
               body="Every skill execution writes a score on-chain. Reputation compounds with every settled job. No self-reporting. No paid rankings."
               footer={<span style={{ color: 'var(--lf-green)' }}>● Live on Solana devnet</span>}

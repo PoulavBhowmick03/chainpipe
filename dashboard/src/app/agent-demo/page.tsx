@@ -28,7 +28,7 @@ interface AgentTabConfig { id: AgentId; label: string; subtitle: string; spec: A
 
 const TABS: AgentTabConfig[] = [
   { id: 'scout', label: 'Scout', subtitle: 'DeFi yield rotation', spec: SCOUT_SPEC as unknown as AgentSpec<unknown> },
-  { id: 'perps-coach', label: 'Perps Coach', subtitle: 'Byreal perps', spec: PERPS_COACH_SPEC as unknown as AgentSpec<unknown> },
+  { id: 'perps-coach', label: 'Perps Coach', subtitle: 'Orca perps', spec: PERPS_COACH_SPEC as unknown as AgentSpec<unknown> },
   { id: 'spawn-auditor', label: 'Spawn Auditor', subtitle: 'AI deploy audit', spec: SPAWN_AUDITOR_SPEC as unknown as AgentSpec<unknown> },
 ]
 

@@ -2,9 +2,9 @@
 import type React from 'react'
 
 /**
- * Visualises the 5-leg ERC-8004 settlement chain for a single job:
+ * Visualises the 5-leg on-chain reputation settlement chain for a single job:
  *
- *   Pull → Create → Complete → Rep → ERC-8004
+ *   Pull → Create → Complete → Rep → on-chain reputation
  *
  * Each segment is a Solana Explorer link when a tx hash is present, and a dimmed
  * "—" / "pending" otherwise. Built as a sibling of agent-demo/SettlementChain
@@ -16,13 +16,13 @@ export interface JobSettlementChainProps {
   createJobTx?: string
   completeJobTx?: string
   skillRegistryRepTx?: string
-  erc8004FeedbackTx?: string
+  reputationFeedbackTx?: string
 }
 
 interface Segment {
   label: string
   hash?: string
-  /** Headline highlight (ERC-8004 = the canonical claim) */
+  /** Headline highlight (on-chain reputation = the canonical claim) */
   accent?: boolean
 }
 
@@ -113,7 +113,7 @@ export default function JobSettlementChain(props: JobSettlementChainProps): Reac
     { label: 'Create',    hash: props.createJobTx },
     { label: 'Complete',  hash: props.completeJobTx },
     { label: 'Rep',       hash: props.skillRegistryRepTx },
-    { label: 'ERC-8004',  hash: props.erc8004FeedbackTx, accent: true },
+    { label: 'on-chain reputation',  hash: props.reputationFeedbackTx, accent: true },
   ]
 
   return (

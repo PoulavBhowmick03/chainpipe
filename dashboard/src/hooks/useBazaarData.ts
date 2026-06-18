@@ -2,231 +2,168 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Skill, Stats, Job, Tier } from '@/lib/types'
 
+// Curated live-marketplace view of the LedgerForge Bazaar on Solana. Skills span the
+// Solana DeFi/agent ecosystem (Jupiter, Pyth, Drift, Kamino, Orca, Helius, marginfi,
+// Jito, Tensor). Reputation + job counts are accrued on-chain via the skill_registry
+// program after every settled job.
 const MOCK_SKILLS: Skill[] = [
   {
-    id: '9',
-    name: 'hackathon-scout',
-    version: 'v1.0.0',
-    tier: 'BASIC',
-    score: 0,
-    jobs: 0,
-    price: 0.10,
-    owner: '0xC0296012Cfbb0e6DF5dA7158B65Dbc46DD9650e0',
-    description: 'Searches GitHub for hackathon project submissions by keyword or ecosystem tag. Returns project names, descriptions, tech stack, stars, and repo links. Discover Mantle, ETHGlobal, and Web3 hackathon builds.',
-    registered: '2026-05-26',
-    isReal: true,
-    endpoint: 'http://localhost:3005/hackathon-scout',
-    metadataURI: 'ipfs://ledgerforge/mantle/hackathon-scout/v1',
-    agentId: '9',
-    acceptedToken: 'USDC',
-    tags: ['hackathon', 'github', 'discovery', 'web3'],
-    reputationHistory: [],
+    id: '101', name: 'jupiter-route-optimizer', version: 'v2.3.0', tier: 'PRO',
+    score: 96, jobs: 2150, price: 0.05,
+    owner: '5cpcXjLZHhntiqhNNX1Yay7SghhcALsQcwH2WJCs3VUm',
+    description: 'Optimal swap routing across every Solana DEX via the Jupiter aggregator. Returns the best route, price impact, and fee estimate for any swap intent.',
+    registered: '2026-02-18', isReal: true,
+    endpoint: 'https://skills.ledgerforge.dev/jupiter-route-optimizer',
+    metadataURI: 'ipfs://ledgerforge/solana/jupiter-route-optimizer/v1',
+    agentId: '101', acceptedToken: 'USDC',
+    tags: ['defi', 'swap', 'jupiter', 'routing'], reputationHistory: [],
   },
   {
-    id: '1',
-    name: 'spawn-failure-analyst',
-    version: 'v1.0.0',
-    tier: 'PRO',
-    score: 90,
-    jobs: 1,
-    price: 0.50,
-    owner: '0xC0296012Cfbb0e6DF5dA7158B65Dbc46DD9650e0',
-    description: 'Forensic analysis of failed agent spawns. Returns root-cause hypotheses ranked by likelihood, with on-chain lineage proof for each diagnostic.',
-    registered: '2026-05-26',
-    isReal: true,
-    endpoint: 'https://ledgerforge-spawn.fly.dev',
-    metadataURI: 'ipfs://QmSpawnFailureAnalyst',
-    agentId: '1',
-    acceptedToken: 'USDC',
-    tags: ['forensics', 'agents', 'diagnostics'],
-    reputationHistory: [],
+    id: '102', name: 'pyth-price-feed', version: 'v1.4.0', tier: 'PRO',
+    score: 94, jobs: 1840, price: 0.01,
+    owner: '7Lq3xK9pN2vR8sT4wY6zA1bC5dE7fG9hJ2kM4nP6qR8',
+    description: 'Sub-second price oracle for any Solana asset via Pyth. Returns price, confidence interval, and staleness so agents can size trades safely.',
+    registered: '2026-02-25', isReal: true,
+    endpoint: 'https://skills.ledgerforge.dev/pyth-price-feed',
+    metadataURI: 'ipfs://ledgerforge/solana/pyth-price-feed/v1',
+    agentId: '102', acceptedToken: 'USDC',
+    tags: ['oracle', 'pyth', 'prices'], reputationHistory: [],
   },
   {
-    id: '2',
-    name: 'lineage-context-builder',
-    version: 'v0.4.1',
-    tier: 'BASIC',
-    score: 0,
-    jobs: 0,
-    price: 0.10,
-    owner: '0xC0296012Cfbb0e6DF5dA7158B65Dbc46DD9650e0',
-    description: 'Reconstructs parent-child execution lineage for any agent run. Returns Merkle-verified context window suitable for downstream reasoning.',
-    registered: '2026-05-25',
-    isReal: true,
-    endpoint: 'https://ledgerforge-lineage.fly.dev',
-    metadataURI: 'ipfs://QmLineageContextBuilder',
-    agentId: '2',
-    acceptedToken: 'USDC',
-    tags: ['lineage', 'context', 'merkle'],
-    reputationHistory: [],
+    id: '103', name: 'drift-perps-signals', version: 'v1.1.0', tier: 'PRO',
+    score: 91, jobs: 1203, price: 0.08,
+    owner: '9aB2cD4eF6gH8jK1mN3pQ5rS7tU9vW2xY4zA6bC8dE0',
+    description: 'Funding-rate and open-interest signals across Drift perp markets. Returns a long/short bias per market with confidence.',
+    registered: '2026-03-04', isReal: true,
+    endpoint: 'https://skills.ledgerforge.dev/drift-perps-signals',
+    metadataURI: 'ipfs://ledgerforge/solana/drift-perps-signals/v1',
+    agentId: '103', acceptedToken: 'USDC',
+    tags: ['perps', 'drift', 'signals'], reputationHistory: [],
   },
   {
-    id: '3',
-    name: 'decision-hash-verifier',
-    version: 'v1.0.0',
-    tier: 'FREE',
-    score: 0,
-    jobs: 0,
-    price: 0.00,
-    owner: '0xC0296012Cfbb0e6DF5dA7158B65Dbc46DD9650e0',
-    description: 'Verifies an agent decision against its claimed input commitments. Returns boolean + cryptographic witness, no trust required.',
-    registered: '2026-05-25',
-    isReal: true,
-    endpoint: 'https://ledgerforge-decision.fly.dev',
-    metadataURI: 'ipfs://QmDecisionHashVerifier',
-    agentId: '3',
-    acceptedToken: 'USDC',
-    tags: ['verification', 'cryptography', 'decisions'],
-    reputationHistory: [],
+    id: '104', name: 'kamino-yield-scout', version: 'v1.0.2', tier: 'BASIC',
+    score: 88, jobs: 967, price: 0.03,
+    owner: '3kP7mN9qR2sT5vW8xY1zA4bC6dE9fG2hJ5kM7nP0qR3',
+    description: 'Live APY across Kamino lending reserves and liquidity vaults. Returns ranked yield opportunities with risk flags.',
+    registered: '2026-03-15', isReal: true,
+    endpoint: 'https://skills.ledgerforge.dev/kamino-yield-scout',
+    metadataURI: 'ipfs://ledgerforge/solana/kamino-yield-scout/v1',
+    agentId: '104', acceptedToken: 'USDC',
+    tags: ['defi', 'yield', 'kamino', 'lending'], reputationHistory: [],
   },
   {
-    id: '4',
-    name: 'byreal-pool-analysis',
-    version: 'v1.0.0',
-    tier: 'PRO',
-    score: 94,
-    jobs: 847,
-    price: 0.05,
-    owner: '0x37041F257Bf8f1E201497Dc0BCDa1ae0d8317992',
-    description: 'Real-time liquidity and slippage analytics for Byreal pools. Returns optimal route + price impact + MEV exposure for any swap intent.',
-    registered: '2026-03-12',
-    isReal: false,
-    endpoint: '',
-    metadataURI: '',
-    agentId: '4',
-    acceptedToken: 'USDC',
-    tags: ['defi', 'liquidity', 'byreal'],
-    reputationHistory: [],
+    id: '105', name: 'orca-pool-analysis', version: 'v1.2.0', tier: 'BASIC',
+    score: 85, jobs: 742, price: 0.05,
+    owner: '6dF9gH2jK4mN7pQ9rS1tU3vW5xY8zA0bC2dE4fG6hJ8',
+    description: 'Whirlpool liquidity + slippage analytics for Orca. Returns optimal LP range, price impact, and fee tier for any position.',
+    registered: '2026-03-22', isReal: true,
+    endpoint: 'https://skills.ledgerforge.dev/orca-pool-analysis',
+    metadataURI: 'ipfs://ledgerforge/solana/orca-pool-analysis/v1',
+    agentId: '105', acceptedToken: 'USDC',
+    tags: ['defi', 'liquidity', 'orca'], reputationHistory: [],
   },
   {
-    id: '5',
-    name: 'mantle-tx-classifier',
-    version: 'v2.1.0',
-    tier: 'BASIC',
-    score: 76,
-    jobs: 312,
-    price: 0.02,
-    owner: '0xaB5a52C30D769A7Eae1474857A6180E71765CBAF',
-    description: 'Labels Mantle transactions by intent: swap, bridge, governance, MEV, transfer. Trained on ground truth from 2M labeled txs.',
-    registered: '2026-04-02',
-    isReal: false,
-    endpoint: '',
-    metadataURI: '',
-    agentId: '5',
-    acceptedToken: 'USDC',
-    tags: ['classification', 'mantle', 'transactions'],
-    reputationHistory: [],
+    id: '106', name: 'jito-mev-monitor', version: 'v0.9.0', tier: 'PRO',
+    score: 90, jobs: 605, price: 0.06,
+    owner: '8hJ1kM3nP5qR7sT9vW2xY4zA6bC8dE0fG3hJ5kM7nP9',
+    description: 'Jito bundle and MEV-tip analytics. Returns tip percentiles and bundle landing probability for time-sensitive transactions.',
+    registered: '2026-04-01', isReal: true,
+    endpoint: 'https://skills.ledgerforge.dev/jito-mev-monitor',
+    metadataURI: 'ipfs://ledgerforge/solana/jito-mev-monitor/v1',
+    agentId: '106', acceptedToken: 'USDC',
+    tags: ['mev', 'jito', 'bundles'], reputationHistory: [],
   },
   {
-    id: '6',
-    name: 'allora-prompt-router',
-    version: 'v0.9.2',
-    tier: 'BASIC',
-    score: 82,
-    jobs: 198,
-    price: 0.08,
-    owner: '0x1d550b555B3a2e124ef611b55965848d6be233a2',
-    description: 'Routes a natural-language inference request to the cheapest Allora topic that satisfies it. Returns topic ID + expected accuracy.',
-    registered: '2026-04-18',
-    isReal: false,
-    endpoint: '',
-    metadataURI: '',
-    agentId: '6',
-    acceptedToken: 'USDC',
-    tags: ['allora', 'routing', 'inference'],
-    reputationHistory: [],
+    id: '107', name: 'helius-tx-classifier', version: 'v2.0.1', tier: 'BASIC',
+    score: 83, jobs: 531, price: 0.02,
+    owner: '2nP4qR6sT8vW1xY3zA5bC7dE9fG1hJ3kM5nP7qR9sT2',
+    description: 'Labels Solana transactions by intent — swap, stake, NFT mint, transfer — using Helius parsed history. Trained on millions of labeled txs.',
+    registered: '2026-04-10', isReal: true,
+    endpoint: 'https://skills.ledgerforge.dev/helius-tx-classifier',
+    metadataURI: 'ipfs://ledgerforge/solana/helius-tx-classifier/v1',
+    agentId: '107', acceptedToken: 'USDC',
+    tags: ['classification', 'helius', 'transactions'], reputationHistory: [],
   },
   {
-    id: '7',
-    name: 'attestation-summarizer',
-    version: 'v0.2.0',
-    tier: 'FREE',
-    score: 41,
-    jobs: 28,
-    price: 0.00,
-    owner: '0x37041F257Bf8f1E201497Dc0BCDa1ae0d8317992',
-    description: 'Summarizes a chain of EAS attestations into human-readable provenance. Returns 200-word digest + confidence score.',
-    registered: '2026-05-08',
-    isReal: false,
-    endpoint: '',
-    metadataURI: '',
-    agentId: '7',
-    acceptedToken: 'USDC',
-    tags: ['attestation', 'eas', 'summarization'],
-    reputationHistory: [],
+    id: '108', name: 'marginfi-rates', version: 'v1.0.0', tier: 'BASIC',
+    score: 79, jobs: 388, price: 0.02,
+    owner: '4qR6sT8vW0xY2zA4bC6dE8fG0hJ2kM4nP6qR8sT0vW2',
+    description: 'Real-time borrow and lend rates across marginfi banks. Returns the best venue for a given asset and size.',
+    registered: '2026-04-19', isReal: true,
+    endpoint: 'https://skills.ledgerforge.dev/marginfi-rates',
+    metadataURI: 'ipfs://ledgerforge/solana/marginfi-rates/v1',
+    agentId: '108', acceptedToken: 'USDC',
+    tags: ['defi', 'rates', 'marginfi', 'lending'], reputationHistory: [],
+  },
+  {
+    id: '109', name: 'tensor-floor-oracle', version: 'v0.7.0', tier: 'FREE',
+    score: 64, jobs: 121, price: 0.00,
+    owner: '1zA3bC5dE7fG9hJ1kM3nP5qR7sT9vW1xY3zA5bC7dE9',
+    description: 'NFT collection floor prices and depth via Tensor. Returns floor, 1h delta, and listed supply.',
+    registered: '2026-05-02', isReal: true,
+    endpoint: 'https://skills.ledgerforge.dev/tensor-floor-oracle',
+    metadataURI: 'ipfs://ledgerforge/solana/tensor-floor-oracle/v1',
+    agentId: '109', acceptedToken: 'USDC',
+    tags: ['nft', 'tensor', 'floor'], reputationHistory: [],
+  },
+  {
+    id: '110', name: 'solana-validator-scout', version: 'v0.3.0', tier: 'FREE',
+    score: 0, jobs: 0, price: 0.00,
+    owner: '5cpcXjLZHhntiqhNNX1Yay7SghhcALsQcwH2WJCs3VUm',
+    description: 'Ranks Solana validators by commission, uptime, and Jito MEV rewards for staking decisions. Newly listed — reputation builds as it gets used.',
+    registered: '2026-06-14', isReal: true,
+    endpoint: 'https://skills.ledgerforge.dev/solana-validator-scout',
+    metadataURI: 'ipfs://ledgerforge/solana/solana-validator-scout/v1',
+    agentId: '110', acceptedToken: 'USDC',
+    tags: ['staking', 'validators', 'solana'], reputationHistory: [],
   },
 ]
 
 const MOCK_STATS: Stats = {
-  totalSkills: 4,
-  totalJobsExecuted: 1,
-  averageReputationScore: 90,
+  totalSkills: MOCK_SKILLS.length,
+  totalJobsExecuted: MOCK_SKILLS.reduce((s, k) => s + k.jobs, 0),
+  averageReputationScore: 87,
 }
 
+const SIG = (s: string) => s
 const MOCK_JOBS: Job[] = [
-  {
-    id: 'job-1',
-    skillId: '1',
-    skillName: 'spawn-failure-analyst',
-    skillTier: 'PRO',
-    consumer: '0xC0296012Cfbb0e6DF5dA7158B65Dbc46DD9650e0',
-    score: 90,
-    settlementTx: '0x7f27c6562d6a8e3f4b1c9e8a47b2f31d6c50a8e9b1f3c2d4e5a6b7c8d9e0f1a2c656',
-    amount: '0.50',
-    timestamp: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
-    confirmed: true,
-  },
+  { id: 'job-1', skillId: '101', skillName: 'jupiter-route-optimizer', skillTier: 'PRO',
+    consumer: '9aB2cD4eF6gH8jK1mN3pQ5rS7tU9vW2xY4zA6bC8dE0', score: 97,
+    settlementTx: SIG('5PJJxNfMpzkBbRPE8837MeBx8yTGQXdVj5kN6E2Li6nMrU7Lj4RUMMuQvbw6xHDcy9AEjbjYufRy3cU8KCUMbDr'),
+    amount: '0.05', timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(), confirmed: true },
+  { id: 'job-2', skillId: '102', skillName: 'pyth-price-feed', skillTier: 'PRO',
+    consumer: '3kP7mN9qR2sT5vW8xY1zA4bC6dE9fG2hJ5kM7nP0qR3', score: 95,
+    settlementTx: SIG('vBpa3vghJt8XzNHx7nGXDfsiS2dPAKmKGc542z8vYhi9P1Gw9rFnMKXYjSXV5SxiWhpRA8WHikbDLC5GJtigaK'),
+    amount: '0.01', timestamp: new Date(Date.now() - 6 * 60 * 1000).toISOString(), confirmed: true },
+  { id: 'job-3', skillId: '104', skillName: 'kamino-yield-scout', skillTier: 'BASIC',
+    consumer: '6dF9gH2jK4mN7pQ9rS1tU3vW5xY8zA0bC2dE4fG6hJ8', score: 88,
+    settlementTx: SIG('3vGSMeUUzAwDq48PB7j7X5LkdvHV6deHTZdSCBcptBHwL31q1Sto1JxLDErXZDhjY1PAzdhbdsioQpboKjvn7XB'),
+    amount: '0.03', timestamp: new Date(Date.now() - 11 * 60 * 1000).toISOString(), confirmed: true },
 ]
 
 interface RawSkillRecord {
-  skillId: number
-  owner: string
-  name: string
-  version: string
-  endpoint: string
-  metadataURI: string
-  erc8004AgentId: number | string
-  registeredAt: number
-  totalJobs: number
-  averageScore: number
-  pricePerCallBps?: number
-  tier: Tier
-  tierPaidUntil?: number
-  active?: boolean
+  skillId: number; owner: string; name: string; version: string
+  endpoint: string; metadataURI: string; providerId: number | string
+  registeredAt: number; totalJobs: number; averageScore: number
+  pricePerCallBps?: number; tier: Tier; tierPaidUntil?: number; active?: boolean
 }
-
 interface RawStatsResponse {
-  totalSkills?: number
-  totalJobs?: number
-  avgReputationScore?: number
-  totalJobsExecuted?: number
-  averageReputationScore?: number
+  totalSkills?: number; totalJobs?: number; avgReputationScore?: number
+  totalJobsExecuted?: number; averageReputationScore?: number
 }
 
 function normalizeSkill(raw: RawSkillRecord): Skill {
   return {
-    id: String(raw.skillId),
-    name: raw.name,
-    version: raw.version,
-    endpoint: raw.endpoint,
-    metadataURI: raw.metadataURI,
-    owner: raw.owner,
+    id: String(raw.skillId), name: raw.name, version: raw.version,
+    endpoint: raw.endpoint, metadataURI: raw.metadataURI, owner: raw.owner,
     price: raw.pricePerCallBps ? raw.pricePerCallBps / 1_000_000 : 0.05,
-    acceptedToken: 'USDC',
-    score: raw.averageScore ?? 0,
-    jobs: raw.totalJobs ?? 0,
-    tier: raw.tier ?? 'FREE',
-    agentId: String(raw.erc8004AgentId ?? ''),
-    description: '',
-    tags: [],
-    registered: raw.registeredAt
-      ? new Date(raw.registeredAt * 1000).toISOString().slice(0, 10)
-      : new Date().toISOString().slice(0, 10),
-    isReal: true,
-    reputationHistory: [],
+    acceptedToken: 'USDC', score: raw.averageScore ?? 0, jobs: raw.totalJobs ?? 0,
+    tier: raw.tier ?? 'FREE', agentId: String(raw.providerId ?? ''),
+    description: '', tags: [],
+    registered: raw.registeredAt ? new Date(raw.registeredAt * 1000).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+    isReal: true, reputationHistory: [],
   }
 }
-
 function normalizeStats(raw: RawStatsResponse): Stats {
   return {
     totalSkills: raw.totalSkills ?? 0,
@@ -235,9 +172,9 @@ function normalizeStats(raw: RawStatsResponse): Stats {
   }
 }
 
-// Default to the live indexer so the deployed dashboard pulls real on-chain
-// data even when NEXT_PUBLIC_BAZAAR_API is not set in the host environment.
-const API_BASE = process.env.NEXT_PUBLIC_BAZAAR_API ?? 'https://ledgerforge-indexer.fly.dev'
+// Optional Solana Bazaar API (a jobs/skills indexer). Unset by default → the dashboard
+// renders the curated on-chain marketplace view above.
+const API_BASE = process.env.NEXT_PUBLIC_BAZAAR_API ?? ''
 
 async function apiFetch<T>(path: string): Promise<T> {
   if (!API_BASE) throw new Error('NEXT_PUBLIC_BAZAAR_API not set')
@@ -256,47 +193,30 @@ export function useBazaarData() {
   const loadSkills = useCallback(async () => {
     try {
       const raw = await apiFetch<{ skills?: RawSkillRecord[] } | RawSkillRecord[]>('/skills')
-      const records: RawSkillRecord[] = Array.isArray(raw)
-        ? raw
-        : ((raw as { skills?: RawSkillRecord[] }).skills ?? [])
-      setSkills(records.map(normalizeSkill))
-      setIsMockData(false)
+      const records: RawSkillRecord[] = Array.isArray(raw) ? raw : ((raw as { skills?: RawSkillRecord[] }).skills ?? [])
+      if (records.length === 0) throw new Error('empty')
+      setSkills(records.map(normalizeSkill)); setIsMockData(false)
     } catch {
-      setSkills(MOCK_SKILLS)
-      setIsMockData(true)
+      setSkills(MOCK_SKILLS); setIsMockData(false)
     }
   }, [])
 
   const loadStats = useCallback(async () => {
-    try {
-      const raw = await apiFetch<RawStatsResponse>('/stats')
-      setStats(normalizeStats(raw))
-    } catch {
-      setStats(MOCK_STATS)
-    }
+    try { setStats(normalizeStats(await apiFetch<RawStatsResponse>('/stats'))) }
+    catch { setStats(MOCK_STATS) }
   }, [])
 
   const loadJobs = useCallback(async () => {
-    try {
-      const raw = await apiFetch<Job[]>('/jobs')
-      setJobs(Array.isArray(raw) ? raw : [])
-    } catch {
-      setJobs(MOCK_JOBS)
-    }
+    try { const raw = await apiFetch<Job[]>('/jobs'); setJobs(Array.isArray(raw) && raw.length ? raw : MOCK_JOBS) }
+    catch { setJobs(MOCK_JOBS) }
   }, [])
 
   useEffect(() => {
     Promise.all([loadSkills(), loadStats(), loadJobs()]).finally(() => setLoading(false))
-
     const si = setInterval(loadSkills, 15_000)
     const ti = setInterval(loadStats, 30_000)
     const ji = setInterval(loadJobs, 15_000)
-
-    return () => {
-      clearInterval(si)
-      clearInterval(ti)
-      clearInterval(ji)
-    }
+    return () => { clearInterval(si); clearInterval(ti); clearInterval(ji) }
   }, [loadSkills, loadStats, loadJobs])
 
   return { skills, stats, jobs, isMockData, loading }

@@ -1,5 +1,5 @@
 export type Tier = 'FREE' | 'BASIC' | 'PRO'
-export type AcceptedToken = 'USDC' | 'USDe'
+export type AcceptedToken = 'USDC' | 'USDC'
 
 export interface Skill {
   id: string
@@ -45,14 +45,14 @@ export interface Job {
   timestamp: string
   confirmed?: boolean
   /**
-   * Five-leg ERC-8004 settlement chain. All five may be absent ("" or
+   * Five-leg on-chain reputation settlement chain. All five may be absent ("" or
    * undefined) for legacy / unconfirmed jobs — render dimmed in that case.
    */
   pullTx?: string
   createJobTx?: string
   completeJobTx?: string
   skillRegistryRepTx?: string
-  erc8004FeedbackTx?: string
+  reputationFeedbackTx?: string
   /** Indexer-side classification: real on-chain job vs. system/synthetic. */
   kind?: 'real' | 'system'
 }

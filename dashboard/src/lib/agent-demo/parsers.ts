@@ -43,9 +43,9 @@ export function pickPoolApr(topPools: unknown): { apr: number; pool: unknown } {
   return { apr: NaN, pool: null };
 }
 
-export function pickAaveSupplyApy(aave: unknown): number {
-  if (!aave || typeof aave !== "object") return NaN;
-  const obj = aave as Record<string, unknown>;
+export function pickmarginfiSupplyApy(marginfi: unknown): number {
+  if (!marginfi || typeof marginfi !== "object") return NaN;
+  const obj = marginfi as Record<string, unknown>;
   const rates = obj.rates;
   if (Array.isArray(rates)) {
     const usdc =

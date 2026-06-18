@@ -152,12 +152,12 @@ function SectionHeading({ kicker, title, sub }: { kicker: string; title: string;
 }
 
 const SKILL_DEFAULT_PARAMS: Record<string, Record<string, string>> = {
-  'hackathon-scout':    { query: 'turing test mantle', limit: '10' },
-  'mantle-tvl-monitor': {},
-  'aave-v3-rates':      { asset: 'all' },
-  'mantle-gas-oracle':  {},
-  'token-price-feed':   { tokens: 'USDe,USDC' },
-  'defi-protocol-stats':{ protocol: 'merchant-moe' },
+  'jupiter-route-optimizer': { inputMint: 'SOL', outputMint: 'USDC', amount: '10' },
+  'kamino-yield-scout': {},
+  'marginfi-rates': { asset: 'all' },
+  'orca-pool-analysis': { pool: 'SOL-USDC' },
+  'pyth-price-feed': { tokens: 'SOL,USDC' },
+  'helius-tx-classifier': {},
 }
 
 function TryItPanel({ skill, txHash }: { skill: Skill; txHash: string | null }) {
@@ -206,7 +206,7 @@ function TryItPanel({ skill, txHash }: { skill: Skill; txHash: string | null }) 
       setResponse(JSON.stringify({
         error: String(err instanceof Error ? err.message : err),
         hint: skill.endpoint?.includes('localhost')
-          ? 'Start the skill server first: cd agents && npx ts-node src/mantle-skills.ts --serve'
+          ? 'Start the skill server first: cd agents && npx ts-node src/solana-skills.ts --serve'
           : 'Skill endpoint unreachable.',
       }, null, 2))
     }
@@ -395,7 +395,7 @@ export default function SkillDetailPage() {
                 <MetaChip label={`${skill.jobs.toLocaleString()} total jobs`} />
                 <MetaChip label="avg 0.18s response" />
                 <MetaChip label={`Registered ${skill.registered}`} />
-                <MetaChip label={`ERC-8004 ID: #${skill.id}`} link />
+                <MetaChip label={`on-chain reputation ID: #${skill.id}`} link />
               </div>
             </div>
 
@@ -403,7 +403,7 @@ export default function SkillDetailPage() {
               <SectionHeading
                 kicker="On-chain history"
                 title="Reputation over time"
-                sub="Each bar = one job completion. Score is written on-chain via the ERC-8004 registry."
+                sub="Each bar = one job completion. Score is written on-chain via the on-chain reputation registry."
               />
               {hasHistory ? (
                 <ReputationChart values={history} avg={skill.score} />
