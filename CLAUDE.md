@@ -84,7 +84,7 @@ Update these as you go:
 - [x] **Phase 0** — Repo scaffold, Anchor workspace init, env setup
 - [x] **Phase 1** — `bonded_registry` Anchor program + tests
 - [ ] **Phase 2** — `dag_escrow` Anchor program + tests
-- [ ] **Phase 3** — `reputation_bridge` Anchor program + tests
+- [x] **Phase 3** — `reputation_bridge` Anchor program + tests (built before Phase 2: dag_escrow CPIs into it)
 - [ ] **Phase 4** — Deploy all 3 programs to devnet, populate DEPLOYED.md
 - [ ] **Phase 5** — TypeScript SDK (`@chainpipe/solana`)
 - [ ] **Phase 6** — Facilitator service (Express)
@@ -491,6 +491,12 @@ All 16 tests must pass before moving to Phase 3.
 ---
 
 ## PHASE 3: `reputation_bridge` Anchor Program
+
+**STATUS: [x] DONE** — 9/9 tests passing. EMA is additive:
+`new = clamp(old + alpha_bps·delta/10000, 0, 10000)`, neutral start 5000,
+failure delta -5000 (matches CLAUDE.md E2E numbers 5000→4000). Auth gated on
+`bridge_config.dag_escrow_authority` (set to dag_escrow's PDA), same pattern as
+bonded_registry. Built before Phase 2 because dag_escrow CPIs into it.
 
 ### What it does
 
