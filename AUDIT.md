@@ -11,11 +11,14 @@ reputation. All core on-chain flows are implemented, tested (37 program tests),
 deployed, and exercised end-to-end with real transactions. The frontend, SDK,
 facilitator, and indexer are live.
 
-**It is not yet usable for real economic work.** The gaps are: it runs on devnet
-with a play-money mint (no real value), there is no actual agent-execution layer
-(jobs are facilitator-attested, not proven), trust is centralized (one key controls
-program upgrades, the facilitator, and the mint), and several headline claims (the
-"official Solana 8004 / ATOM registry" integration) are aspirational, not built.
+**It is not yet usable for real economic work.** The remaining gaps are: it runs on
+devnet with a play-money mint (no real value), and job completion is still
+facilitator-attested rather than proven (a `result_hash` commitment is now in
+place as the first step). Several earlier issues have since been addressed (see the
+**Update** section below): the "8004/ATOM" overclaim is reworded, facilitator-key
+rotation and a proof-of-delivery commitment are implemented, CI + tests + an agent
+work console + durable storage are live. Full decentralization (multisig upgrade
+authority), a verification/dispute layer, and mainnet + real USDC remain.
 
 ---
 
@@ -99,10 +102,9 @@ someone trusts with value."
    that gates every settlement. Real users must trust this one entity completely.
    → Migrate to a multisig (Squads), set/relinquish upgrade authority, and design
    a path to decentralize or bond the facilitator.
-4. **Agent workflow is incomplete in the UI.** The dashboard supports **staking**
-   and **creating pipelines**, but there is **no UI for an agent to claim a node**
-   or for completion/expiry — those only exist in the SDK/scripts/facilitator. A
-   real agent operator can't run the full loop from the app.
+4. ~~**Agent workflow is incomplete in the UI.**~~ **✅ Resolved** — the `/work`
+   agent console lets an operator browse claimable nodes, claim on-chain, and
+   submit a wallet-signed completion the facilitator settles. Full loop now in-app.
 
 ---
 
@@ -124,13 +126,13 @@ someone trusts with value."
   rely solely on on-chain state + an ed25519 signature; no per-agent rate limit
   keyed to the agent (only IP).
 
-## 4. Testing & quality gaps (P1)
+## 4. Testing & quality gaps (P1) — **largely resolved**
 
-- **Only the 3 Anchor programs have tests** (`tests/*.ts`). **No automated tests**
-  for the SDK, facilitator, or indexer (verification was done via one-off scripts).
-- **No CI** (`.github/` absent) — nothing runs `anchor test` / builds on push.
-- **No `LICENSE` file** though README states MIT.
-- **No monitoring/alerting/error tracking** on the Fly services.
+- ✅ **CI** added (`.github/workflows/ci.yml`: web builds + unit tests + SBPF
+  program build) and **unit tests** for SDK/facilitator/indexer (`npm run test:units`).
+- ✅ **`LICENSE`** (MIT) added.
+- Programs keep the 37-test Anchor suite; **deeper SDK/facilitator integration
+  tests** and **monitoring/error tracking** on the Fly services are still thin.
 
 ## 5. Infra / ops gaps (P1/P2)
 
@@ -175,34 +177,45 @@ someone trusts with value."
 
 ## 8. Prioritized "what's left" checklist
 
+Legend: [x] done · [~] partial / documented plan · [ ] outstanding (human/external).
+
 ### P0 — required for credible real-user testing / grant submission
 - [ ] Record a 2–3 min demo video of the live flow (faucet → stake → create
-      pipeline → settle/expire) and embed in README.
-- [ ] Fix the **8004/ATOM claim**: either implement the registry CPI or reword to
-      "composable-by-design," everywhere it appears.
-- [ ] Add a **LICENSE** file (MIT) + a short architecture diagram.
-- [ ] Move program **upgrade authority to a Squads multisig** (or document a
-      credible plan); surface this in the README for trust.
-- [ ] Build the **agent claim → complete UI** so the full loop is usable from the app.
-- [ ] Write the honest "devnet / trust model / roadmap" section so reviewers
-      aren't surprised.
+      pipeline → settle/expire) and embed in README. _(human-only: screen recording)_
+- [x] Fix the **8004/ATOM claim** — reworded to "composable-by-design" everywhere.
+- [x] Add a **LICENSE** file (MIT) + architecture diagram (mermaid in README).
+- [~] Move program **upgrade authority to a Squads multisig** — credible plan +
+      rotation primitives documented in `SECURITY.md`; creating the multisig and
+      reassigning is a manual Squads-UI step.
+- [x] Build the **agent claim → complete UI** — shipped at `/work` (claim on-chain
+      + wallet-signed completion the facilitator settles).
+- [x] Write the honest **devnet / trust model / roadmap** — `SECURITY.md` + README
+      status section.
 
 ### P1 — required before mainnet / real value
-- [ ] Mainnet deploy plan with **real USDC**; remove the faucet.
-- [ ] A **proof-of-work / verification** design (attestation, dispute window, or
-      oracle) so settlement reflects real delivery.
-- [ ] **Decentralize / bond the facilitator** (or at least multisig + rotation).
-- [ ] Tests for SDK/facilitator/indexer + **CI** (GitHub Actions running
-      `anchor test` and builds).
-- [ ] **Dedicated RPC** + durable indexer storage + monitoring.
-- [ ] Security review/audit of the programs (esp. the expire cascade).
+- [~] Mainnet deploy plan with **real USDC**; remove the faucet — faucet is now
+      env-gated (`FAUCET_ENABLED`); mainnet/USDC plan documented (needs funds).
+- [x] **Proof-of-work / verification** — first step shipped: `complete_node` takes
+      an agent-signed `result_hash` commitment (emitted in `NodeSettled`); full
+      dispute/oracle path documented in `SECURITY.md`.
+- [x] **Facilitator key rotation** via `set_facilitator_authority`; full
+      decentralization/bonding documented (the rest is a design decision).
+- [x] Tests for SDK/facilitator/indexer + **CI** — `npm run test:units` (4/4) and
+      `.github/workflows/ci.yml`.
+- [~] **Dedicated RPC** + durable indexer storage + monitoring — durable Fly volume
+      + health checks done; dedicated RPC documented (needs a provider key).
+- [~] Security review/audit — internal review pass in this doc + expire-cascade
+      hardening noted; external audit still needed before mainnet.
 
 ### P2 — polish & growth
-- [ ] On-chain skill/capability metadata + richer bazaar filtering.
-- [ ] Better reputation scoring (quality + consumer ratings + decay).
-- [ ] DAG **graph** visualization (currently a list).
-- [ ] More wallets, mobile-adapter UX, analytics, operator dashboards.
-- [ ] SDK published to npm with docs/examples.
+- [~] On-chain skill metadata + bazaar filtering — deferred (needs a migration-safe
+      `AgentProfile` account; documented to avoid bricking live accounts).
+- [~] Better reputation scoring (quality + consumer ratings + decay) — documented;
+      blocked on a real quality signal.
+- [x] DAG **graph** visualization — shipped on the pipeline page.
+- [~] More wallets / mobile UX / analytics — Wallet Standard auto-detects more
+      wallets; `autoConnect` off; analytics/operator dashboards outstanding.
+- [ ] SDK published to npm with docs/examples. _(needs npm auth)_
 
 ---
 
@@ -210,10 +223,12 @@ someone trusts with value."
 
 ChainPipe is a **well-executed, genuinely-working devnet prototype** of two
 non-trivial primitives, with real programs, real tests, and a real deployed stack
-— which already puts it ahead of most grant submissions at the demo stage. To be
-something real users _rely on_, it needs (1) a real value layer (mainnet + USDC),
-(2) a proof-of-work/verification story so payment ≠ blind trust in the facilitator,
-(3) decentralized/multisig trust instead of one hot key, and (4) the headline
-claims (8004 registry) to match the code. None of these are blockers to a strong
-grant application as a _public-good prototype with a clear roadmap_ — but they are
-blockers to "real users doing real work."
+— which already puts it ahead of most grant submissions at the demo stage. Since
+the original audit, the claims now match the code (8004 reworded), an agent work
+console + proof-of-delivery commitment + key rotation + CI/tests + durable infra
+have shipped. To be something real users _rely on_, the remaining needs are
+(1) a real value layer (mainnet + USDC), (2) a full verification/dispute layer so
+payment ≠ blind trust in the facilitator, and (3) multisig/decentralized trust
+instead of one hot key. None of these are blockers to a strong grant application as
+a _public-good prototype with a clear roadmap_ — but they are blockers to "real
+users doing real work."
