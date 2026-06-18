@@ -1,70 +1,25 @@
-# ── Secrets ───────────────────────────────────────────────────────────────────
+# Rust / Anchor
+target/
+.anchor/
+test-ledger/
+**/*.rs.bk
+
+# Node
+node_modules/
+dist/
+.next/
+out/
+*.tsbuildinfo
+
+# Secrets / keys
+keys/*.json
 .env
 .env.local
 .env.*.local
 *.pem
-*.key
 
-# ── Node.js ───────────────────────────────────────────────────────────────────
-node_modules/
-npm-debug.log*
-yarn-error.log
-pnpm-debug.log*
-.pnpm-store/
+# Indexer data
+indexer/data/
 
-# ── TypeScript build outputs ───────────────────────────────────────────────────
-dist/
-*.tsbuildinfo
-*.js.map
-
-# ── Next.js ───────────────────────────────────────────────────────────────────
-.next/
-out/
-
-# ── Foundry / Forge ───────────────────────────────────────────────────────────
-contracts/out/
-contracts/cache/
-contracts/lib/
-broadcast/
-
-# ── SQLite (indexer DB) ────────────────────────────────────────────────────────
-*.db
-*.sqlite
-*.sqlite3
-
-# ── macOS ─────────────────────────────────────────────────────────────────────
+# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-
-# ── IDE ───────────────────────────────────────────────────────────────────────
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# ── Logs ──────────────────────────────────────────────────────────────────────
-*.log
-logs/
-
-# ── Turbo / build caches ──────────────────────────────────────────────────────
-.turbo/
-.cache/
-
-# ── Indexer local DB ──────────────────────────────────────────────────────────
-indexer/skill_db.json
-indexer/jobs_db.json
-
-# ── Autonomous agent run artifacts (per-run digests + JSON, demo-provider addrs) ──
-agents/scout-runs/
-agents/perps-coach-runs/
-agents/spawn-auditor-runs/
-.vercel
-
-# Solana / Anchor
-solana/target/
-solana/.anchor/
-test-ledger/
-**/*.rs.bk

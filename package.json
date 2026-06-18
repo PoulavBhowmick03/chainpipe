@@ -1,0 +1,29 @@
+{
+  "name": "chainpipe-solana",
+  "private": true,
+  "workspaces": [
+    "sdk",
+    "facilitator",
+    "indexer",
+    "dashboard"
+  ],
+  "scripts": {
+    "test:programs": "anchor test",
+    "build:sdk": "cd sdk && npm run build",
+    "build:facilitator": "cd facilitator && npm run build",
+    "build:dashboard": "cd dashboard && next build",
+    "e2e": "npx tsx scripts/e2e-devnet.mts",
+    "seed": "npx tsx scripts/seed-devnet.mts"
+  },
+  "devDependencies": {
+    "@coral-xyz/anchor": "^0.31.0",
+    "@types/bn.js": "^5.1.5",
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.6",
+    "chai": "^4.3.10",
+    "mocha": "^10.3.0",
+    "ts-mocha": "^10.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}

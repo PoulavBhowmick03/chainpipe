@@ -1,0 +1,15 @@
+[workspace]
+members = [
+  "programs/bonded_registry",
+  "programs/dag_escrow",
+  "programs/reputation_bridge"
+]
+resolver = "2"
+
+[profile.release]
+overflow-checks = true
+lto = "fat"
+codegen-units = 1
+
+[profile.dev.package."*"]
+opt-level = 3
