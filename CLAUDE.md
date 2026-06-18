@@ -1154,7 +1154,7 @@ All phases must show `[x] DONE`. If any show `[ ]` or `[~]`, continue working.
 - [x] `cd facilitator && npm run build` passes
 - [x] `cd dashboard && next build` passes
 - [x] `npx tsx scripts/e2e-devnet.mts` runs to completion with all explorer links valid
-- [x] README has demo video URL embedded (record this last)
+- [~] README has demo video URL embedded (record this last) — human-only: needs a screen recording; README/scripts are ready to record against
 - [x] DEPLOYED.md has all real addresses, config PDAs, and seeded account addresses
 - [x] BLOCKERS.md exists (even if empty) documenting any issues hit
 - [x] `git log --oneline` shows one commit per phase minimum
