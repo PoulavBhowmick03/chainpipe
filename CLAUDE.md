@@ -87,7 +87,7 @@ Update these as you go:
 - [x] **Phase 3** — `reputation_bridge` Anchor program + tests (built before Phase 2: dag_escrow CPIs into it)
 - [x] **Phase 4** — Deploy all 3 programs to devnet, populate DEPLOYED.md (SBPFv3; see BLOCKERS.md D2)
 - [x] **Phase 5** — TypeScript SDK (`@chainpipe/solana`) (web3.js v1 for stack coherence; see BLOCKERS.md D4)
-- [ ] **Phase 6** — Facilitator service (Express)
+- [x] **Phase 6** — Facilitator service (Express) — builds clean; /health verified live on devnet (POST /complete,/expire exercised in Phase 9 e2e)
 - [ ] **Phase 7** — Indexer
 - [ ] **Phase 8** — Next.js 15 dashboard (100% Solana-native, wallet-adapter)
 - [ ] **Phase 9** — E2E devnet script (full loop with real tx signatures)
