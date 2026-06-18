@@ -2,5 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "npm --prefix .. install",
-  "buildCommand": "npm --prefix .. run build:sdk && next build"
+  "buildCommand": "npm --prefix .. run build:sdk && npx next build"
 }
