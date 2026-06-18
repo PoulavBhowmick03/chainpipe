@@ -83,7 +83,7 @@ Update these as you go:
 
 - [x] **Phase 0** — Repo scaffold, Anchor workspace init, env setup
 - [x] **Phase 1** — `bonded_registry` Anchor program + tests
-- [ ] **Phase 2** — `dag_escrow` Anchor program + tests
+- [x] **Phase 2** — `dag_escrow` Anchor program + tests
 - [x] **Phase 3** — `reputation_bridge` Anchor program + tests (built before Phase 2: dag_escrow CPIs into it)
 - [ ] **Phase 4** — Deploy all 3 programs to devnet, populate DEPLOYED.md
 - [ ] **Phase 5** — TypeScript SDK (`@chainpipe/solana`)
@@ -353,6 +353,16 @@ All 12 tests must pass before moving to Phase 2.
 ---
 
 ## PHASE 2: `dag_escrow` Anchor Program
+
+**STATUS: [x] DONE** — 16/16 tests passing (37 total across all programs).
+Node accounts are created via signed system CPI in `create_pipeline`
+(remaining_accounts). DAG validity is enforced by requiring backward-only
+dependency edges (mask bits < node index) — a topological constraint that makes
+cycles impossible. `pipeline.settled_mask` tracks settled nodes so claim-time
+dependency checks need no extra accounts. expire_node cascades over downstream
+node accounts (remaining_accounts) and uses Optional accounts for the
+slash/reputation path (present only when the expired node was Claimed). CPIs to
+bonded_registry + reputation_bridge are signed by the `[b"dag_authority"]` PDA.
 
 ### What it does
 

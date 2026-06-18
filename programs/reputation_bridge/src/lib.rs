@@ -31,6 +31,15 @@ pub mod reputation_bridge {
         Ok(())
     }
 
+    /// Operator may update the authorized dag_escrow CPI signer (its PDA).
+    pub fn set_dag_escrow_authority(
+        ctx: Context<SetDagEscrowAuthority>,
+        dag_escrow_authority: Pubkey,
+    ) -> Result<()> {
+        ctx.accounts.bridge_config.dag_escrow_authority = dag_escrow_authority;
+        Ok(())
+    }
+
     /// Record a settled job. Callable only by the dag_escrow authority PDA.
     pub fn record_completion(
         ctx: Context<RecordOutcome>,
@@ -179,6 +188,13 @@ pub struct Initialize<'info> {
     #[account(mut)]
     pub operator: Signer<'info>,
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct SetDagEscrowAuthority<'info> {
+    #[account(mut, seeds = [b"bridge_config"], bump = bridge_config.bump, has_one = operator)]
+    pub bridge_config: Account<'info, BridgeConfig>,
+    pub operator: Signer<'info>,
 }
 
 #[derive(Accounts)]
