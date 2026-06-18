@@ -1,0 +1,27 @@
+{
+  "name": "@chainpipe/indexer",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/api.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/api.js",
+    "dev": "tsx watch src/api.ts"
+  },
+  "dependencies": {
+    "@chainpipe/solana": "*",
+    "@coral-xyz/anchor": "^0.31.0",
+    "@solana/web3.js": "^1.95.0",
+    "bn.js": "^5.2.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "express": "^4.19.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}
