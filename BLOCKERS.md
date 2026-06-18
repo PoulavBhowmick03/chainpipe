@@ -47,6 +47,15 @@ close <buffer> --url devnet`.
 `anchor.BN` was undefined at runtime. Import from `bn.js` directly:
 `import BN from "bn.js"`.
 
+### D4 — SDK uses @solana/web3.js v1, not v2 (Phase 5)
+CLAUDE.md Phase 5 suggested `@solana/web3.js@2` (functional API). Anchor 0.31's
+IDL client and the rest of the stack (facilitator, indexer, wallet-adapter) are
+built on web3.js v1, and the Phase 5 function signatures themselves use v1 types
+(`Connection`, `Keypair`, `TransactionSignature`). Using v2 would fracture the
+codebase. The SDK therefore standardizes on web3.js v1 + @coral-xyz/anchor 0.31
+for a coherent, working stack. Addresses remain configurable via
+`ChainPipeAddresses` (the IDL `address` is overridden at construction).
+
 ## Open blockers
 
 (none)

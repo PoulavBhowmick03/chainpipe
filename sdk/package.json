@@ -1,0 +1,21 @@
+{
+  "name": "@chainpipe/solana",
+  "version": "0.1.0",
+  "description": "SDK for ChainPipe — atomic multi-agent pipeline escrow and bonded trust on Solana",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.31.0",
+    "@solana/spl-token": "^0.4.0",
+    "@solana/web3.js": "^1.95.0",
+    "bn.js": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.5",
+    "typescript": "^5.4.0"
+  }
+}

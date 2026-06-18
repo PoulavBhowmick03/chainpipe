@@ -86,7 +86,7 @@ Update these as you go:
 - [x] **Phase 2** — `dag_escrow` Anchor program + tests
 - [x] **Phase 3** — `reputation_bridge` Anchor program + tests (built before Phase 2: dag_escrow CPIs into it)
 - [x] **Phase 4** — Deploy all 3 programs to devnet, populate DEPLOYED.md (SBPFv3; see BLOCKERS.md D2)
-- [ ] **Phase 5** — TypeScript SDK (`@chainpipe/solana`)
+- [x] **Phase 5** — TypeScript SDK (`@chainpipe/solana`) (web3.js v1 for stack coherence; see BLOCKERS.md D4)
 - [ ] **Phase 6** — Facilitator service (Express)
 - [ ] **Phase 7** — Indexer
 - [ ] **Phase 8** — Next.js 15 dashboard (100% Solana-native, wallet-adapter)
