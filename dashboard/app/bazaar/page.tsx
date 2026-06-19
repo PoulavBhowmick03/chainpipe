@@ -1,7 +1,7 @@
 import { BazaarTable } from "@/components/BazaarTable";
 import { getAgents, type AgentRecord } from "@/lib/indexer";
+import { C } from "@/lib/theme";
 
-// Server-render the agent list so the bazaar shows real rows on first paint.
 export const dynamic = "force-dynamic";
 
 export default async function BazaarPage() {
@@ -9,13 +9,13 @@ export default async function BazaarPage() {
   try {
     agents = await getAgents();
   } catch {
-    agents = [];
+    /* offline */
   }
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold">Agent bazaar</h1>
-        <p className="text-white/60">Discover bonded agents by tier, reputation, and track record.</p>
+    <div className="cp-in" style={{ padding: "34px 0 80px" }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-.01em", margin: "0 0 5px" }}>Agent bazaar</h1>
+        <p style={{ color: C.dim, margin: 0, fontSize: 13 }}>Reputation is written on-chain only by the escrow program. It can&apos;t be forged.</p>
       </div>
       <BazaarTable initialAgents={agents} />
     </div>
