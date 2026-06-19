@@ -1,115 +1,120 @@
-# Claude design prompt — ChainPipe UI
+# Claude design prompt — ChainPipe UI (production / designer-grade)
 
-Paste into Claude (claude.ai with Artifacts on, or Claude Code). It will produce a
-self-contained, runnable design you can iterate on.
+Paste into Claude with Artifacts on. Goal: a UI that looks like a real design team
+shipped it — not a generic AI dark-dashboard.
 
 ---
 
-You are a senior product designer + front-end engineer who designs award-worthy
-crypto/dev-tool interfaces (think Linear, Vercel, Phantom, Jupiter, Helius). Design
-an **amazing, production-credible UI for ChainPipe** and deliver it as a single
-self-contained **React + Tailwind artifact** I can preview immediately, using mocked
-data that matches the real data shapes below. Prioritize a clear information
-hierarchy and one or two signature "wow" moments over decoration.
+You are the founding designer at a top-tier crypto product studio. Your work looks
+like Linear, Vercel, Stripe, Phantom, Jupiter, Highlight, Family, and a Bloomberg
+terminal — never like a generic AI dashboard. Design the **ChainPipe** interface to a
+**production, portfolio-grade** standard and deliver it as a runnable **React +
+Tailwind artifact** with mocked data.
 
-## What ChainPipe is (context)
-ChainPipe is a Solana protocol for the **AI agent economy** with two primitives:
-1. **DAG Pipeline Escrow** — a consumer locks one USDC budget for a *pipeline* of
-   cooperating agents expressed as a directed acyclic graph (DAG) of *nodes*. Each
-   node has an allocation, a deadline, and dependencies on other nodes. Nodes settle
-   individually as their dependencies complete; if a node misses its deadline anyone
-   can expire it and the refund **cascades atomically** to all downstream nodes and
-   back to the consumer.
-2. **Bonded Agent Registry** — agents stake USDC for a trust **tier** (T1 ≥10, T2
-   ≥100, T3 ≥1000 USDC). Tier gates which nodes an agent may claim. Failure
-   **slashes** stake to the wronged consumer. A facilitator-gated **reputation**
-   (EMA score 0–100, settled/failed counts) is written on-chain only via the escrow
-   program — so reputation can't be forged.
+## Read this first: the current version is generic. Do NOT repeat these AI tells.
+I will reject the design if it does any of these:
+- A green→purple gradient on every button/heading. **The Solana gradient is a
+  garnish, not the theme.** Use one restrained accent; let the gradient appear once,
+  maybe, in a single hero moment.
+- A row of 6–8 identical evenly-spaced stat cards. Financial dashboards have
+  **hierarchy** — one or two hero numbers, the rest secondary/inline.
+- Donut/ring progress for "reputation." Find a more legible, more original
+  representation of a 0–100 trust score.
+- Centered hero with a big two-line headline and two pill buttons. Overdone.
+- Glassmorphism, neon glows on everything, rounded-2xl on every box, emoji as icons,
+  faux-3D, generic "web3" purple haze backgrounds.
+- Everything the same density, same border, same radius, same spacing. No rhythm.
 
-It's live on Solana devnet. Tone: precise, trustworthy, a little futuristic — money
-and trust are at stake, so it must feel solid, not gimmicky.
+If your draft looks like a Tailwind UI template with crypto words in it, start over.
 
-## Brand / visual direction
-- Dark, high-contrast, "on-chain control room." Base ink `#0b0e14`, panel `#11151f`.
-- Solana accent gradient: green `#14f195` → purple `#9945ff` (use sparingly for
-  emphasis, CTAs, the DAG flow, tier/score highlights).
-- Status colors: pending (slate), claimed (blue), settled (green), expired (red).
-- Clean system font stack; generous spacing; subtle borders (white/8–12%); soft
-  glows on active/important elements only. Motion: tasteful, purposeful (flow along
-  DAG edges, number count-ups, settle/expire transitions). Respect reduced-motion.
-- Must be fully responsive (mobile → wide desktop); wide content scrolls inside its
-  own container, the page never scrolls horizontally.
+## Make a real art-direction decision (state it, then commit)
+Pick ONE strong concept and execute it ruthlessly. Examples (choose or better one):
+- **"On-chain control room"** — terminal/instrument aesthetic: tight grid, hairline
+  rules, tabular monospace numerics, dense data, restrained color, status as the
+  only color. Trust through precision.
+- **"Editorial fintech"** — large confident typography, lots of negative space,
+  serif/grotesk pairing, magazine-like layout, money rendered beautifully.
+- **"Engineering tool"** — Linear-grade: crisp, fast, opinionated, keyboard-first,
+  every pixel intentional.
+Whatever you choose, the DAG is the soul of the product — design it like a signature
+data-visualization, not a row of cards.
 
-## Screens to design (these already exist as routes — redesign them)
-1. **Landing `/`** — hero (the value prop in one line), a live **stats bar**
-   (pipelines, active, nodes settled, USDC settled/refunded, agents staked, total
-   stake), **featured agents**, **recent pipelines**, primary CTAs: Create pipeline /
-   Find work / Browse bazaar. Show real numbers immediately (it's server-rendered).
-2. **Bazaar `/bazaar`** — discover agents: filter by tier + min reputation, sort by
-   reputation/stake/jobs, paginated table or card grid. Each agent shows tier badge,
-   EMA score (as a bar/dial), stake, settled/failed.
-3. **Agent profile `/agent/[pubkey]`** — tier, reputation (with a small history
-   chart), stake, open jobs, settled/failed, explorer link.
-4. **Pipeline builder `/pipeline/create`** — THE signature screen. A visual DAG
-   editor: add/remove nodes, set allocation (USDC) + deadline (hours) + required tier,
-   draw dependencies between nodes (only to earlier nodes — acyclic), live-validate
-   (no cycles, total ≤ budget), show total locked + per-node breakdown, then a
-   "Create pipeline" CTA (wallet-signed). Make the graph editing delightful.
-5. **Pipeline detail `/pipeline/[pda]`** — the OTHER signature screen. A live
-   **DAG visualization** (nodes as cards positioned by dependency depth, animated
-   edges, color-coded by status), pipeline status, vault/locked/settled/refunded,
-   per-node detail (agent, allocation, deadline countdown, tx links). Show the
-   cascade-refund concept visually when a node expires.
-6. **Find work `/work`** (agent console) — for a connected agent: their tier; a list
-   of **claimable** nodes (deps settled, tier ok) with Claim; their **in-progress**
-   claimed nodes with "Submit completion."
-7. **My pipelines `/my/pipelines`** — the consumer's pipelines with status.
-8. **My stake `/my/stake`** — onboarding flow for a fresh wallet: ① Get test USDC
-   (faucet) → ② Stake & register (tier selector); for registered agents show
-   stake/tier/open-jobs + add/unstake.
-9. **Global**: top nav with wallet connect (Solana wallet-adapter modal), an
-   "agent vs consumer" mental model that's obvious, empty/loading/error states,
-   toasts for tx success with explorer links.
+## Craft requirements (this is what separates designer from AI)
+- **Typography:** a real type system. Pick a distinctive pairing (e.g. a grotesk like
+  Inter Tight / Geist / Söhne-feel for UI + a true monospace like Berkeley
+  Mono/JetBrains for addresses & numbers). Define a type scale, line-height, and
+  **tracking**; use **tabular/lining figures** for all money and metrics so columns
+  align. Big numbers should feel engineered, not bold-by-default.
+- **Color discipline:** a near-monochrome dark base with 1 accent + a precise status
+  palette (pending/claimed/settled/expired). Color carries meaning only. Define exact
+  hex tokens and contrast (WCAG AA). No background gradients-for-mood.
+- **Grid & layout:** an intentional, sometimes asymmetric grid. Vary density: dense
+  data tables vs. breathing hero. Use hairline dividers and alignment over boxes-in-
+  boxes. Show you understand optical spacing.
+- **Depth:** earn it — one elevation system, subtle shadows or borders (not both),
+  maybe a faint grain or 1px gridline texture. Glow only on the one thing that matters.
+- **Motion (describe + implement what's cheap):** purposeful only — value flowing
+  along DAG edges on settle, number count-ups, a node's state transition, refund
+  cascading visibly downstream on expire. Honor `prefers-reduced-motion`.
+- **Components are bespoke, not borrowed:** a real tier badge system, a reputation
+  representation you invented, a node card that reads at a glance, a wallet/identity
+  chip, status pills with intent. Empty/loading/error states designed, not default.
+- **Voice:** copy that's confident and specific ("Lock one budget for the whole
+  pipeline. Refunds cascade on failure."), not buzzword soup.
 
-## Signature moments (spend your best effort here)
-- The **DAG builder** and the **DAG status visualization** — these are the product's
-  identity. Make graph layout, edges, and node states beautiful and legible. Show how
-  an expired node cascades refunds downstream.
-- The **stats bar** and **tier/reputation** visualizations — make trust legible at a
-  glance (tier badges, EMA dials, slash/failure indicators).
+## The product (so the design is real, not decorative)
+ChainPipe (Solana, devnet): consumers lock one USDC budget for a **pipeline** = a DAG
+of agent **nodes** (allocation, deadline, deps, required tier). Nodes settle as deps
+complete; an expired node **cascades refunds** to downstream nodes + the consumer.
+Agents **stake** USDC for a trust **tier** (T1≥10 / T2≥100 / T3≥1000); failure
+**slashes** stake; on-chain **reputation** (EMA 0–100, settled/failed) is written only
+by the escrow program (un-forgeable). Two personas: **consumer** (builds pipelines)
+and **agent** (stakes, claims & completes nodes).
 
-## Data shapes to mock against (use realistic values)
+### Screens (redesign all; make 1,2,5 the heroes)
+1. Landing `/` — value prop, **live stats** (hierarchy!), featured agents, recent
+   pipelines, clear consumer-vs-agent entry.
+2. Pipeline builder `/pipeline/create` — visual DAG editor: add nodes, set
+   allocation/deadline/tier, draw deps to earlier nodes only (acyclic), live-validate,
+   budget meter, wallet-signed create. **Signature screen.**
+3. Pipeline detail `/pipeline/[pda]` — **live DAG visualization**, status, vault math,
+   per-node detail + deadline countdowns + tx links, cascade-refund made visible.
+   **Signature screen.**
+4. Bazaar `/bazaar` — filterable/sortable agent discovery (tier, reputation, jobs).
+5. Agent profile `/agent/[pubkey]` — tier, reputation w/ history, stake, track record.
+6. Find work `/work` — agent console: claimable nodes (Claim) + in-progress (Submit).
+7. My stake `/my/stake` — fresh-wallet onboarding (faucet → stake & register, tier
+   picker) and manage stake.
+8. Global — top nav + Solana wallet connect, tx toasts w/ explorer links, real states.
+
+### Data shapes (mock realistic values; money is 6-dp integer strings, ema 0–10000)
 ```ts
-type Stats = { totalPipelines:number; activePipelines:number; totalNodesSettled:number;
-  totalUsdcSettled:string; totalUsdcRefunded:string; totalAgentsStaked:number; totalStakeValueUsdc:string };
-type Agent = { agent:string; tier:0|1|2|3; stakeAmount:string; openJobs:number;
-  totalSettled:number; totalSlashed:number;
-  reputation:{ emaScore:number /*0..10000, /100 = 0..100*/; totalSettled:number; totalFailed:number } | null;
-  skill?:string /* e.g. "code-gen","data-fetch","report-synthesis" */ };
-type Node = { nodeIndex:number; agent:string; allocationUsdc:string; deadlineSlot:string;
-  dependencyMask:string /*bitmask of dep node indices*/; requiredTier:number;
-  status:{pending?:{}}|{claimed?:{}}|{settled?:{}}|{expired?:{}} };
-type Pipeline = { address:string; consumer:string; totalNodes:number; totalUsdcLocked:string;
-  nodesSettled:number; nodesExpired:number; status:{active?:{}}|{completed?:{}}|{partiallyRefunded?:{}}|{cancelled?:{}};
-  nonce:string; nodes:Node[] };
+Stats{ totalPipelines, activePipelines, totalNodesSettled, totalUsdcSettled,
+       totalUsdcRefunded, totalAgentsStaked, totalStakeValueUsdc }
+Agent{ agent, tier:0|1|2|3, stakeAmount, openJobs, totalSettled, totalSlashed,
+       reputation:{emaScore /*0..10000*/, totalSettled, totalFailed}|null, skill? }
+Node{ nodeIndex, agent, allocationUsdc, deadlineSlot, dependencyMask, requiredTier,
+      status: "pending"|"claimed"|"settled"|"expired" }
+Pipeline{ address, consumer, totalNodes, totalUsdcLocked, nodesSettled, nodesExpired,
+          status:"active"|"completed"|"partiallyRefunded"|"cancelled", nodes:Node[] }
 ```
-USDC amounts are integer strings in 6-decimal base units (e.g. "40000000" = 40.00).
-emaScore is 0–10000 (divide by 100 for 0–100). Mock ~5 agents across tiers and ~4
-pipelines (one active, one completed, one partially-refunded) with a 3–4 node DAG.
+Mock ~6 agents across tiers + skills (code-gen, data-fetch, report-synthesis,
+image-gen, audio-transcribe), and ~4 pipelines incl. one partially-refunded with a
+3–4 node DAG so the cascade shows.
 
 ## Constraints & deliverable
-- It must be **implementable in the existing stack**: Next.js 15 App Router, React 18,
-  Tailwind, `@solana/wallet-adapter-react` (don't invent a backend; data comes from a
-  REST indexer and txs go through wallet-adapter). Public/landing/bazaar/pipeline
-  pages are server-rendered for first-paint data; wallet actions are client-side.
-- Deliver as **one runnable React artifact** with mocked data and Tailwind so I can
-  see it now. Inline everything (no external assets/fonts/CDNs). Then list the
-  Tailwind design tokens (colors, radii, spacing, typography) and a short component
-  inventory so it can be ported into the real app.
-- Reference (for tone/data, don't just copy): dashboard https://chainpipe.vercel.app,
-  indexer https://chainpipe-indexer.fly.dev/stats.
+- Implementable in: **Next.js 15 App Router, React 18, Tailwind, wallet-adapter**.
+  Public pages server-rendered for first paint; wallet actions client-side. No
+  invented backend (REST indexer + on-chain txs). Fonts: if a CDN font is blocked in
+  the artifact, fall back gracefully but specify the intended typefaces.
+- Fully responsive; page never scrolls horizontally; wide tables/graphs scroll in
+  their own container. WCAG AA contrast. Respect reduced-motion.
+- **Deliver:** first, 4–6 lines stating your art-direction concept + the exact design
+  tokens (typefaces, type scale, color hex, radii, spacing, elevation). Then a single
+  runnable React+Tailwind artifact, everything inlined, focused on **landing + the
+  pipeline builder + the pipeline DAG detail at very high fidelity**, with the other
+  screens as polished secondary views. Then a short component inventory for porting.
 
-Start by stating the design concept + a token palette in 4–6 lines, then build the
-artifact: landing + bazaar + the pipeline builder + the pipeline DAG detail as the
-hero screens, with the others as polished secondary views. Make it something a Solana
-grant committee screenshots.
+Hold yourself to: "would this win on a design-portfolio site, and would a Solana grant
+committee screenshot it?" If not, push the concept harder. Show craft, restraint, and
+a point of view — not features in boxes.
