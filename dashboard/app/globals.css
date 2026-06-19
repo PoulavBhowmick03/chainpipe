@@ -155,3 +155,19 @@ input[type="range"]::-webkit-slider-thumb {
   outline: none;
   border-color: #14f195;
 }
+
+/* wallet-adapter modal: ensure it sits above the sticky nav and is themed */
+.wallet-adapter-modal {
+  z-index: 9999 !important;
+}
+.wallet-adapter-modal-wrapper {
+  background: #0e1217 !important;
+  border: 1px solid #262d39 !important;
+}
+.wallet-adapter-modal-title {
+  color: #e8ebf0 !important;
+}
+.wallet-adapter-button:not(.wallet-adapter-button-trigger) {
+  font-family: var(--font-geist), sans-serif;
+}
+

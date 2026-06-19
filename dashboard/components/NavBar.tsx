@@ -3,9 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { C, short } from "@/lib/theme";
+
+// Canonical opener (handles the modal + wallet selection reliably); ssr:false
+// because it touches window. Styled inline to match the v2 button.
+const WalletModalButton = dynamic(
+  () => import("@solana/wallet-adapter-react-ui").then((m) => m.WalletModalButton),
+  { ssr: false, loading: () => <span style={{ width: 120 }} /> }
+);
 
 const links = [
   { href: "/bazaar", label: "Bazaar", match: ["/bazaar", "/agent"] },
@@ -18,7 +25,6 @@ const links = [
 export function NavBar() {
   const pathname = usePathname() || "/";
   const { publicKey, disconnect } = useWallet();
-  const { setVisible } = useWalletModal();
   const [role, setRole] = useState<"consumer" | "agent">("consumer");
 
   const isActive = (m: string[]) =>
@@ -62,9 +68,11 @@ export function NavBar() {
             {short(publicKey.toBase58())}
           </button>
         ) : (
-          <button onClick={() => setVisible(true)} style={{ padding: "8px 14px", borderRadius: 7, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+          <WalletModalButton
+            style={{ height: "auto", lineHeight: 1, padding: "8px 14px", borderRadius: 7, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 12, fontFamily: "var(--font-geist)" }}
+          >
             Connect wallet
-          </button>
+          </WalletModalButton>
         )}
       </div>
     </header>
