@@ -20,7 +20,8 @@ export function submitNode(
   agent: PublicKey,
   scoreDelta: number,
   addresses: ChainPipeAddresses,
-  resultHash: Uint8Array = new Uint8Array(32)
+  resultHash: Uint8Array = new Uint8Array(32),
+  uri: string = ""
 ): Promise<{ signature: TransactionSignature; settlementPda: PublicKey }> {
   return submitCompletion(
     connection,
@@ -30,7 +31,8 @@ export function submitNode(
     agent,
     scoreDelta,
     addresses,
-    resultHash
+    resultHash,
+    uri
   );
 }
 

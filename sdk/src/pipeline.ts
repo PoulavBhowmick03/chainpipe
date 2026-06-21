@@ -30,6 +30,23 @@ export type NodeSettlement = anchor.IdlAccounts<DagEscrow>["nodeSettlement"];
 /** Dispute window length in slots — mirrors `DISPUTE_SLOTS` in the dag_escrow program. */
 export const DISPUTE_SLOTS = 150;
 
+/** Max on-chain delivery URI length (bytes), mirrors `NodeSettlement.uri` size. */
+export const MAX_URI_LEN = 96;
+
+/** Encode a delivery URI string into the fixed 96-byte on-chain buffer + length. */
+export function encodeUri(uri: string): { bytes: number[]; len: number } {
+  const enc = new TextEncoder().encode(uri);
+  if (enc.length > MAX_URI_LEN) throw new Error(`uri exceeds ${MAX_URI_LEN} bytes`);
+  const bytes = new Array(MAX_URI_LEN).fill(0);
+  enc.forEach((b, i) => (bytes[i] = b));
+  return { bytes, len: enc.length };
+}
+
+/** Decode the on-chain 96-byte URI buffer + length back to a string. */
+export function decodeUri(uri: number[] | Uint8Array, uriLen: number): string {
+  return new TextDecoder().decode(Uint8Array.from(Array.from(uri).slice(0, uriLen)));
+}
+
 export interface NodeInput {
   allocationUsdc: bigint;
   deadlineSlotsFromNow: bigint;
@@ -156,13 +173,15 @@ export async function submitCompletion(
   agent: PublicKey,
   scoreDelta: number,
   addresses: ChainPipeAddresses,
-  resultHash: Uint8Array = new Uint8Array(32)
+  resultHash: Uint8Array = new Uint8Array(32),
+  uri: string = ""
 ): Promise<{ signature: TransactionSignature; settlementPda: PublicKey }> {
   const { dag } = loadPrograms(connection, addresses, facilitator);
   const node = nodePda(addresses, pipeline, nodeIndex);
   const settlement = settlementPda(addresses, node);
+  const { bytes: uriBytes, len: uriLen } = encodeUri(uri);
   const signature = await dag.methods
-    .submitCompletion(nodeIndex, scoreDelta, Array.from(resultHash))
+    .submitCompletion(nodeIndex, scoreDelta, Array.from(resultHash), uriBytes, uriLen)
     .accountsPartial({
       pipelineConfig: pipelineConfigPda(addresses),
       pipeline,
@@ -184,12 +203,13 @@ export async function disputeNode(
   pipeline: PublicKey,
   nodeIndex: number,
   addresses: ChainPipeAddresses,
-  reasonHash: Uint8Array = new Uint8Array(32)
+  reasonHash: Uint8Array = new Uint8Array(32),
+  reasonCode: number = 0
 ): Promise<{ signature: TransactionSignature }> {
   const { dag } = loadPrograms(connection, addresses, consumer);
   const node = nodePda(addresses, pipeline, nodeIndex);
   const signature = await dag.methods
-    .disputeNode(nodeIndex, Array.from(reasonHash))
+    .disputeNode(nodeIndex, Array.from(reasonHash), reasonCode)
     .accountsPartial({
       pipeline,
       node,

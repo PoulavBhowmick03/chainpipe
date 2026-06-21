@@ -104,7 +104,7 @@ validator, NOT the framework CLI. Use `PATH="$HOME/.avm/bin:$PATH" anchor …`
 (avm-managed anchor-cli 0.31.1) for all build/test/deploy.
 
 - [x] **Phase 11** — Unblock: IDL sync (target/ → sdk + dashboard), SDK build fixed, all builds green, `anchor test` 41/41 (incl. 4 dispute tests)
-- [ ] **Phase 12** — Proof-of-delivery in dag_escrow (NodeSettlement uri/uri_len, submit_completion, events, tests)
+- [x] **Phase 12** — Proof-of-delivery in dag_escrow — NodeSettlement uri/uri_len, submit_completion+InvalidUri, dispute_node reason_code, events; SDK encodeUri/decodeUri; `anchor test` 43/43
 - [ ] **Phase 13** — Devnet redeploy (dispute+proof) + facilitator dispute routes + e2e + reseed
 - [ ] **Phase 14** — Proof-of-delivery off-chain UX (SDK verifyDelivery, facilitator integrity, dashboard)
 - [ ] **Phase 15** — Production hardening: config realloc migrations, dispute-window/pause/slash-cap, two-step operator

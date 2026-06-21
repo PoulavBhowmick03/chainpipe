@@ -841,7 +841,10 @@ export type DagEscrow = {
     {
       "name": "disputeNode",
       "docs": [
-        "The consumer challenges a submitted node within the dispute window."
+        "The consumer challenges a submitted node within the dispute window.",
+        "`reason_code`: 0 = HashMismatch, 1 = Unavailable, 2 = IncorrectOutput.",
+        "Codes 0/1 are objectively checkable against `uri`+`result_hash`; 2 is",
+        "subjective and resolves via the arbiter. Recorded for triage only."
       ],
       "discriminator": [
         109,
@@ -909,6 +912,10 @@ export type DagEscrow = {
               32
             ]
           }
+        },
+        {
+          "name": "reasonCode",
+          "type": "u8"
         }
       ]
     },
@@ -1912,6 +1919,19 @@ export type DagEscrow = {
               32
             ]
           }
+        },
+        {
+          "name": "uri",
+          "type": {
+            "array": [
+              "u8",
+              96
+            ]
+          }
+        },
+        {
+          "name": "uriLen",
+          "type": "u8"
         }
       ]
     }
@@ -2225,11 +2245,16 @@ export type DagEscrow = {
     },
     {
       "code": 6024,
+      "name": "invalidUri",
+      "msg": "Delivery URI length exceeds 96-byte buffer"
+    },
+    {
+      "code": 6025,
       "name": "pipelineHasActivity",
       "msg": "Pipeline has claimed or settled nodes"
     },
     {
-      "code": 6025,
+      "code": 6026,
       "name": "mathOverflow",
       "msg": "Math overflow"
     }
@@ -2353,6 +2378,10 @@ export type DagEscrow = {
                 32
               ]
             }
+          },
+          {
+            "name": "reasonCode",
+            "type": "u8"
           }
         ]
       }
@@ -2461,12 +2490,34 @@ export type DagEscrow = {
           },
           {
             "name": "resultHash",
+            "docs": [
+              "sha256 of the delivered output bytes. Anyone can fetch `uri`, recompute",
+              "sha256, and prove a mismatch — this is what makes a dispute objective."
+            ],
             "type": {
               "array": [
                 "u8",
                 32
               ]
             }
+          },
+          {
+            "name": "uri",
+            "docs": [
+              "Content-addressed retrieval pointer for the delivered output (IPFS CID,",
+              "Arweave id, or https URL). Fixed buffer keeps INIT_SPACE exact; `uri_len`",
+              "is the meaningful prefix length."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                96
+              ]
+            }
+          },
+          {
+            "name": "uriLen",
+            "type": "u8"
           },
           {
             "name": "submittedAtSlot",
@@ -2538,6 +2589,19 @@ export type DagEscrow = {
                 32
               ]
             }
+          },
+          {
+            "name": "uri",
+            "type": {
+              "array": [
+                "u8",
+                96
+              ]
+            }
+          },
+          {
+            "name": "uriLen",
+            "type": "u8"
           },
           {
             "name": "disputeUntil",

@@ -356,11 +356,14 @@ pub mod dag_escrow {
         node_index: u8,
         score_delta: i16,
         result_hash: [u8; 32],
+        uri: [u8; 96],
+        uri_len: u8,
     ) -> Result<()> {
         require!(
             ctx.accounts.facilitator.key() == ctx.accounts.pipeline_config.facilitator_authority,
             DagError::UnauthorizedFacilitator
         );
+        require!((uri_len as usize) <= 96, DagError::InvalidUri);
         let clock = Clock::get()?;
         {
             let node = &ctx.accounts.node;
@@ -371,6 +374,8 @@ pub mod dag_escrow {
         let s = &mut ctx.accounts.settlement;
         s.node = ctx.accounts.node.key();
         s.result_hash = result_hash;
+        s.uri = uri;
+        s.uri_len = uri_len;
         s.submitted_at_slot = clock.slot;
         s.score_delta = score_delta;
         s.disputed = false;
@@ -382,13 +387,23 @@ pub mod dag_escrow {
             node_index,
             agent: ctx.accounts.agent.key(),
             result_hash,
+            uri,
+            uri_len,
             dispute_until: clock.slot.saturating_add(DISPUTE_SLOTS),
         });
         Ok(())
     }
 
     /// The consumer challenges a submitted node within the dispute window.
-    pub fn dispute_node(ctx: Context<DisputeNode>, node_index: u8, reason_hash: [u8; 32]) -> Result<()> {
+    /// `reason_code`: 0 = HashMismatch, 1 = Unavailable, 2 = IncorrectOutput.
+    /// Codes 0/1 are objectively checkable against `uri`+`result_hash`; 2 is
+    /// subjective and resolves via the arbiter. Recorded for triage only.
+    pub fn dispute_node(
+        ctx: Context<DisputeNode>,
+        node_index: u8,
+        reason_hash: [u8; 32],
+        reason_code: u8,
+    ) -> Result<()> {
         let clock = Clock::get()?;
         {
             let node = &ctx.accounts.node;
@@ -401,7 +416,7 @@ pub mod dag_escrow {
         );
         ctx.accounts.settlement.disputed = true;
         ctx.accounts.node.status = NodeStatus::Disputed;
-        emit!(NodeDisputed { pipeline: ctx.accounts.pipeline.key(), node_index, reason_hash });
+        emit!(NodeDisputed { pipeline: ctx.accounts.pipeline.key(), node_index, reason_hash, reason_code });
         Ok(())
     }
 
@@ -931,7 +946,14 @@ pub struct PipelineNode {
 #[derive(InitSpace)]
 pub struct NodeSettlement {
     pub node: Pubkey,
+    /// sha256 of the delivered output bytes. Anyone can fetch `uri`, recompute
+    /// sha256, and prove a mismatch — this is what makes a dispute objective.
     pub result_hash: [u8; 32],
+    /// Content-addressed retrieval pointer for the delivered output (IPFS CID,
+    /// Arweave id, or https URL). Fixed buffer keeps INIT_SPACE exact; `uri_len`
+    /// is the meaningful prefix length.
+    pub uri: [u8; 96],
+    pub uri_len: u8,
     pub submitted_at_slot: u64,
     pub score_delta: i16,
     pub disputed: bool,
@@ -1317,6 +1339,8 @@ pub struct NodeSubmitted {
     pub node_index: u8,
     pub agent: Pubkey,
     pub result_hash: [u8; 32],
+    pub uri: [u8; 96],
+    pub uri_len: u8,
     pub dispute_until: u64,
 }
 
@@ -1325,6 +1349,7 @@ pub struct NodeDisputed {
     pub pipeline: Pubkey,
     pub node_index: u8,
     pub reason_hash: [u8; 32],
+    pub reason_code: u8,
 }
 
 #[event]
@@ -1385,6 +1410,8 @@ pub enum DagError {
     InvalidTreasury,
     #[msg("Consumer token account has wrong owner")]
     InvalidConsumerAccount,
+    #[msg("Delivery URI length exceeds 96-byte buffer")]
+    InvalidUri,
     #[msg("Pipeline has claimed or settled nodes")]
     PipelineHasActivity,
     #[msg("Math overflow")]

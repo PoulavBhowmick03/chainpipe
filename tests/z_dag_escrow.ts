@@ -497,11 +497,18 @@ describe("dag_escrow (integration)", () => {
   const settlementPda = (node: PublicKey) =>
     PublicKey.findProgramAddressSync([Buffer.from("settlement"), node.toBuffer()], de.programId)[0];
 
-  const submitCompletion = (pipeline: PublicKey, idx: number, agent: PublicKey, scoreDelta: number) =>
-    de.methods.submitCompletion(idx, scoreDelta, Array(32).fill(7)).accountsPartial({
+  const enc96 = (s: string) => {
+    const e = Buffer.from(s, "utf8"); const a = Array(96).fill(0); e.forEach((b, i) => (a[i] = b));
+    return { bytes: a, len: e.length };
+  };
+  const TEST_URI = "ipfs://bafkreiproofofdeliverytesturi";
+  const submitCompletion = (pipeline: PublicKey, idx: number, agent: PublicKey, scoreDelta: number, uri = TEST_URI) => {
+    const { bytes, len } = enc96(uri);
+    return de.methods.submitCompletion(idx, scoreDelta, Array(32).fill(7), bytes, len).accountsPartial({
       pipelineConfig: pipelineConfigPda, pipeline, node: nodePda(pipeline, idx), facilitator: facilitator.publicKey,
       agent, settlement: settlementPda(nodePda(pipeline, idx)), systemProgram: anchor.web3.SystemProgram.programId,
     }).signers([facilitator]).rpc();
+  };
 
   const finalizeNode = (pipeline: PublicKey, idx: number, agent: PublicKey) =>
     de.methods.finalizeNode(idx).accountsPartial({
@@ -538,6 +545,23 @@ describe("dag_escrow (integration)", () => {
     assert.deepEqual(node.status, { submitted: {} });
     const s = await de.account.nodeSettlement.fetch(settlementPda(nodePda(PD.pipeline, 0)));
     assert.equal(s.disputed, false);
+    // proof-of-delivery: uri + uri_len + result_hash round-trip on-chain
+    assert.equal(s.uriLen, Buffer.from(TEST_URI, "utf8").length);
+    assert.equal(Buffer.from((s.uri as number[]).slice(0, s.uriLen)).toString("utf8"), TEST_URI);
+    assert.deepEqual(s.resultHash, Array(32).fill(7));
+  });
+
+  it("submit_completion rejects a uri_len exceeding the 96-byte buffer (InvalidUri)", async () => {
+    const PX = await createPipeline(77, [{ alloc: 10 * USDC, deadline: FAR, deps: 0, tier: 1 }]);
+    const a = await makeAgent(T1);
+    await claim(a, PX.pipeline, 0);
+    await expectErr(
+      de.methods.submitCompletion(0, 0, Array(32).fill(1), Array(96).fill(1), 200).accountsPartial({
+        pipelineConfig: pipelineConfigPda, pipeline: PX.pipeline, node: nodePda(PX.pipeline, 0), facilitator: facilitator.publicKey,
+        agent: a.publicKey, settlement: settlementPda(nodePda(PX.pipeline, 0)), systemProgram: anchor.web3.SystemProgram.programId,
+      }).signers([facilitator]).rpc(),
+      "InvalidUri"
+    );
   });
 
   it("finalize before the dispute window elapses fails", async () => {
@@ -548,7 +572,7 @@ describe("dag_escrow (integration)", () => {
     await claim(agentG, PD.pipeline, 1);
     await cacheJob(PD.pipeline, 1);
     await submitCompletion(PD.pipeline, 1, agentG.publicKey, 800);
-    await de.methods.disputeNode(1, Array(32).fill(3)).accountsPartial({
+    await de.methods.disputeNode(1, Array(32).fill(3), 0).accountsPartial({
       pipeline: PD.pipeline, node: nodePda(PD.pipeline, 1), settlement: settlementPda(nodePda(PD.pipeline, 1)), consumer: consumer.publicKey,
     }).signers([consumer]).rpc();
     let node = await de.account.pipelineNode.fetch(nodePda(PD.pipeline, 1));
@@ -588,5 +612,36 @@ describe("dag_escrow (integration)", () => {
     assert.deepEqual(node.status, { settled: {} });
     const repF = await rb.account.agentReputation.fetch(rbRepPda(agentF.publicKey));
     assert.equal(repF.totalSettled, 1);
+  });
+
+  it("frivolous dispute → resolve upheld=false pays the agent + records completion", async () => {
+    const agentH = await makeAgent(T1);
+    const PH = await createPipeline(88, [{ alloc: 30 * USDC, deadline: FAR, deps: 0, tier: 1 }]);
+    await claim(agentH, PH.pipeline, 0);
+    await cacheJob(PH.pipeline, 0);
+    await submitCompletion(PH.pipeline, 0, agentH.publicKey, 900);
+    // consumer disputes (claims incorrect output — reason_code 2, subjective)
+    await de.methods.disputeNode(0, Array(32).fill(9), 2).accountsPartial({
+      pipeline: PH.pipeline, node: nodePda(PH.pipeline, 0), settlement: settlementPda(nodePda(PH.pipeline, 0)), consumer: consumer.publicKey,
+    }).signers([consumer]).rpc();
+    assert.deepEqual((await de.account.pipelineNode.fetch(nodePda(PH.pipeline, 0))).status, { disputed: {} });
+
+    const agentAta = getAssociatedTokenAddressSync(mint, agentH.publicKey);
+    const before = Number((await getAccount(connection, agentAta)).amount);
+    // arbiter rejects the dispute (upheld=false): node settles, agent paid
+    await de.methods.resolveDispute(0, false).accountsPartial({
+      pipelineConfig: pipelineConfigPda, pipeline: PH.pipeline, node: nodePda(PH.pipeline, 0), settlement: settlementPda(nodePda(PH.pipeline, 0)),
+      facilitator: facilitator.publicKey, vault: getAssociatedTokenAddressSync(mint, PH.pipeline, true), stakeMint: mint, agent: agentH.publicKey,
+      agentTokenAccount: agentAta, operatorTreasury, consumerTokenAccount: consumerAta,
+      dagAuthority: dagAuthPda, registryConfig: brConfigPda, agentStake: brStakePda(agentH.publicKey), agentStakeVault: brVault(agentH.publicKey),
+      bondedRegistryProgram: br.programId, bridgeConfig: rbConfigPda, agentReputation: rbRepPda(agentH.publicKey), jobRecord: rbJobPda(jobId(PH.pipeline, 0)),
+      reputationBridgeProgram: rb.programId, tokenProgram: TOKEN_PROGRAM_ID, systemProgram: anchor.web3.SystemProgram.programId,
+    }).signers([facilitator]).rpc();
+
+    const after = Number((await getAccount(connection, agentAta)).amount);
+    const fee = Math.floor((30 * USDC * FEE_BPS) / 10_000);
+    assert.equal(after - before, 30 * USDC - fee, "agent paid alloc - fee");
+    assert.deepEqual((await de.account.pipelineNode.fetch(nodePda(PH.pipeline, 0))).status, { settled: {} });
+    assert.equal((await rb.account.agentReputation.fetch(rbRepPda(agentH.publicKey))).totalSettled, 1);
   });
 });
