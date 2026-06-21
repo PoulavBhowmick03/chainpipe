@@ -1,6 +1,12 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import nacl from "tweetnacl";
-import { getPipeline, ChainPipeAddresses, PipelineNode } from "@chainpipe/solana";
+import {
+  getPipeline,
+  getSettlement,
+  DISPUTE_SLOTS,
+  ChainPipeAddresses,
+  PipelineNode,
+} from "@chainpipe/solana";
 
 export interface CompletionVerification {
   ok: boolean;

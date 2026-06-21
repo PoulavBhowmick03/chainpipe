@@ -492,4 +492,101 @@ describe("dag_escrow (integration)", () => {
     const jr = await rb.account.jobRecord.fetch(rbJobPda(node0Job));
     assert.deepEqual(jr.outcome, { settled: {} });
   });
+
+  // ---- optimistic settlement / dispute layer ----
+  const settlementPda = (node: PublicKey) =>
+    PublicKey.findProgramAddressSync([Buffer.from("settlement"), node.toBuffer()], de.programId)[0];
+
+  const submitCompletion = (pipeline: PublicKey, idx: number, agent: PublicKey, scoreDelta: number) =>
+    de.methods.submitCompletion(idx, scoreDelta, Array(32).fill(7)).accountsPartial({
+      pipelineConfig: pipelineConfigPda, pipeline, node: nodePda(pipeline, idx), facilitator: facilitator.publicKey,
+      agent, settlement: settlementPda(nodePda(pipeline, idx)), systemProgram: anchor.web3.SystemProgram.programId,
+    }).signers([facilitator]).rpc();
+
+  const finalizeNode = (pipeline: PublicKey, idx: number, agent: PublicKey) =>
+    de.methods.finalizeNode(idx).accountsPartial({
+      pipelineConfig: pipelineConfigPda, pipeline, node: nodePda(pipeline, idx), settlement: settlementPda(nodePda(pipeline, idx)),
+      caller: facilitator.publicKey, vault: getAssociatedTokenAddressSync(mint, pipeline, true), stakeMint: mint, agent,
+      agentTokenAccount: getAssociatedTokenAddressSync(mint, agent), operatorTreasury, dagAuthority: dagAuthPda,
+      registryConfig: brConfigPda, agentStake: brStakePda(agent), bondedRegistryProgram: br.programId,
+      bridgeConfig: rbConfigPda, agentReputation: rbRepPda(agent), jobRecord: rbJobPda(jobId(pipeline, idx)), reputationBridgeProgram: rb.programId,
+      tokenProgram: TOKEN_PROGRAM_ID, systemProgram: anchor.web3.SystemProgram.programId,
+    }).signers([facilitator]).rpc();
+
+  // job_id is on the node; read it lazily inside the helpers that need it.
+  let _jobCache: Record<string, Buffer> = {};
+  const jobId = (pipeline: PublicKey, idx: number) => _jobCache[`${pipeline.toBase58()}:${idx}`];
+  const cacheJob = async (pipeline: PublicKey, idx: number) => {
+    const n = await de.account.pipelineNode.fetch(nodePda(pipeline, idx));
+    _jobCache[`${pipeline.toBase58()}:${idx}`] = Buffer.from(n.jobId as number[]);
+  };
+
+  let PD: { pipeline: PublicKey; nodePdas: PublicKey[] };
+  let agentF: Keypair, agentG: Keypair;
+
+  it("submit_completion moves a claimed node to Submitted (no payout yet)", async () => {
+    agentF = await makeAgent(T1);
+    agentG = await makeAgent(T1);
+    PD = await createPipeline(7, [
+      { alloc: 20 * USDC, deadline: FAR, deps: 0, tier: 1 },
+      { alloc: 15 * USDC, deadline: FAR, deps: 0, tier: 1 },
+    ]);
+    await claim(agentF, PD.pipeline, 0);
+    await cacheJob(PD.pipeline, 0);
+    await submitCompletion(PD.pipeline, 0, agentF.publicKey, 1000);
+    const node = await de.account.pipelineNode.fetch(nodePda(PD.pipeline, 0));
+    assert.deepEqual(node.status, { submitted: {} });
+    const s = await de.account.nodeSettlement.fetch(settlementPda(nodePda(PD.pipeline, 0)));
+    assert.equal(s.disputed, false);
+  });
+
+  it("finalize before the dispute window elapses fails", async () => {
+    await expectErr(finalizeNode(PD.pipeline, 0, agentF.publicKey), "DisputeWindowOpen");
+  });
+
+  it("dispute within window → Disputed; resolve upheld refunds consumer + slashes agent", async () => {
+    await claim(agentG, PD.pipeline, 1);
+    await cacheJob(PD.pipeline, 1);
+    await submitCompletion(PD.pipeline, 1, agentG.publicKey, 800);
+    await de.methods.disputeNode(1, Array(32).fill(3)).accountsPartial({
+      pipeline: PD.pipeline, node: nodePda(PD.pipeline, 1), settlement: settlementPda(nodePda(PD.pipeline, 1)), consumer: consumer.publicKey,
+    }).signers([consumer]).rpc();
+    let node = await de.account.pipelineNode.fetch(nodePda(PD.pipeline, 1));
+    assert.deepEqual(node.status, { disputed: {} });
+
+    const stakeBefore = (await br.account.agentStake.fetch(brStakePda(agentG.publicKey))).stakeAmount.toNumber();
+    const consumerBefore = Number((await getAccount(connection, consumerAta)).amount);
+    await de.methods.resolveDispute(1, true).accountsPartial({
+      pipelineConfig: pipelineConfigPda, pipeline: PD.pipeline, node: nodePda(PD.pipeline, 1), settlement: settlementPda(nodePda(PD.pipeline, 1)),
+      facilitator: facilitator.publicKey, vault: getAssociatedTokenAddressSync(mint, PD.pipeline, true), stakeMint: mint, agent: agentG.publicKey,
+      agentTokenAccount: getAssociatedTokenAddressSync(mint, agentG.publicKey), operatorTreasury, consumerTokenAccount: consumerAta,
+      dagAuthority: dagAuthPda, registryConfig: brConfigPda, agentStake: brStakePda(agentG.publicKey), agentStakeVault: brVault(agentG.publicKey),
+      bondedRegistryProgram: br.programId, bridgeConfig: rbConfigPda, agentReputation: rbRepPda(agentG.publicKey), jobRecord: rbJobPda(jobId(PD.pipeline, 1)),
+      reputationBridgeProgram: rb.programId, tokenProgram: TOKEN_PROGRAM_ID, systemProgram: anchor.web3.SystemProgram.programId,
+    }).signers([facilitator]).rpc();
+
+    node = await de.account.pipelineNode.fetch(nodePda(PD.pipeline, 1));
+    assert.deepEqual(node.status, { expired: {} });
+    const stakeAfter = (await br.account.agentStake.fetch(brStakePda(agentG.publicKey))).stakeAmount.toNumber();
+    assert.ok(stakeAfter < stakeBefore, "agent slashed");
+    const consumerAfter = Number((await getAccount(connection, consumerAta)).amount);
+    assert.ok(consumerAfter > consumerBefore, "consumer refunded + slash");
+    const repG = await rb.account.agentReputation.fetch(rbRepPda(agentG.publicKey));
+    assert.equal(repG.totalFailed, 1);
+  });
+
+  it("finalize after the window settles + pays the agent", async () => {
+    const s = await de.account.nodeSettlement.fetch(settlementPda(nodePda(PD.pipeline, 0)));
+    const ready = s.submittedAtSlot.toNumber() + 152;
+    while ((await connection.getSlot("confirmed")) < ready) await new Promise((r) => setTimeout(r, 500));
+    const before = Number((await getAccount(connection, getAssociatedTokenAddressSync(mint, agentF.publicKey))).amount);
+    await finalizeNode(PD.pipeline, 0, agentF.publicKey);
+    const after = Number((await getAccount(connection, getAssociatedTokenAddressSync(mint, agentF.publicKey))).amount);
+    const fee = Math.floor((20 * USDC * FEE_BPS) / 10_000);
+    assert.equal(after - before, 20 * USDC - fee);
+    const node = await de.account.pipelineNode.fetch(nodePda(PD.pipeline, 0));
+    assert.deepEqual(node.status, { settled: {} });
+    const repF = await rb.account.agentReputation.fetch(rbRepPda(agentF.publicKey));
+    assert.equal(repF.totalSettled, 1);
+  });
 });

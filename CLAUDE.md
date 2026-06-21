@@ -93,6 +93,24 @@ Update these as you go:
 - [x] **Phase 9** — E2E devnet script (full loop with real tx signatures) — runs clean; stake×3 tiers → pipeline → settle+fee+rep → tier-gated claim → expire+slash+failure+refund
 - [x] **Phase 10** — Seed script + README + DEPLOYED.md finalization — 5 agents + 3 pipelines seeded; indexer confirmed non-zero (4 pipelines, 11 agents, minTier filter works)
 
+### POST-AUDIT CONTINUATION (Phases 11–17)
+
+A 2026-06-21 end-to-end audit found an uncommitted/half-integrated trust-dispute layer
+and several P0 gaps. These phases finish + harden + package it. Plan:
+`~/.claude/plans/i-have-the-entire-moonlit-badger.md`.
+
+**TOOLCHAIN NOTE:** the `anchor` on PATH (`~/.cargo/bin/anchor`) is the Sigma Prime SSV
+validator, NOT the framework CLI. Use `PATH="$HOME/.avm/bin:$PATH" anchor …`
+(avm-managed anchor-cli 0.31.1) for all build/test/deploy.
+
+- [x] **Phase 11** — Unblock: IDL sync (target/ → sdk + dashboard), SDK build fixed, all builds green, `anchor test` 41/41 (incl. 4 dispute tests)
+- [ ] **Phase 12** — Proof-of-delivery in dag_escrow (NodeSettlement uri/uri_len, submit_completion, events, tests)
+- [ ] **Phase 13** — Devnet redeploy (dispute+proof) + facilitator dispute routes + e2e + reseed
+- [ ] **Phase 14** — Proof-of-delivery off-chain UX (SDK verifyDelivery, facilitator integrity, dashboard)
+- [ ] **Phase 15** — Production hardening: config realloc migrations, dispute-window/pause/slash-cap, two-step operator
+- [ ] **Phase 16** — Hardening redeploy + run migrate_* + upgrade-authority→Squads runbook + docs
+- [ ] **Phase 17** — Grant packaging: honest README/CLAUDE.md, decentralization roadmap, npm publish prep
+
 ---
 
 ## PHASE 0: Repo Scaffold

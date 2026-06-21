@@ -839,6 +839,80 @@ export type DagEscrow = {
       ]
     },
     {
+      "name": "disputeNode",
+      "docs": [
+        "The consumer challenges a submitted node within the dispute window."
+      ],
+      "discriminator": [
+        109,
+        31,
+        184,
+        48,
+        169,
+        52,
+        45,
+        236
+      ],
+      "accounts": [
+        {
+          "name": "pipeline"
+        },
+        {
+          "name": "node",
+          "writable": true
+        },
+        {
+          "name": "settlement",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "node"
+              }
+            ]
+          }
+        },
+        {
+          "name": "consumer",
+          "signer": true,
+          "relations": [
+            "pipeline"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "nodeIndex",
+          "type": "u8"
+        },
+        {
+          "name": "reasonHash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "expireNode",
       "docs": [
         "Permissionless expiry of an overdue node. Cascades expiry to all",
@@ -1079,6 +1153,263 @@ export type DagEscrow = {
       ]
     },
     {
+      "name": "finalizeNode",
+      "docs": [
+        "Permissionless finalize after the dispute window elapses with no dispute:",
+        "pays the agent (minus fee) + operator fee and records completion reputation."
+      ],
+      "discriminator": [
+        124,
+        145,
+        166,
+        100,
+        42,
+        92,
+        177,
+        180
+      ],
+      "accounts": [
+        {
+          "name": "pipelineConfig",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pipeline",
+          "writable": true
+        },
+        {
+          "name": "node",
+          "writable": true
+        },
+        {
+          "name": "settlement",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "node"
+              }
+            ]
+          }
+        },
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pipeline"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stakeMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "stakeMint"
+        },
+        {
+          "name": "agent"
+        },
+        {
+          "name": "agentTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "operatorTreasury",
+          "writable": true
+        },
+        {
+          "name": "dagAuthority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  97,
+                  103,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "registryConfig",
+          "writable": true
+        },
+        {
+          "name": "agentStake",
+          "writable": true
+        },
+        {
+          "name": "bondedRegistryProgram",
+          "address": "26AB6S5crQAkhfx928bnWSHfpQE6wp2Sdt4afFtk7crq"
+        },
+        {
+          "name": "bridgeConfig",
+          "writable": true
+        },
+        {
+          "name": "agentReputation",
+          "writable": true
+        },
+        {
+          "name": "jobRecord",
+          "writable": true
+        },
+        {
+          "name": "reputationBridgeProgram",
+          "address": "6RRfs1Ho1bJ3JWXSy3xVth4BTGHWwVwum74ph2LRWWsf"
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "nodeIndex",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "initialize",
       "docs": [
         "One-time operator setup. Stores the fee, the facilitator authority",
@@ -1145,6 +1476,276 @@ export type DagEscrow = {
       ]
     },
     {
+      "name": "resolveDispute",
+      "docs": [
+        "Arbiter (facilitator authority, v1) resolves a disputed node. Upheld →",
+        "refund the consumer + slash the agent + record a failure. Rejected →",
+        "settle as normal (pay the agent, record completion)."
+      ],
+      "discriminator": [
+        231,
+        6,
+        202,
+        6,
+        96,
+        103,
+        12,
+        230
+      ],
+      "accounts": [
+        {
+          "name": "pipelineConfig",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pipeline",
+          "writable": true
+        },
+        {
+          "name": "node",
+          "writable": true
+        },
+        {
+          "name": "settlement",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "node"
+              }
+            ]
+          }
+        },
+        {
+          "name": "facilitator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pipeline"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stakeMint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "stakeMint"
+        },
+        {
+          "name": "agent"
+        },
+        {
+          "name": "agentTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "operatorTreasury",
+          "writable": true
+        },
+        {
+          "name": "consumerTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "dagAuthority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  97,
+                  103,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "registryConfig",
+          "writable": true
+        },
+        {
+          "name": "agentStake",
+          "writable": true
+        },
+        {
+          "name": "agentStakeVault",
+          "writable": true
+        },
+        {
+          "name": "bondedRegistryProgram",
+          "address": "26AB6S5crQAkhfx928bnWSHfpQE6wp2Sdt4afFtk7crq"
+        },
+        {
+          "name": "bridgeConfig",
+          "writable": true
+        },
+        {
+          "name": "agentReputation",
+          "writable": true
+        },
+        {
+          "name": "jobRecord",
+          "writable": true
+        },
+        {
+          "name": "reputationBridgeProgram",
+          "address": "6RRfs1Ho1bJ3JWXSy3xVth4BTGHWwVwum74ph2LRWWsf"
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "nodeIndex",
+          "type": "u8"
+        },
+        {
+          "name": "upheld",
+          "type": "bool"
+        }
+      ]
+    },
+    {
       "name": "setFacilitatorAuthority",
       "docs": [
         "Operator rotates the facilitator authority (key rotation / decentralization)."
@@ -1202,6 +1803,117 @@ export type DagEscrow = {
           "type": "pubkey"
         }
       ]
+    },
+    {
+      "name": "submitCompletion",
+      "docs": [
+        "Optimistic settlement step 1: the facilitator submits a completion with an",
+        "agent-committed `result_hash` and starts the dispute window. No funds move."
+      ],
+      "discriminator": [
+        155,
+        236,
+        211,
+        88,
+        53,
+        120,
+        74,
+        196
+      ],
+      "accounts": [
+        {
+          "name": "pipelineConfig",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pipeline"
+        },
+        {
+          "name": "node",
+          "writable": true
+        },
+        {
+          "name": "facilitator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "agent"
+        },
+        {
+          "name": "settlement",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "node"
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "nodeIndex",
+          "type": "u8"
+        },
+        {
+          "name": "scoreDelta",
+          "type": "i16"
+        },
+        {
+          "name": "resultHash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
     }
   ],
   "accounts": [
@@ -1216,6 +1928,19 @@ export type DagEscrow = {
         4,
         183,
         36
+      ]
+    },
+    {
+      "name": "nodeSettlement",
+      "discriminator": [
+        16,
+        98,
+        179,
+        116,
+        131,
+        81,
+        215,
+        42
       ]
     },
     {
@@ -1286,6 +2011,19 @@ export type DagEscrow = {
       ]
     },
     {
+      "name": "nodeDisputed",
+      "discriminator": [
+        196,
+        178,
+        203,
+        39,
+        223,
+        192,
+        237,
+        151
+      ]
+    },
+    {
       "name": "nodeExpired",
       "discriminator": [
         75,
@@ -1299,6 +2037,19 @@ export type DagEscrow = {
       ]
     },
     {
+      "name": "nodeResolved",
+      "discriminator": [
+        187,
+        163,
+        11,
+        114,
+        213,
+        215,
+        78,
+        83
+      ]
+    },
+    {
       "name": "nodeSettled",
       "discriminator": [
         163,
@@ -1308,6 +2059,19 @@ export type DagEscrow = {
         159,
         11,
         66,
+        26
+      ]
+    },
+    {
+      "name": "nodeSubmitted",
+      "discriminator": [
+        127,
+        20,
+        20,
+        29,
+        124,
+        86,
+        94,
         26
       ]
     },
@@ -1401,41 +2165,71 @@ export type DagEscrow = {
     },
     {
       "code": 6012,
+      "name": "unauthorizedArbiter",
+      "msg": "Caller is not the configured arbiter"
+    },
+    {
+      "code": 6013,
+      "name": "nodeNotSubmitted",
+      "msg": "Node is not in the Submitted state"
+    },
+    {
+      "code": 6014,
+      "name": "nodeNotDisputed",
+      "msg": "Node is not in the Disputed state"
+    },
+    {
+      "code": 6015,
+      "name": "disputeWindowOpen",
+      "msg": "Dispute window is still open"
+    },
+    {
+      "code": 6016,
+      "name": "disputeWindowClosed",
+      "msg": "Dispute window has closed"
+    },
+    {
+      "code": 6017,
+      "name": "nodeAlreadyDisputed",
+      "msg": "Node is already disputed"
+    },
+    {
+      "code": 6018,
       "name": "nodeNotClaimed",
       "msg": "Node is not claimed"
     },
     {
-      "code": 6013,
+      "code": 6019,
       "name": "nodeNotExpirable",
       "msg": "Node cannot be expired in its current state"
     },
     {
-      "code": 6014,
+      "code": 6020,
       "name": "deadlineNotPassed",
       "msg": "Node deadline has not passed"
     },
     {
-      "code": 6015,
+      "code": 6021,
       "name": "missingSlashAccounts",
       "msg": "Missing accounts required to slash a claimed node"
     },
     {
-      "code": 6016,
+      "code": 6022,
       "name": "invalidTreasury",
       "msg": "Operator treasury account has wrong owner"
     },
     {
-      "code": 6017,
+      "code": 6023,
       "name": "invalidConsumerAccount",
       "msg": "Consumer token account has wrong owner"
     },
     {
-      "code": 6018,
+      "code": 6024,
       "name": "pipelineHasActivity",
       "msg": "Pipeline has claimed or settled nodes"
     },
     {
-      "code": 6019,
+      "code": 6025,
       "name": "mathOverflow",
       "msg": "Math overflow"
     }
@@ -1539,6 +2333,31 @@ export type DagEscrow = {
       }
     },
     {
+      "name": "nodeDisputed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pipeline",
+            "type": "pubkey"
+          },
+          {
+            "name": "nodeIndex",
+            "type": "u8"
+          },
+          {
+            "name": "reasonHash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "nodeExpired",
       "type": {
         "kind": "struct",
@@ -1557,6 +2376,30 @@ export type DagEscrow = {
           },
           {
             "name": "slashed",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "nodeResolved",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pipeline",
+            "type": "pubkey"
+          },
+          {
+            "name": "nodeIndex",
+            "type": "u8"
+          },
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "upheld",
             "type": "bool"
           }
         ]
@@ -1603,6 +2446,48 @@ export type DagEscrow = {
       }
     },
     {
+      "name": "nodeSettlement",
+      "docs": [
+        "Companion account for the optimistic-settlement / dispute flow, created at",
+        "submit_completion and closed at finalize/resolve. Kept separate so PipelineNode",
+        "keeps its on-chain layout (no migration of existing nodes)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "node",
+            "type": "pubkey"
+          },
+          {
+            "name": "resultHash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "submittedAtSlot",
+            "type": "u64"
+          },
+          {
+            "name": "scoreDelta",
+            "type": "i16"
+          },
+          {
+            "name": "disputed",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
       "name": "nodeStatus",
       "type": {
         "kind": "enum",
@@ -1614,10 +2499,49 @@ export type DagEscrow = {
             "name": "claimed"
           },
           {
+            "name": "submitted"
+          },
+          {
+            "name": "disputed"
+          },
+          {
             "name": "settled"
           },
           {
             "name": "expired"
+          }
+        ]
+      }
+    },
+    {
+      "name": "nodeSubmitted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pipeline",
+            "type": "pubkey"
+          },
+          {
+            "name": "nodeIndex",
+            "type": "u8"
+          },
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "resultHash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "disputeUntil",
+            "type": "u64"
           }
         ]
       }

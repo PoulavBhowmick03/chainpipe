@@ -12,6 +12,7 @@ import {
   pipelineConfigPda,
   pipelinePda,
   nodePda,
+  settlementPda,
   dagAuthorityPda,
   registryConfigPda,
   agentStakePda,
@@ -24,6 +25,10 @@ import type { DagEscrow } from "./idl/dag_escrow";
 
 export type Pipeline = anchor.IdlAccounts<DagEscrow>["pipeline"];
 export type PipelineNode = anchor.IdlAccounts<DagEscrow>["pipelineNode"];
+export type NodeSettlement = anchor.IdlAccounts<DagEscrow>["nodeSettlement"];
+
+/** Dispute window length in slots — mirrors `DISPUTE_SLOTS` in the dag_escrow program. */
+export const DISPUTE_SLOTS = 150;
 
 export interface NodeInput {
   allocationUsdc: bigint;
@@ -138,6 +143,162 @@ export async function completeNode(
   return { signature };
 }
 
+/**
+ * Facilitator-only: submit a completion attestation for a claimed node. Starts the
+ * dispute window; no payout yet. The node moves Claimed → Submitted and a companion
+ * NodeSettlement PDA is created.
+ */
+export async function submitCompletion(
+  connection: Connection,
+  facilitator: Keypair,
+  pipeline: PublicKey,
+  nodeIndex: number,
+  agent: PublicKey,
+  scoreDelta: number,
+  addresses: ChainPipeAddresses,
+  resultHash: Uint8Array = new Uint8Array(32)
+): Promise<{ signature: TransactionSignature; settlementPda: PublicKey }> {
+  const { dag } = loadPrograms(connection, addresses, facilitator);
+  const node = nodePda(addresses, pipeline, nodeIndex);
+  const settlement = settlementPda(addresses, node);
+  const signature = await dag.methods
+    .submitCompletion(nodeIndex, scoreDelta, Array.from(resultHash))
+    .accountsPartial({
+      pipelineConfig: pipelineConfigPda(addresses),
+      pipeline,
+      node,
+      facilitator: facilitator.publicKey,
+      agent,
+      settlement,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .signers([facilitator])
+    .rpc();
+  return { signature, settlementPda: settlement };
+}
+
+/** Consumer-only: dispute a Submitted node within the dispute window. */
+export async function disputeNode(
+  connection: Connection,
+  consumer: Keypair,
+  pipeline: PublicKey,
+  nodeIndex: number,
+  addresses: ChainPipeAddresses,
+  reasonHash: Uint8Array = new Uint8Array(32)
+): Promise<{ signature: TransactionSignature }> {
+  const { dag } = loadPrograms(connection, addresses, consumer);
+  const node = nodePda(addresses, pipeline, nodeIndex);
+  const signature = await dag.methods
+    .disputeNode(nodeIndex, Array.from(reasonHash))
+    .accountsPartial({
+      pipeline,
+      node,
+      settlement: settlementPda(addresses, node),
+      consumer: consumer.publicKey,
+    })
+    .signers([consumer])
+    .rpc();
+  return { signature };
+}
+
+/**
+ * Permissionless: finalize a Submitted node after the dispute window elapses with no
+ * dispute. Pays the agent (minus fee) + operator fee, records completion reputation,
+ * and closes the settlement PDA (rent refunded to caller).
+ */
+export async function finalizeNode(
+  connection: Connection,
+  caller: Keypair,
+  pipeline: PublicKey,
+  nodeIndex: number,
+  agent: PublicKey,
+  operatorTreasury: PublicKey,
+  addresses: ChainPipeAddresses
+): Promise<{ signature: TransactionSignature }> {
+  const { dag } = loadPrograms(connection, addresses, caller);
+  const node = nodePda(addresses, pipeline, nodeIndex);
+  const nodeAcc = await dag.account.pipelineNode.fetch(node);
+  const jobId = Uint8Array.from(nodeAcc.jobId);
+  const signature = await dag.methods
+    .finalizeNode(nodeIndex)
+    .accountsPartial({
+      pipelineConfig: pipelineConfigPda(addresses),
+      pipeline,
+      node,
+      settlement: settlementPda(addresses, node),
+      caller: caller.publicKey,
+      vault: vaultAta(addresses.usdcMint, pipeline),
+      stakeMint: addresses.usdcMint,
+      agent,
+      agentTokenAccount: getAssociatedTokenAddressSync(addresses.usdcMint, agent),
+      operatorTreasury,
+      dagAuthority: dagAuthorityPda(addresses),
+      registryConfig: registryConfigPda(addresses),
+      agentStake: agentStakePda(addresses, agent),
+      bondedRegistryProgram: addresses.bondedRegistry,
+      bridgeConfig: bridgeConfigPda(addresses),
+      agentReputation: reputationPda(addresses, agent),
+      jobRecord: jobRecordPda(addresses, jobId),
+      reputationBridgeProgram: addresses.reputationBridge,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .signers([caller])
+    .rpc();
+  return { signature };
+}
+
+/**
+ * Arbiter (facilitator authority, v1) resolves a disputed node. `upheld` → refund the
+ * consumer + slash the agent + record failure; otherwise pay the agent + record
+ * completion. Closes the settlement PDA (rent refunded to facilitator).
+ */
+export async function resolveDispute(
+  connection: Connection,
+  facilitator: Keypair,
+  pipeline: PublicKey,
+  nodeIndex: number,
+  agent: PublicKey,
+  upheld: boolean,
+  operatorTreasury: PublicKey,
+  addresses: ChainPipeAddresses
+): Promise<{ signature: TransactionSignature }> {
+  const { dag } = loadPrograms(connection, addresses, facilitator);
+  const node = nodePda(addresses, pipeline, nodeIndex);
+  const nodeAcc = await dag.account.pipelineNode.fetch(node);
+  const jobId = Uint8Array.from(nodeAcc.jobId);
+  const pipelineAcc = await dag.account.pipeline.fetch(pipeline);
+  const signature = await dag.methods
+    .resolveDispute(nodeIndex, upheld)
+    .accountsPartial({
+      pipelineConfig: pipelineConfigPda(addresses),
+      pipeline,
+      node,
+      settlement: settlementPda(addresses, node),
+      facilitator: facilitator.publicKey,
+      vault: vaultAta(addresses.usdcMint, pipeline),
+      stakeMint: addresses.usdcMint,
+      agent,
+      agentTokenAccount: getAssociatedTokenAddressSync(addresses.usdcMint, agent),
+      operatorTreasury,
+      consumerTokenAccount: getAssociatedTokenAddressSync(addresses.usdcMint, pipelineAcc.consumer),
+      dagAuthority: dagAuthorityPda(addresses),
+      registryConfig: registryConfigPda(addresses),
+      agentStake: agentStakePda(addresses, agent),
+      agentStakeVault: vaultAta(addresses.usdcMint, agentStakePda(addresses, agent)),
+      bondedRegistryProgram: addresses.bondedRegistry,
+      bridgeConfig: bridgeConfigPda(addresses),
+      agentReputation: reputationPda(addresses, agent),
+      jobRecord: jobRecordPda(addresses, jobId),
+      reputationBridgeProgram: addresses.reputationBridge,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .signers([facilitator])
+    .rpc();
+  return { signature };
+}
+
 export async function expireNode(
   connection: Connection,
   caller: Keypair,
@@ -232,6 +393,18 @@ export async function cancelPipeline(
     .signers([consumer])
     .rpc();
   return { signature };
+}
+
+/** Fetch the companion NodeSettlement PDA for a submitted node (null if none). */
+export async function getSettlement(
+  connection: Connection,
+  pipeline: PublicKey,
+  nodeIndex: number,
+  addresses: ChainPipeAddresses
+): Promise<NodeSettlement | null> {
+  const { dag } = loadPrograms(connection, addresses);
+  const node = nodePda(addresses, pipeline, nodeIndex);
+  return dag.account.nodeSettlement.fetchNullable(settlementPda(addresses, node));
 }
 
 export async function getPipeline(
