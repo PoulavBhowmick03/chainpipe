@@ -271,3 +271,9 @@ html, body { max-width: 100%; overflow-x: hidden; }
 @media (max-width: 600px) {
   .cp-in { padding-left: 0; padding-right: 0; }
 }
+
+/* Mobile: fade parallax layers so conduits/grid never cut through hero copy. */
+@media (max-width: 640px) {
+  .px-scene .px-grid { opacity: 0.35 !important; }
+  .px-scene svg.px-layer { opacity: 0.25 !important; }
+}

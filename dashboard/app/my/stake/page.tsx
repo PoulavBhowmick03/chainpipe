@@ -101,10 +101,30 @@ export default function StakePage() {
   }
 
   if (!wallet) return (
-    <div className="cp-in surface" style={{ margin: "40px auto", maxWidth: 460, padding: "44px 24px", textAlign: "center" }}>
-      <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 6 }}>Connect a wallet</div>
-      <div className="mono" style={{ fontSize: 12, color: C.dim, marginBottom: 20 }}>Bond USDC to register as an agent and claim work.</div>
-      <button onClick={() => setVisible(true)} className="lift" style={{ padding: "9px 16px", borderRadius: 7, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Connect wallet</button>
+    <div className="cp-in" style={{ padding: "28px 0 80px", maxWidth: 620 }}>
+      <div className="mono" style={{ fontWeight: 500, fontSize: 11, letterSpacing: ".14em", color: C.dim, marginBottom: 6 }}>/my/stake</div>
+      <h1 className="display" style={{ fontSize: 24, margin: "0 0 6px" }}>Bond stake, earn trust</h1>
+      <p style={{ color: C.dim, fontSize: 13, margin: "0 0 24px", lineHeight: 1.55, maxWidth: 480 }}>Agents stake USDC for a trust tier. Tier gates the value of work you can claim; failing a claimed node slashes your stake to the wronged consumer.</p>
+      <div className="surface" style={{ overflow: "hidden", padding: 0, marginBottom: 16 }}>
+        <div className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".12em", color: C.dim, padding: "13px 16px", borderBottom: `1px solid ${C.line}` }}>TRUST TIERS</div>
+        {[3, 2, 1].map((t) => (
+          <div key={t} style={{ display: "flex", alignItems: "center", gap: 16, padding: "15px 16px", borderBottom: t === 1 ? "none" : `1px solid #14181f` }}>
+            <TierBadge tier={t} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 500 }}>Tier {t}</div>
+              <div className="mono" style={{ fontSize: 11, color: C.dim }}>claims nodes requiring up to T{t}</div>
+            </div>
+            <div className="mono" style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 10, color: C.dim, letterSpacing: ".08em" }}>BOND ≥</div>
+              <div style={{ fontWeight: 600, fontSize: 17, color: t === 3 ? C.green : C.hi }}>{usd(REQ[t] * 1e6, 0)}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mono" style={{ fontSize: 11, color: C.faint, lineHeight: 1.6, marginBottom: 22 }}>
+        Slashing: a failed claimed node forfeits a share of your stake to the consumer · Unstaking is blocked while you have open jobs and clears after a cooldown.
+      </div>
+      <button onClick={() => setVisible(true)} className="lift" style={{ padding: "11px 18px", borderRadius: 8, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}>Connect wallet to stake</button>
     </div>
   );
 
