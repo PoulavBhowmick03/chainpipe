@@ -109,7 +109,7 @@ validator, NOT the framework CLI. Use `PATH="$HOME/.avm/bin:$PATH" anchor …`
 - [x] **Phase 14** — Proof-of-delivery off-chain UX — SDK deliveryMessage/verifyDelivery, facilitator uri-binding + integrity check, dashboard /work upload+sign + SettlementPanel (verify/dispute/finalize); units 7/7, next build 0 errors
 - [x] **Phase 15** — Production hardening — pause, configurable+snapshotted dispute window, slash cap, two-step operator transfer, realloc migrate_* across all 3 programs (Boxed ExpireNode to fix 4KB stack); anchor test 52/52
 - [~] **Phase 16** — migrate-configs.mts + SECURITY.md Squads/migration runbook + DEPLOYED.md ops block DONE; live devnet deploy+migrate batched w/ P13 (BLOCKERS D6, faucet-gated)
-- [ ] **Phase 17** — Grant packaging: honest README/CLAUDE.md, decentralization roadmap, npm publish prep
+- [x] **Phase 17** — Grant packaging — honest README (dispute/proof/hardening, demo script), DECENTRALIZATION.md roadmap, AUDIT/CLAUDE test counts reconciled (52), SDK npm pack clean (publish = human step)
 
 ---
 
@@ -1166,8 +1166,8 @@ All phases must show `[x] DONE`. If any show `[ ]` or `[~]`, continue working.
 
 ### Final Verification Checklist — Phase 10
 
-- [x] All 10 phases show `[x] DONE` in CLAUDE.md phase tracker
-- [x] `anchor test` passes (all 37 tests across 3 programs)
+- [x] All 10 phases show `[x] DONE` in CLAUDE.md phase tracker (see Post-Audit Continuation 11–17 above)
+- [x] `anchor test` passes (52 tests across 3 programs after the dispute/proof/hardening layers; was 37)
 - [x] `cd sdk && npm run build` passes
 - [x] `cd facilitator && npm run build` passes
 - [x] `cd dashboard && next build` passes

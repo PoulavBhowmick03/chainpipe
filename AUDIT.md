@@ -7,14 +7,18 @@ missing, and what's required before real users can rely on it for real work._
 
 ChainPipe is a **working devnet prototype** of two real primitives — DAG pipeline
 escrow with cascading refunds, and a bonded agent registry with facilitator-gated
-reputation. All core on-chain flows are implemented, tested (37 program tests),
-deployed, and exercised end-to-end with real transactions. The frontend, SDK,
-facilitator, and indexer are live.
+reputation — plus an optimistic-settlement **dispute layer** with content-addressed
+**proof-of-delivery** and a **production-hardening** pass (pause, configurable dispute
+window, per-incident slash cap, two-step operator transfer). All core on-chain flows are
+implemented, tested (**52 program tests**), and exercised end-to-end. The frontend, SDK,
+facilitator, and indexer are live. _(The dispute/proof/hardening binaries are localnet-
+green and pending a funded devnet upgrade — see BLOCKERS.md D6.)_
 
 **It is not yet usable for real economic work.** The remaining gaps are: it runs on
-devnet with a play-money mint (no real value), and job completion is still
-facilitator-attested rather than proven (a `result_hash` commitment is now in
-place as the first step). Several earlier issues have since been addressed (see the
+devnet with a play-money mint (no real value); job-delivery *integrity/availability/
+authorship* are now provable + disputable on-chain, but *subjective quality* rulings still
+rest with a v1 facilitator-arbiter (see [`DECENTRALIZATION.md`](./DECENTRALIZATION.md)).
+Several earlier issues have since been addressed (see the
 **Update** section below): the "8004/ATOM" overclaim is reworded, facilitator-key
 rotation and a proof-of-delivery commitment are implemented, CI + tests + an agent
 work console + durable storage are live. Full decentralization (multisig upgrade
@@ -66,9 +70,11 @@ funds, external audit, npm publish) or deliberately-deferred risky migrations.
 - **3 Anchor programs on devnet** (`bonded_registry`, `dag_escrow`,
   `reputation_bridge`), SBPFv3, initialized and wired via a `dag_authority` PDA so
   only `dag_escrow` can slash stake / write reputation.
-- **37/37 program tests** passing (stake/tier/slash, DAG creation + cycle
+- **52/52 program tests** passing (stake/tier/slash, DAG creation + cycle
   rejection, claim/complete with fee, expire + cascade refund + slash + failure
-  reputation, cancel, replay guard).
+  reputation, cancel, replay guard, optimistic submit + dispute + finalize +
+  proof-of-delivery, and the hardening suite: pause, dispute-window snapshot,
+  slash cap, two-step operator, migration guards).
 - **End-to-end devnet run** (`scripts/e2e-devnet.mts`) with real tx signatures:
   3-tier staking → pipeline → settle + fee + reputation → tier-gated claim →
   expire + slash + cascade refund.
