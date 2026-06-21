@@ -73,18 +73,18 @@ export function PipelineBuilder() {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "stretch" }}>
       {/* canvas */}
-      <div style={{ flex: "3 1 460px", minWidth: 300, border: `1px solid ${C.line}`, borderRadius: 10, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div className="surface" style={{ flex: "3 1 460px", minWidth: 300, overflow: "hidden", display: "flex", flexDirection: "column", padding: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: `1px solid ${C.line}`, background: C.bg }}>
           <span className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".1em", color: C.dim }}>DAG · {nodes.length} NODES</span>
           <div style={{ flex: 1 }} />
-          <button onClick={addNode} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 11px", borderRadius: 7, border: `1px solid ${C.line2}`, background: C.panel, color: C.hi, fontWeight: 500, fontSize: 12, cursor: "pointer" }}><span className="mono" style={{ color: C.green }}>+</span> Add node</button>
+          <button onClick={addNode} className="lift" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 11px", borderRadius: 7, border: `1px solid ${C.line2}`, background: C.panel, color: C.hi, fontWeight: 500, fontSize: 12, cursor: "pointer" }}><span className="mono" style={{ color: C.green }}>+</span> Add node</button>
         </div>
         <DagCanvas nodes={dagNodes} onNodeClick={setSel} selId={sel} height={320} />
       </div>
 
       {/* sidebar */}
       <div style={{ flex: "1 1 290px", minWidth: 270, display: "flex", flexDirection: "column", gap: 14 }}>
-        <div style={{ border: `1px solid ${C.line}`, borderRadius: 10, padding: 16 }}>
+        <div className="surface-raised" style={{ padding: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14 }}>
             <span className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".12em", color: C.dim }}>BUDGET LOCKED</span>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -96,12 +96,12 @@ export function PipelineBuilder() {
             <span className="mono" style={{ fontWeight: 600, fontSize: 30, letterSpacing: "-.02em", color: over ? C.red : C.hi }}>{usd(total * 1e6, 2)}</span>
             <span className="mono" style={{ fontSize: 12, color: C.dim }}>/ {usd(budget * 1e6, 0)}</span>
           </div>
-          <div style={{ height: 5, borderRadius: 3, background: C.line, overflow: "hidden" }}><div style={{ height: "100%", width: Math.min(100, budget ? (total / budget) * 100 : 0) + "%", background: over ? C.red : C.green, transition: "width .3s" }} /></div>
+          <div style={{ height: 6, borderRadius: 3, background: C.bg0, overflow: "hidden", boxShadow: "inset 0 1px 2px rgba(0,0,0,.6)" }}><div style={{ height: "100%", width: Math.min(100, budget ? (total / budget) * 100 : 0) + "%", background: `linear-gradient(90deg, ${over ? C.red : C.green}55, ${over ? C.red : C.green})`, boxShadow: `0 0 10px ${over ? C.red : C.green}66`, transition: "width .3s var(--ease)" }} /></div>
           <div className="mono" style={{ fontSize: 11, color: over ? C.red : C.dim, marginTop: 8 }}>{over ? "over budget by " + usd(-remain * 1e6, 2) : usd(remain * 1e6, 2) + " unallocated"}</div>
         </div>
 
         {selNode ? (
-          <div style={{ border: `1px solid ${C.line2}`, borderRadius: 10, padding: 16, background: C.bg }}>
+          <div className="surface" style={{ padding: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <span className="mono" style={{ fontWeight: 500, fontSize: 11, letterSpacing: ".1em", color: C.tx }}>NODE {idx(selNode.id)}</span>
               <button onClick={() => removeNode(selNode.id)} className="mono" style={{ background: "none", border: "none", color: C.red, fontWeight: 500, fontSize: 11, cursor: "pointer" }}>remove</button>
@@ -140,7 +140,7 @@ export function PipelineBuilder() {
           <div style={{ border: `1px dashed ${C.line}`, borderRadius: 10, padding: 20, textAlign: "center", color: C.faint, fontSize: 12, lineHeight: 1.5 }}>Select a node to set allocation, deadline, tier &amp; dependencies.</div>
         )}
 
-        <button onClick={create} disabled={busy || !wallet} style={{ padding: 13, borderRadius: 8, border: `1px solid ${valid && wallet ? C.hi : C.line}`, fontWeight: 600, fontSize: 13, cursor: valid && wallet ? "pointer" : "not-allowed", background: valid && wallet ? C.hi : "transparent", color: valid && wallet ? C.bg0 : C.faint }}>
+        <button onClick={create} disabled={busy || !wallet} className="lift" style={{ padding: 13, borderRadius: 8, border: `1px solid ${valid && wallet ? C.hi : C.line}`, fontWeight: 600, fontSize: 13, cursor: valid && wallet ? "pointer" : "not-allowed", background: valid && wallet ? C.hi : "transparent", color: valid && wallet ? C.bg0 : C.faint, boxShadow: valid && wallet ? "0 0 18px rgba(20,241,149,.12)" : "none" }}>
           {busy ? "Locking…" : !wallet ? "Connect wallet to create" : valid ? `Lock ${usd(total * 1e6, 2)} · create` : "Fix allocation to continue"}
         </button>
         {error && <div className="mono" style={{ fontSize: 11, color: C.red, textAlign: "center", wordBreak: "break-word" }}>{error}</div>}
