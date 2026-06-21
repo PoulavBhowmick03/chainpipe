@@ -22,8 +22,16 @@ export default function PipelinePage() {
     getPipeline(pda).then(setP).catch(() => setErr(true));
   }, [pda]);
 
-  if (err) return <p className="mono" style={{ color: C.dim, padding: "28px 0" }}>Pipeline not found or indexer offline.</p>;
-  if (!p) return <p className="mono" style={{ color: C.dim, padding: "28px 0" }}>Loading…</p>;
+  if (err) return (
+    <div className="cp-in surface" style={{ margin: "40px 0", padding: "40px 24px", textAlign: "center" }}>
+      <div className="mono" style={{ color: C.dim, fontSize: 13 }}>Pipeline not found, or the indexer is offline.</div>
+    </div>
+  );
+  if (!p) return (
+    <div className="surface" style={{ margin: "40px 0", padding: "40px 24px", textAlign: "center" }}>
+      <div className="mono cp-blink" style={{ color: C.dim, fontSize: 13 }}>Loading pipeline…</div>
+    </div>
+  );
 
   const stKey = Object.keys(p.status)[0] || "active";
   const num = (s: string) => Number(s) / 1e6;
@@ -49,10 +57,10 @@ export default function PipelinePage() {
       </div>
       <div className="mono" style={{ fontSize: 12, color: C.faint, marginBottom: 22 }}>consumer {short(p.consumer)} · nonce {p.nonce}</div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", border: `1px solid ${C.line}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+      <div className="surface" style={{ display: "flex", flexWrap: "wrap", overflow: "hidden", marginBottom: 20, padding: 0 }}>
         <div style={{ flex: "1 1 200px", padding: 18, borderRight: `1px solid ${C.line}` }}>
           <div className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".12em", color: C.dim, marginBottom: 9 }}>TOTAL LOCKED</div>
-          <div className="mono" style={{ fontWeight: 600, fontSize: 30, letterSpacing: "-.02em" }}>{usd(p.totalUsdcLocked, 2)}</div>
+          <div className="mono display" style={{ fontSize: 30 }}>{usd(p.totalUsdcLocked, 2)}</div>
         </div>
         {vault.map((v) => (
           <div key={v.label} style={{ flex: "1 1 130px", padding: 18, borderRight: `1px solid ${C.line}` }}>
@@ -63,7 +71,7 @@ export default function PipelinePage() {
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "stretch" }}>
-        <div style={{ flex: "3 1 460px", minWidth: 300, border: `1px solid ${C.line}`, borderRadius: 10, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div className="surface" style={{ flex: "3 1 460px", minWidth: 300, overflow: "hidden", display: "flex", flexDirection: "column", padding: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "10px 14px", borderBottom: `1px solid ${C.line}`, background: C.bg, flexWrap: "wrap" }}>
             <span className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".1em", color: C.dim }}>DEPENDENCY GRAPH</span>
             <div style={{ flex: 1 }} />
@@ -84,12 +92,13 @@ export default function PipelinePage() {
             </div>
           </div>
           <SettlementPanel p={p} />
-          <div style={{ border: `1px solid ${C.line}`, borderRadius: 10, overflow: "hidden" }}>
+          <div className="surface" style={{ overflow: "hidden", padding: 0 }}>
             {p.nodes.map((n) => {
               const st = statusKey(n.status);
               const assigned = n.agent && n.agent !== "11111111111111111111111111111111";
+              const litRail = st === "settled" || st === "claimed";
               return (
-                <div key={n.nodeIndex} style={{ padding: "13px 15px", borderBottom: `1px solid #14181f`, borderLeft: `2px solid ${statusColor(st)}` }}>
+                <div key={n.nodeIndex} style={{ padding: "13px 15px", borderBottom: `1px solid #14181f`, borderLeft: `2px solid ${statusColor(st)}`, boxShadow: litRail ? `inset 3px 0 8px -3px ${statusColor(st)}` : "none" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
                     <span style={{ fontSize: 12, fontWeight: 500 }}>N{n.nodeIndex} · node {n.nodeIndex}</span>
                     <span className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".05em", textTransform: "uppercase", color: statusColor(st) }}>{st}</span>

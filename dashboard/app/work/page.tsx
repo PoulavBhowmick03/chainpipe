@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useConnection, useWallet, useAnchorWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { PublicKey } from "@solana/web3.js";
 import { agentStakePda, registryConfigPda, pipelineConfigPda, dagAuthorityPda, nodePda, deliveryMessage, sha256 } from "@/lib/sdk";
 import { buildPrograms, ADDRESSES, FACILITATOR_URL, explorerTx } from "@/lib/chainpipe";
@@ -11,6 +12,7 @@ import { statusKey } from "@/lib/format";
 import { C, usd, short } from "@/lib/theme";
 import { depsOf } from "@/lib/adapt";
 import { TierBadge } from "@/components/primitives";
+import { NetworkPanel } from "@/components/NetworkPanel";
 
 type Job = { p: PipelineRecord; n: NodeRecord };
 const SYSTEM = "11111111111111111111111111111111";
@@ -22,6 +24,7 @@ export default function WorkPage() {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const { signMessage } = useWallet();
+  const { setVisible } = useWalletModal();
   const [tier, setTier] = useState<number | null>(null);
   const [claimable, setClaimable] = useState<Job[]>([]);
   const [mine, setMine] = useState<Job[]>([]);
@@ -103,7 +106,35 @@ export default function WorkPage() {
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(null); }
   }
 
-  if (!wallet) return <p style={{ color: C.tx, padding: "28px 0" }}>Connect your wallet to find and complete work.</p>;
+  if (!wallet) return (
+    <div className="cp-in" style={{ padding: "28px 0 80px" }}>
+      <div className="mono" style={{ fontWeight: 500, fontSize: 11, letterSpacing: ".14em", color: C.dim, marginBottom: 6 }}>/work · AGENT CONSOLE</div>
+      <h1 className="display" style={{ fontSize: 24, margin: "0 0 6px" }}>Claim work, get paid on proof</h1>
+      <p style={{ color: C.dim, fontSize: 13, margin: "0 0 24px", lineHeight: 1.55, maxWidth: 520 }}>Staked agents claim open pipeline nodes, deliver, and submit content-addressed proof. Payment settles after a dispute window unless the consumer challenges.</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
+        <div style={{ flex: "1 1 440px", minWidth: 320 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
+            {[
+              ["01", "Claim", "Take an open node your tier qualifies for; your stake backs it."],
+              ["02", "Deliver + proof", "Submit the output URL; its sha256 is committed on-chain."],
+              ["03", "Dispute window", "Anyone can verify the hash and challenge a bad delivery."],
+              ["04", "Settled", "No dispute → finalize pays you, minus the protocol fee."],
+            ].map(([n, t, d]) => (
+              <div key={n} className="surface" style={{ padding: 16 }}>
+                <div className="mono" style={{ fontSize: 11, color: C.green, marginBottom: 8 }}>{n}</div>
+                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 5 }}>{t}</div>
+                <div className="mono" style={{ fontSize: 10.5, color: C.dim, lineHeight: 1.5 }}>{d}</div>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => setVisible(true)} className="lift" style={{ padding: "11px 18px", borderRadius: 8, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}>Connect wallet to find work</button>
+        </div>
+        <div style={{ flex: "1 1 440px", minWidth: 320 }}>
+          <NetworkPanel title="OPEN WORK · LIVE ON THE NETWORK" mt={0} />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="cp-in" style={{ padding: "28px 0 80px" }}>
@@ -127,11 +158,11 @@ export default function WorkPage() {
         <div style={{ flex: "1 1 380px", minWidth: 300 }}>
           <div className="mono" style={{ fontWeight: 500, fontSize: 11, letterSpacing: ".1em", color: C.dim, marginBottom: 14 }}>CLAIMABLE · {claimable.length}</div>
           {claimable.length === 0 ? (
-            <div className="mono" style={{ border: `1px dashed ${C.line}`, borderRadius: 9, padding: 30, textAlign: "center", color: C.faint, fontSize: 12 }}>No claimable nodes. They unlock as dependencies settle.</div>
+            <div className="mono surface" style={{ padding: 30, textAlign: "center", color: C.faint, fontSize: 12 }}>No claimable nodes. They unlock as dependencies settle.</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
               {claimable.map((j) => (
-                <div key={`${j.p.address}-${j.n.nodeIndex}`} style={{ border: `1px solid ${C.line}`, borderRadius: 9, padding: 15 }}>
+                <div key={`${j.p.address}-${j.n.nodeIndex}`} className="surface lift" style={{ padding: 15 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 12 }}>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 3 }}>node {j.n.nodeIndex}</div>
@@ -141,7 +172,7 @@ export default function WorkPage() {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <TierBadge tier={j.n.requiredTier} />
-                    <button onClick={() => claim(j)} disabled={busy !== null} style={{ padding: "7px 16px", borderRadius: 7, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>{busy === `c-${j.p.address}-${j.n.nodeIndex}` ? "Claiming…" : "Claim"}</button>
+                    <button onClick={() => claim(j)} disabled={busy !== null} className="lift" style={{ padding: "7px 16px", borderRadius: 7, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>{busy === `c-${j.p.address}-${j.n.nodeIndex}` ? "Claiming…" : "Claim"}</button>
                   </div>
                 </div>
               ))}
@@ -152,11 +183,11 @@ export default function WorkPage() {
         <div style={{ flex: "1 1 380px", minWidth: 300 }}>
           <div className="mono" style={{ fontWeight: 500, fontSize: 11, letterSpacing: ".1em", color: C.dim, marginBottom: 14 }}>IN PROGRESS · {mine.length}</div>
           {mine.length === 0 ? (
-            <div className="mono" style={{ border: `1px dashed ${C.line}`, borderRadius: 9, padding: 30, textAlign: "center", color: C.faint, fontSize: 12 }}>Nothing claimed yet.</div>
+            <div className="mono surface" style={{ padding: 30, textAlign: "center", color: C.faint, fontSize: 12 }}>Nothing claimed yet.</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
               {mine.map((j) => (
-                <div key={`${j.p.address}-${j.n.nodeIndex}`} style={{ border: `1px solid ${C.line}`, borderLeft: `2px solid ${C.blue}`, borderRadius: 9, padding: 15 }}>
+                <div key={`${j.p.address}-${j.n.nodeIndex}`} className="surface" style={{ borderLeft: `2px solid ${C.blue}`, padding: 15, boxShadow: `inset 0 1px 0 rgba(255,255,255,.03), inset 3px 0 8px -3px ${C.blue}` }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 12 }}>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 3 }}>node {j.n.nodeIndex}</div>
@@ -168,12 +199,12 @@ export default function WorkPage() {
                     value={uris[`${j.p.address}-${j.n.nodeIndex}`] ?? ""}
                     onChange={(e) => setUris((u) => ({ ...u, [`${j.p.address}-${j.n.nodeIndex}`]: e.target.value }))}
                     placeholder="delivery URL (https:// or ipfs://) — output hashed on submit"
-                    className="mono"
-                    style={{ width: "100%", boxSizing: "border-box", marginBottom: 9, padding: "7px 9px", borderRadius: 6, border: `1px solid ${C.line}`, background: C.bg, color: C.tx, fontSize: 11 }}
+                    className="field mono"
+                    style={{ width: "100%", boxSizing: "border-box", marginBottom: 9, fontSize: 11, color: C.tx }}
                   />
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span className="mono" style={{ fontSize: 10, color: C.faint }}>proof-of-delivery → {150} slot dispute window</span>
-                    <button onClick={() => submit(j)} disabled={busy !== null} style={{ padding: "7px 14px", borderRadius: 7, border: `1px solid ${C.line2}`, background: C.panel, color: C.hi, fontWeight: 500, fontSize: 12, cursor: "pointer" }}>{busy === `s-${j.p.address}-${j.n.nodeIndex}` ? "Submitting…" : "Submit + proof"}</button>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                    <span className="mono" style={{ fontSize: 10, color: C.faint }}>proof-of-delivery → 150-slot dispute window</span>
+                    <button onClick={() => submit(j)} disabled={busy !== null} className="lift" style={{ padding: "7px 14px", borderRadius: 7, border: `1px solid ${C.green}`, background: C.panel, color: C.green, fontWeight: 500, fontSize: 12, cursor: "pointer", flex: "none" }}>{busy === `s-${j.p.address}-${j.n.nodeIndex}` ? "Submitting…" : "Submit + proof"}</button>
                   </div>
                 </div>
               ))}

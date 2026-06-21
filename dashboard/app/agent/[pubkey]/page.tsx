@@ -8,6 +8,7 @@ import { C, usdC, short, tapeSeq } from "@/lib/theme";
 import { agentTitle } from "@/lib/adapt";
 import { explorerAddr } from "@/lib/chainpipe";
 import { TierBadge, OutcomeTape, Gauge } from "@/components/primitives";
+import { NetworkPanel } from "@/components/NetworkPanel";
 
 export default function AgentPage() {
   const { pubkey } = useParams<{ pubkey: string }>();
@@ -36,7 +37,7 @@ export default function AgentPage() {
     <div className="cp-in" style={{ padding: "28px 0 80px" }}>
       <Link href="/bazaar" className="mono" style={{ color: C.dim, fontWeight: 500, fontSize: 12, textDecoration: "none", display: "inline-block", marginBottom: 22 }}>← bazaar</Link>
       <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", marginBottom: 30 }}>
-        <span className="mono" style={{ width: 50, height: 50, border: `1px solid ${C.line2}`, borderRadius: 9, background: C.panel, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 19, color: C.hi, flex: "none" }}>{agentTitle(a)[0]?.toUpperCase()}</span>
+        <span className="mono" style={{ width: 50, height: 50, border: `1px solid ${C.line2}`, borderRadius: 9, background: "linear-gradient(180deg,#12161d,#0e1217)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 19, color: C.hi, flex: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.06)" }}>{agentTitle(a)[0]?.toUpperCase()}</span>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <h1 style={{ fontSize: 21, fontWeight: 600, margin: 0 }}>{agentTitle(a)}</h1>
@@ -45,11 +46,11 @@ export default function AgentPage() {
           <div className="mono" style={{ fontSize: 12, color: C.dim, marginTop: 4, wordBreak: "break-all" }}>{a.agent}</div>
         </div>
         <div style={{ flex: 1 }} />
-        <a href={explorerAddr(a.address)} target="_blank" rel="noreferrer" className="mono" style={{ padding: "8px 13px", borderRadius: 7, border: `1px solid ${C.line}`, background: C.bg, color: C.tx, fontWeight: 500, fontSize: 12, textDecoration: "none" }}>explorer ↗</a>
+        <a href={explorerAddr(a.address)} target="_blank" rel="noreferrer" className="mono lift" style={{ padding: "8px 13px", borderRadius: 7, border: `1px solid ${C.line}`, background: C.bg, color: C.tx, fontWeight: 500, fontSize: 12, textDecoration: "none" }}>explorer ↗</a>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 18, alignItems: "stretch" }}>
-        <div style={{ flex: "1 1 380px", minWidth: 300, border: `1px solid ${C.line}`, borderRadius: 10, padding: 22 }}>
+        <div className="surface-raised" style={{ flex: "1 1 380px", minWidth: 300, padding: 22 }}>
           <div className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".14em", color: C.dim, marginBottom: 14 }}>TRUST SCORE · EMA</div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 18, marginBottom: 20 }}>
             <div className="mono" style={{ fontWeight: 600, fontSize: 60, letterSpacing: "-.03em", lineHeight: 0.9 }}>{a.reputation ? score.toFixed(1) : "—"}</div>
@@ -65,20 +66,31 @@ export default function AgentPage() {
         </div>
 
         <div style={{ flex: "1 1 280px", minWidth: 260, display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", border: `1px solid ${C.line}`, borderRadius: 10, overflow: "hidden" }}>
-            {stats.map((s) => (
-              <div key={s.label} style={{ padding: 16, borderRight: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
+          <div className="surface" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", overflow: "hidden", padding: 0 }}>
+            {stats.map((s, i) => (
+              <div key={s.label} style={{ padding: 16, borderRight: i % 2 === 0 ? `1px solid ${C.line}` : "none", borderBottom: i < 2 ? `1px solid ${C.line}` : "none" }}>
                 <div className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".1em", color: C.dim, marginBottom: 7 }}>{s.label}</div>
                 <div className="mono" style={{ fontWeight: 500, fontSize: 19, color: s.color }}>{s.value}</div>
               </div>
             ))}
           </div>
-          <div style={{ flex: 1, border: `1px solid ${C.line}`, borderRadius: 10, padding: 16 }}>
-            <div className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".1em", color: C.dim, marginBottom: 12 }}>OPEN JOBS · {a.openJobs}</div>
-            <div className="mono" style={{ fontSize: 12, color: C.faint }}>{a.openJobs === 0 ? "No open jobs." : `${a.openJobs} node(s) in progress.`}</div>
+          <div className="surface" style={{ flex: 1, padding: 16 }}>
+            <div className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".1em", color: C.dim, marginBottom: 12 }}>STAKE STATUS</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 8 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: a.openJobs > 0 ? C.blue : C.green, boxShadow: `0 0 7px ${a.openJobs > 0 ? C.blue : C.green}` }} />
+              <span className="mono" style={{ fontSize: 12, color: a.openJobs > 0 ? C.blue : C.green, fontWeight: 500 }}>
+                {a.openJobs > 0 ? "LOCKED · WORKING" : "UNLOCKED · IDLE"}
+              </span>
+            </div>
+            <div className="mono" style={{ fontSize: 12, color: C.faint, lineHeight: 1.5 }}>
+              {a.openJobs === 0
+                ? "No open jobs — stake is eligible to unstake (after the cooldown)."
+                : `${a.openJobs} node(s) in progress — stake is locked until they settle or expire.`}
+            </div>
           </div>
         </div>
       </div>
+      <NetworkPanel title="ELSEWHERE ON THE NETWORK" />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { nodePda, settlementPda, verifyDelivery, DISPUTE_SLOTS } from "@/lib/sdk
 import { buildPrograms, ADDRESSES, FACILITATOR_URL, explorerTx } from "@/lib/chainpipe";
 import { statusKey } from "@/lib/format";
 import { C, short } from "@/lib/theme";
+import { DisputeTimer } from "@/components/DisputeTimer";
 import type { PipelineRecord, NodeRecord } from "@/lib/indexer";
 
 type Settlement = { uri: string; resultHash: string; submittedAtSlot: number; disputeUntil: number; disputed: boolean };
@@ -102,9 +103,13 @@ export function SettlementPanel({ p }: { p: PipelineRecord }) {
             <div key={idx} style={{ border: `1px solid ${C.line}`, borderRadius: 8, padding: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                 <span style={{ fontSize: 12, fontWeight: 500 }}>node {idx} {disputed ? "· disputed" : "· submitted"}</span>
-                <span className="mono" style={{ fontSize: 10, color: windowOpen ? C.amber : C.dim }}>
-                  {s ? (windowOpen ? `${remaining} slots to dispute` : "window closed") : "settlement n/a"}
-                </span>
+                {s ? (
+                  disputed
+                    ? <span className="mono" style={{ fontSize: 10, color: C.amber }}>in dispute</span>
+                    : <DisputeTimer remaining={remaining} total={DISPUTE_SLOTS} />
+                ) : (
+                  <span className="mono" style={{ fontSize: 10, color: C.dim }}>settlement n/a</span>
+                )}
               </div>
               {s && (
                 <div className="mono" style={{ fontSize: 10, color: C.dim, marginBottom: 8, wordBreak: "break-all" }}>
