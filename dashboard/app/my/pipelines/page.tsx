@@ -61,13 +61,13 @@ export default function MyPipelinesPage() {
           <Link href="/pipeline/create" className="mono" style={{ color: C.green, fontSize: 12, textDecoration: "none" }}>Create your first pipeline →</Link>
         </div>
       ) : (
-        <div className="surface" style={{ overflow: "hidden", padding: 0 }}>
+        <div className="surface scroll-x" style={{ padding: 0 }}>
           {pipelines.map((p) => {
             const stKey = Object.keys(p.status)[0] || "active";
             const settledAmt = amtOf(p, ["settled"]);
             const refundAmt = amtOf(p, ["expired", "refunded"]);
             return (
-              <Link key={p.address} href={`/pipeline/${p.address}`} className="lift" style={{ display: "grid", gridTemplateColumns: "140px 1fr 116px 150px 120px", gap: 18, alignItems: "center", padding: "15px 16px", borderBottom: `1px solid #14181f`, textDecoration: "none", color: C.hi }}>
+              <Link key={p.address} href={`/pipeline/${p.address}`} className="lift" style={{ display: "grid", gridTemplateColumns: "140px 1fr 116px 150px 120px", gap: 18, alignItems: "center", padding: "15px 16px", borderBottom: `1px solid #14181f`, textDecoration: "none", color: C.hi, minWidth: 700 }}>
                 <span className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 7, fontWeight: 500, fontSize: 10, letterSpacing: ".05em", textTransform: "uppercase", color: pipelineColor(stKey) }}>
                   <span style={{ width: 6, height: 6, borderRadius: 1, background: pipelineColor(stKey), boxShadow: `0 0 6px ${pipelineColor(stKey)}88` }} />{pipelineLabel(stKey)}
                 </span>
@@ -85,7 +85,7 @@ export default function MyPipelinesPage() {
               </Link>
             );
           })}
-          <div className="mono" style={{ display: "grid", gridTemplateColumns: "140px 1fr 116px 150px 120px", gap: 18, padding: "8px 16px", fontSize: 9, letterSpacing: ".08em", color: C.faint, borderTop: `1px solid ${C.line}` }}>
+          <div className="mono" style={{ display: "grid", gridTemplateColumns: "140px 1fr 116px 150px 120px", gap: 18, padding: "8px 16px", fontSize: 9, letterSpacing: ".08em", color: C.faint, borderTop: `1px solid ${C.line}`, minWidth: 700 }}>
             <span>STATUS</span><span>PIPELINE · HEALTH</span><span>NODES</span><span style={{ textAlign: "right" }}>SETTLED · REFUNDED</span><span style={{ textAlign: "right" }}>LOCKED</span>
           </div>
         </div>

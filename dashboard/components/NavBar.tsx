@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { C, short } from "@/lib/theme";
+import { CommandPalette } from "@/components/CommandPalette";
 
 // Canonical opener (handles the modal + wallet selection reliably); ssr:false
 // because it touches window. Styled inline to match the v2 button.
@@ -42,6 +43,8 @@ export function NavBar() {
     m.some((p) => (p === "/pipeline/create" ? pathname === p : pathname === p || pathname.startsWith(p)));
 
   return (
+    <>
+    <CommandPalette />
     <header style={{ position: "sticky", top: 0, zIndex: 40, background: "rgba(7,9,13,.86)", backdropFilter: "blur(10px)", borderBottom: `1px solid ${C.line}` }}>
       <div className="max-w-[1260px] mx-auto" style={{ padding: "0 22px", height: 54, display: "flex", alignItems: "center", gap: 18 }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none", color: C.hi, flex: "none" }}>
@@ -64,6 +67,15 @@ export function NavBar() {
         </nav>
 
         <div style={{ flex: 1 }} />
+
+        <button
+          onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+          className="mono"
+          title="Command palette (⌘K)"
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 9px", borderRadius: 7, border: `1px solid ${C.line}`, background: C.bg, color: C.dim, fontSize: 11, cursor: "pointer" }}
+        >
+          <span style={{ fontSize: 12 }}>⌘</span>K
+        </button>
 
         <div className="mono" title="Current devnet slot" style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 10px", borderRadius: 7, border: `1px solid ${C.line}`, background: C.bg }}>
           <span className={slot ? "cp-blink" : ""} style={{ width: 5, height: 5, borderRadius: "50%", background: slot ? C.green : C.faint }} />
@@ -92,5 +104,6 @@ export function NavBar() {
         )}
       </div>
     </header>
+    </>
   );
 }

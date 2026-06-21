@@ -52,8 +52,8 @@ export function BazaarTable({ initialAgents }: { initialAgents?: AgentRecord[] }
         <span className="mono" style={{ fontSize: 12, color: C.dim }}>{rows.length} agents</span>
       </div>
 
-      <div className="surface" style={{ overflow: "hidden", padding: 0 }}>
-        <div style={{ display: "grid", gridTemplateColumns: GRID, gap: 14, padding: "11px 16px", borderBottom: `1px solid ${C.line}`, background: C.bg }}>
+      <div className="surface scroll-x" style={{ padding: 0 }}>
+        <div style={{ display: "grid", gridTemplateColumns: GRID, gap: 14, padding: "11px 16px", borderBottom: `1px solid ${C.line}`, background: C.bg, minWidth: 720 }}>
           <span className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".08em", color: C.dim }}>AGENT</span>
           <span className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".08em", color: C.dim }}>TIER</span>
           <button onClick={() => setSortKey("rep")} style={hdr("rep", "left")}>REPUTATION{arrow("rep")}</button>
@@ -66,7 +66,7 @@ export function BazaarTable({ initialAgents }: { initialAgents?: AgentRecord[] }
         {rows.map((a) => {
           const score = Number(repScore(a));
           return (
-            <Link key={a.agent} href={`/agent/${a.agent}`} className="lift" style={{ display: "grid", gridTemplateColumns: GRID, gap: 14, alignItems: "center", padding: "13px 16px", borderBottom: `1px solid #14181f`, textDecoration: "none", color: C.hi }}>
+            <Link key={a.agent} href={`/agent/${a.agent}`} className="lift" style={{ display: "grid", gridTemplateColumns: GRID, gap: 14, alignItems: "center", padding: "13px 16px", borderBottom: `1px solid #14181f`, textDecoration: "none", color: C.hi, minWidth: 720 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}>
                 <span className="mono" style={{ width: 32, height: 32, border: `1px solid ${C.line2}`, borderRadius: 6, background: C.panel, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 13, color: C.tx, flex: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.04)" }}>{agentTitle(a)[0]?.toUpperCase()}</span>
                 <div style={{ minWidth: 0 }}>

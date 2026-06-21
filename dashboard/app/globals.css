@@ -263,3 +263,11 @@ input[type="range"]::-webkit-slider-thumb {
   .px-layer { transform: none !important; transition: none !important; }
   .cp-conduit, .cp-drift { animation: none !important; }
 }
+
+/* Responsive guard: the page body never scrolls horizontally; wide dense tables
+   scroll inside their own panel instead (see BazaarTable / my-pipelines). */
+html, body { max-width: 100%; overflow-x: hidden; }
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 600px) {
+  .cp-in { padding-left: 0; padding-right: 0; }
+}
