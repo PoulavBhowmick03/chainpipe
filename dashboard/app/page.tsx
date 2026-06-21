@@ -65,6 +65,20 @@ export default async function Home() {
                 <div style={{ flex: 1 }} />
                 <span className="mono" style={{ fontWeight: 500, fontSize: 10, color: C.green }}>ACTIVE</span>
               </div>
+              {/* budget readout — states the locked-once premise in crisp foreground */}
+              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "13px 16px", borderBottom: `1px solid ${C.line}`, background: "linear-gradient(180deg, rgba(20,241,149,.05), transparent)" }}>
+                <div>
+                  <div className="mono" style={{ fontWeight: 500, fontSize: 9.5, letterSpacing: ".14em", color: C.dim, marginBottom: 5 }}>BUDGET LOCKED · ESCROW PDA</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    <span className="mono display" style={{ fontSize: 27, letterSpacing: "-.02em", color: C.hi }}>150.00</span>
+                    <span className="mono" style={{ fontSize: 11, color: C.dim }}>USDC</span>
+                  </div>
+                </div>
+                <div className="mono" style={{ textAlign: "right", fontSize: 10, color: C.dim, lineHeight: 1.7 }}>
+                  <div>4 nodes · 1 DAG</div>
+                  <div><span style={{ color: C.green }}>3 settled</span> · <span style={{ color: C.amber }}>1 refunded</span></div>
+                </div>
+              </div>
               <HeroDag height={300} />
             </div>
           </div>

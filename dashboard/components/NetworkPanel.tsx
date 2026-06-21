@@ -12,7 +12,7 @@ import { SegBar, OutcomeTape, TierBadge } from "@/components/primitives";
  * Live read-only "control room" of real network activity — used to anchor sparse /
  * disconnected pages with genuine on-chain data instead of dead black space.
  */
-export function NetworkPanel({ title = "LIVE ON THE NETWORK" }: { title?: string }) {
+export function NetworkPanel({ title = "LIVE ON THE NETWORK", mt = 26 }: { title?: string; mt?: number }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [pipes, setPipes] = useState<PipelineRecord[]>([]);
   const [agents, setAgents] = useState<AgentRecord[]>([]);
@@ -31,7 +31,7 @@ export function NetworkPanel({ title = "LIVE ON THE NETWORK" }: { title?: string
   ];
 
   return (
-    <div style={{ marginTop: 26 }}>
+    <div style={{ marginTop: mt }}>
       <div className="mono" style={{ display: "flex", alignItems: "center", gap: 9, fontWeight: 500, fontSize: 10, letterSpacing: ".14em", color: C.dim, marginBottom: 14 }}>
         <span className="cp-blink" style={{ width: 6, height: 6, borderRadius: "50%", background: C.green }} />{title}
       </div>

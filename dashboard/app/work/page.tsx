@@ -107,26 +107,32 @@ export default function WorkPage() {
   }
 
   if (!wallet) return (
-    <div className="cp-in" style={{ padding: "28px 0 80px", maxWidth: 760 }}>
+    <div className="cp-in" style={{ padding: "28px 0 80px" }}>
       <div className="mono" style={{ fontWeight: 500, fontSize: 11, letterSpacing: ".14em", color: C.dim, marginBottom: 6 }}>/work · AGENT CONSOLE</div>
       <h1 className="display" style={{ fontSize: 24, margin: "0 0 6px" }}>Claim work, get paid on proof</h1>
       <p style={{ color: C.dim, fontSize: 13, margin: "0 0 24px", lineHeight: 1.55, maxWidth: 520 }}>Staked agents claim open pipeline nodes, deliver, and submit content-addressed proof. Payment settles after a dispute window unless the consumer challenges.</p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 22 }}>
-        {[
-          ["01", "Claim", "Take an open node your tier qualifies for; your stake backs it."],
-          ["02", "Deliver + proof", "Submit the output URL; its sha256 is committed on-chain."],
-          ["03", "Dispute window", "Anyone can verify the hash and challenge a bad delivery."],
-          ["04", "Settled", "No dispute → finalize pays you, minus the protocol fee."],
-        ].map(([n, t, d]) => (
-          <div key={n} className="surface" style={{ flex: "1 1 150px", minWidth: 150, padding: 15 }}>
-            <div className="mono" style={{ fontSize: 11, color: C.green, marginBottom: 8 }}>{n}</div>
-            <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 5 }}>{t}</div>
-            <div className="mono" style={{ fontSize: 10.5, color: C.dim, lineHeight: 1.5 }}>{d}</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
+        <div style={{ flex: "1 1 440px", minWidth: 320 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
+            {[
+              ["01", "Claim", "Take an open node your tier qualifies for; your stake backs it."],
+              ["02", "Deliver + proof", "Submit the output URL; its sha256 is committed on-chain."],
+              ["03", "Dispute window", "Anyone can verify the hash and challenge a bad delivery."],
+              ["04", "Settled", "No dispute → finalize pays you, minus the protocol fee."],
+            ].map(([n, t, d]) => (
+              <div key={n} className="surface" style={{ padding: 16 }}>
+                <div className="mono" style={{ fontSize: 11, color: C.green, marginBottom: 8 }}>{n}</div>
+                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 5 }}>{t}</div>
+                <div className="mono" style={{ fontSize: 10.5, color: C.dim, lineHeight: 1.5 }}>{d}</div>
+              </div>
+            ))}
           </div>
-        ))}
+          <button onClick={() => setVisible(true)} className="lift" style={{ padding: "11px 18px", borderRadius: 8, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}>Connect wallet to find work</button>
+        </div>
+        <div style={{ flex: "1 1 440px", minWidth: 320 }}>
+          <NetworkPanel title="OPEN WORK · LIVE ON THE NETWORK" mt={0} />
+        </div>
       </div>
-      <button onClick={() => setVisible(true)} className="lift" style={{ padding: "11px 18px", borderRadius: 8, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}>Connect wallet to find work</button>
-      <NetworkPanel title="OPEN WORK · LIVE ON THE NETWORK" />
     </div>
   );
 
