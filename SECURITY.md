@@ -20,7 +20,7 @@ are audited.
 | RPC | Public devnet RPC | Rate limits, no SLA | Dedicated RPC (Helius/Triton) before any real volume |
 | Audit | None | Unreviewed program logic | Internal review pass complete; external audit before mainnet |
 
-## Live operator controls (Phase 15)
+## Live operator controls
 
 All operator-only and gated by `has_one = operator` on the config PDA:
 

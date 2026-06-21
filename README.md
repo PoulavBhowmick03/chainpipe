@@ -4,20 +4,20 @@
 
 > Live on **Solana devnet**. Three Anchor programs + a TypeScript SDK + an x402-style
 > facilitator + an indexer + a Next.js 15 dashboard. See [`DEPLOYED.md`](./DEPLOYED.md)
-> for live program IDs and [`BLOCKERS.md`](./BLOCKERS.md) for build/deploy notes.
+> for live program IDs.
 
 > **Status: devnet prototype.** Core flows + an optimistic-settlement **dispute layer**
 > with **content-addressed proof-of-delivery** and a **production-hardening** pass
 > (emergency pause, configurable dispute window, per-incident slash cap, two-step operator
 > transfer) are implemented and tested (52 program tests). Trust is currently a centralized
-> facilitator-arbiter (v1) and value is play-money. Read [`SECURITY.md`](./SECURITY.md) for
-> the trust model, [`DECENTRALIZATION.md`](./DECENTRALIZATION.md) for the v2 roadmap, and
-> [`AUDIT.md`](./AUDIT.md) for an honest production-readiness review. The `reputation_bridge`
-> program is ChainPipe's own; it is **designed to be composable with** the official Solana
-> 8004 / ATOM registry (forward integration, not a live tie-in).
+> facilitator-arbiter (v1) and value is play-money. See [`SECURITY.md`](./SECURITY.md) for
+> the trust model and [`DECENTRALIZATION.md`](./DECENTRALIZATION.md) for the path beyond it.
+> The `reputation_bridge` program is ChainPipe's own; it is **designed to be composable with**
+> the official Solana 8004 / ATOM registry (forward integration, not a live tie-in).
 >
 > **Live:** dashboard https://chainpipe.vercel.app · indexer
-> https://chainpipe-indexer.fly.dev · facilitator https://chainpipe-facilitator.fly.dev
+> https://chainpipe-indexer.fly.dev · facilitator https://chainpipe-facilitator.fly.dev ·
+> npm `@chainpipe/solana`
 
 ---
 
@@ -105,7 +105,7 @@ Full config PDAs and tx signatures in [`DEPLOYED.md`](./DEPLOYED.md).
 npm install
 
 # Build + test all three programs against a local validator (52 tests)
-anchor test    # uses avm anchor 0.31.1 — note: ~/.cargo/bin/anchor is a different tool
+anchor test
 
 # Run the full lifecycle on devnet (real transactions)
 npx tsx scripts/e2e-devnet.mts
@@ -118,8 +118,9 @@ npm --workspace @chainpipe/dashboard run dev  # :3000
 ```
 
 > Build programs with `cargo build-sbf --arch v3` and deploy with
-> `solana program deploy ... --program-id keys/<prog>.json` — CPI-dependency crates must
-> be built standalone (`--manifest-path`). See [`BLOCKERS.md`](./BLOCKERS.md) D2.
+> `solana program deploy ... --program-id keys/<prog>.json`. CPI-dependency crates
+> (`reputation_bridge`, `bonded_registry`) must be built standalone via `--manifest-path`
+> before `dag_escrow`.
 
 ## SDK
 

@@ -91,7 +91,7 @@ Test mint: `8BPRrfsXT3FZUvxW5v5ctq8Q5moZinNu7eFR4gtFPxz1`
 | 2 | Active | `4pFdQSBSkhBR8Sjw5XNLDwsMxsmSuAAFx5s9Ezmd7vZa` |
 | 3 | PartiallyRefunded | `7LqDXqWtpW4RTvyhJ9x5spWzxHfuLLmmp6Ld4g7zaKiu` |
 
-## Hardening upgrade — dispute + proof-of-delivery + production hardening (Phases 11–16) — ✅ LIVE
+## Dispute layer + proof-of-delivery + hardening — live on devnet
 
 All three programs were upgraded in place on devnet with the optimistic-settlement **dispute
 layer**, content-addressed **proof-of-delivery**, and the **production-hardening** pass
@@ -117,7 +117,7 @@ runbook in [`SECURITY.md`](./SECURITY.md).
 ## Reproduce
 
 ```bash
-# Build (programs that are CPI dependencies must be built standalone — see BLOCKERS.md D2)
+# Build (CPI-dependency crates must be built standalone, in this order)
 cargo build-sbf --arch v3 --manifest-path programs/reputation_bridge/Cargo.toml
 cargo build-sbf --arch v3 --manifest-path programs/bonded_registry/Cargo.toml
 cargo build-sbf --arch v3 --manifest-path programs/dag_escrow/Cargo.toml
