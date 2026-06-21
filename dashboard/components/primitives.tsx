@@ -55,12 +55,12 @@ export function OutcomeTape({ seq, width = 84, height = 14 }: { seq: boolean[]; 
  * Reputation gauge — a backlit linear meter. A recessed track, an illuminated fill
  * up to the score, quartile ticks etched into it, and a glowing marker head.
  */
-export function Gauge({ score, width }: { score: number; width?: number | string }) {
+export function Gauge({ score, width, compact = false }: { score: number; width?: number | string; compact?: boolean }) {
   const pct = Math.max(0, Math.min(100, score)) / 100;
   const col = score >= 75 ? C.green : score >= 50 ? C.hi : C.amber;
   return (
     <div style={{ width: width ?? "100%" }}>
-      <div style={{ position: "relative", height: 8, background: C.bg0, borderRadius: 4, boxShadow: "inset 0 1px 2px rgba(0,0,0,.6)", overflow: "hidden" }}>
+      <div style={{ position: "relative", height: compact ? 6 : 8, background: C.bg0, borderRadius: 4, boxShadow: "inset 0 1px 2px rgba(0,0,0,.6)", overflow: "hidden" }}>
         <div
           style={{
             position: "absolute", left: 0, top: 0, bottom: 0, width: pct * 100 + "%",
@@ -71,11 +71,13 @@ export function Gauge({ score, width }: { score: number; width?: number | string
         {[25, 50, 75].map((t) => (
           <div key={t} style={{ position: "absolute", left: t + "%", top: 0, bottom: 0, width: 1, background: "rgba(7,9,13,.8)" }} />
         ))}
-        <div style={{ position: "absolute", left: `calc(${pct * 100}% - 1px)`, top: -3, width: 2, height: 14, background: col, borderRadius: 1, boxShadow: `0 0 8px ${col}` }} />
+        <div style={{ position: "absolute", left: `calc(${pct * 100}% - 1px)`, top: -3, width: 2, height: (compact ? 6 : 8) + 6, background: col, borderRadius: 1, boxShadow: `0 0 8px ${col}` }} />
       </div>
-      <div className="mono" style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 9, color: C.faint }}>
-        <span>0</span><span>50</span><span>100</span>
-      </div>
+      {!compact && (
+        <div className="mono" style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 9, color: C.faint }}>
+          <span>0</span><span>50</span><span>100</span>
+        </div>
+      )}
     </div>
   );
 }
