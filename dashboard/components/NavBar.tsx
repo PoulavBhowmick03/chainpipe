@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { C, short } from "@/lib/theme";
 
 // Canonical opener (handles the modal + wallet selection reliably); ssr:false
@@ -25,7 +25,18 @@ const links = [
 export function NavBar() {
   const pathname = usePathname() || "/";
   const { publicKey, disconnect } = useWallet();
+  const { connection } = useConnection();
   const [role, setRole] = useState<"consumer" | "agent">("consumer");
+  const [slot, setSlot] = useState<number | null>(null);
+
+  // Live slot readout — the heartbeat of the control room.
+  useEffect(() => {
+    let alive = true;
+    const tick = () => connection.getSlot("confirmed").then((s) => alive && setSlot(s)).catch(() => {});
+    tick();
+    const id = setInterval(tick, 10_000);
+    return () => { alive = false; clearInterval(id); };
+  }, [connection]);
 
   const isActive = (m: string[]) =>
     m.some((p) => (p === "/pipeline/create" ? pathname === p : pathname === p || pathname.startsWith(p)));
@@ -53,6 +64,11 @@ export function NavBar() {
         </nav>
 
         <div style={{ flex: 1 }} />
+
+        <div className="mono" title="Current devnet slot" style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 10px", borderRadius: 7, border: `1px solid ${C.line}`, background: C.bg }}>
+          <span className={slot ? "cp-blink" : ""} style={{ width: 5, height: 5, borderRadius: "50%", background: slot ? C.green : C.faint }} />
+          <span style={{ fontSize: 11, color: C.dim, letterSpacing: ".04em" }}>{slot ? slot.toLocaleString() : "—"}</span>
+        </div>
 
         <div style={{ display: "flex", alignItems: "center", border: `1px solid ${C.line}`, borderRadius: 7, overflow: "hidden" }}>
           {(["consumer", "agent"] as const).map((r) => (

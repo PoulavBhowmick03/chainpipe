@@ -171,3 +171,95 @@ input[type="range"]::-webkit-slider-thumb {
   font-family: var(--font-geist), sans-serif;
 }
 
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Design system v3 — "instrument-grade": elevation-by-light, motion tokens,
+   purposeful parallax. Surfaces read as backlit glass / etched metal, not
+   drop-shadowed cards. One electric accent (Solana green) = value in motion.
+   ────────────────────────────────────────────────────────────────────────── */
+:root {
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-1: 160ms;
+  --dur-2: 220ms;
+  --hair: #1b212b;
+  --hair-2: #262d39;
+}
+
+/* Elevation by light: hairline + faint top-edge highlight (no Material shadow). */
+.surface {
+  background: #0e1217;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.surface-raised {
+  background: linear-gradient(180deg, #12161d, #0e1217);
+  border: 1px solid var(--hair-2);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+/* Hairline that fades at its ends — etched, not a hard rule. */
+.rule-fade {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, var(--hair-2) 12%, var(--hair-2) 88%, transparent);
+}
+
+/* Keyboard-native focus: a precise green ring, never the default glow. */
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px #07090d, 0 0 0 2.5px rgba(20, 241, 149, 0.7);
+  border-radius: 6px;
+}
+
+/* Magnetic, fast hover lift for interactive rows/cards. */
+.lift {
+  transition: transform var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease),
+    background var(--dur-1) var(--ease);
+}
+.lift:hover {
+  transform: translateY(-1px);
+}
+
+/* Display type: tight, confident, optical tracking. */
+.display {
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+}
+
+/* Parallax: transform-only depth layers driven by --mx/--my (px) from JS. */
+.px-scene {
+  position: relative;
+  isolation: isolate;
+}
+.px-layer {
+  will-change: transform;
+  transition: transform 180ms var(--ease);
+}
+.px-grid {
+  background-image: radial-gradient(circle at 1px 1px, rgba(108, 118, 137, 0.16) 1px, transparent 0);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 40%, #000 35%, transparent 78%);
+}
+
+/* Value-flow conduit dashes (mid layer / DAG edges). */
+@keyframes cpDrift {
+  to {
+    background-position: 0 -680px;
+  }
+}
+@keyframes cpFlow2 {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+.cp-conduit {
+  stroke-dasharray: 2 7;
+  animation: cpFlow2 1.4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .px-layer { transform: none !important; transition: none !important; }
+  .cp-conduit, .cp-drift { animation: none !important; }
+}
