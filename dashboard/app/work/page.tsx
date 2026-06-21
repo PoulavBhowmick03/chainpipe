@@ -6,7 +6,7 @@ import { useConnection, useWallet, useAnchorWallet } from "@solana/wallet-adapte
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { PublicKey } from "@solana/web3.js";
 import { agentStakePda, registryConfigPda, pipelineConfigPda, dagAuthorityPda, nodePda, deliveryMessage, sha256 } from "@/lib/sdk";
-import { buildPrograms, ADDRESSES, FACILITATOR_URL, explorerTx } from "@/lib/chainpipe";
+import { buildPrograms, ADDRESSES, explorerTx, facilitatorPost, hashViaFacilitator } from "@/lib/chainpipe";
 import { getPipelines, type PipelineRecord, type NodeRecord } from "@/lib/indexer";
 import { statusKey } from "@/lib/format";
 import { C, usd, short } from "@/lib/theme";
@@ -85,23 +85,30 @@ export default function WorkPage() {
       const pipeline = new PublicKey(j.p.address);
       const node = await dag.account.pipelineNode.fetch(nodePda(ADDRESSES, pipeline, j.n.nodeIndex));
       const jobId = Uint8Array.from(node.jobId);
-      // Fetch the hosted output and hash the actual bytes (honest, not self-reported).
+      // Hash the actual delivered bytes (honest, not self-reported). Browsers can't read
+      // most cross-origin URLs (CORS), so on a fetch failure fall back to hashing the URL
+      // server-side via the facilitator; only then give up with clear guidance.
       const gw = uri.startsWith("ipfs://") ? "https://ipfs.io/ipfs/" + uri.slice(7) : uri;
-      const resp = await fetch(gw);
-      if (!resp.ok) throw new Error(`could not fetch delivery URL (${resp.status})`);
-      const bytes = new Uint8Array(await resp.arrayBuffer());
-      const resultHash = await sha256(bytes);
+      let resultHash: Uint8Array;
+      try {
+        const resp = await fetch(gw);
+        if (!resp.ok) throw new Error(`status ${resp.status}`);
+        resultHash = await sha256(new Uint8Array(await resp.arrayBuffer()));
+      } catch {
+        try {
+          resultHash = Uint8Array.from(Buffer.from(await hashViaFacilitator(uri), "hex"));
+        } catch {
+          throw new Error("Couldn't read your delivery URL from the browser (usually CORS). Host the output on IPFS (ipfs://…) or a server that allows cross-origin reads, then resubmit.");
+        }
+      }
       const uriBytes = new TextEncoder().encode(uri);
       const message = await deliveryMessage(pipeline, j.n.nodeIndex, jobId, resultHash, uriBytes);
       const signature = await signMessage(message);
       const b64 = btoa(String.fromCharCode(...signature));
       const resultHashHex = Buffer.from(resultHash).toString("hex");
-      const res = await fetch(`${FACILITATOR_URL}/submit`, {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ pipelinePda: j.p.address, nodeIndex: j.n.nodeIndex, agentSignature: b64, resultHash: resultHashHex, uri }),
+      const json = await facilitatorPost<{ signature: string }>("/submit", {
+        pipelinePda: j.p.address, nodeIndex: j.n.nodeIndex, agentSignature: b64, resultHash: resultHashHex, uri,
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "facilitator rejected submission");
       setMsg(json.signature); await refresh();
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(null); }
   }

@@ -49,6 +49,15 @@ export function PipelineBuilder() {
     if (!valid) return;
     setBusy(true); setError(null); setResult(null);
     try {
+      // Pre-check the consumer actually holds the budget, so we fail with a clear message
+      // instead of a raw Anchor error mid-transaction.
+      const ata = getAssociatedTokenAddressSync(ADDRESSES.usdcMint, wallet.publicKey);
+      const bal = await connection.getTokenAccountBalance(ata).then((b) => b.value.uiAmount ?? 0).catch(() => 0);
+      if (bal < total) {
+        setError(`Insufficient USDC: you hold ${bal.toFixed(2)}, this pipeline locks ${total.toFixed(2)}. Get devnet USDC from the faucet on the Stake page.`);
+        setBusy(false);
+        return;
+      }
       const { dag } = buildPrograms(connection, wallet);
       const nonce = BigInt(Date.now());
       const pipeline = pipelinePda(ADDRESSES, wallet.publicKey, nonce);

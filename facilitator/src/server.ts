@@ -9,6 +9,7 @@ import {
   getAgentReputation,
   getSettlement,
   decodeUri,
+  sha256Bytes,
   DISPUTE_SLOTS,
 } from "@chainpipe/solana";
 
@@ -200,6 +201,24 @@ app.post("/expire", async (req: Request, res: Response) => {
     });
   } catch (e) {
     res.status(500).json({ error: String(e) });
+  }
+});
+
+// CORS-proof delivery hashing: the browser often can't read an arbitrary cross-origin
+// delivery URL, so the dashboard falls back to this server-side fetch+sha256 (read-only;
+// the agent still signs the resulting hash and the program re-verifies on settle).
+app.post("/hash", async (req: Request, res: Response) => {
+  try {
+    const { uri } = req.body ?? {};
+    if (!uri || typeof uri !== "string") return res.status(400).json({ error: "uri required" });
+    const gateway = process.env.IPFS_GATEWAY ?? "https://ipfs.io/ipfs/";
+    const url = uri.startsWith("ipfs://") ? gateway + uri.slice("ipfs://".length) : uri;
+    const resp = await fetch(url);
+    if (!resp.ok) return res.status(400).json({ error: `could not fetch uri (${resp.status})` });
+    const bytes = new Uint8Array(await resp.arrayBuffer());
+    res.json({ resultHash: Buffer.from(sha256Bytes(bytes)).toString("hex") });
+  } catch (e) {
+    res.status(502).json({ error: `fetch/hash failed: ${String(e)}` });
   }
 });
 

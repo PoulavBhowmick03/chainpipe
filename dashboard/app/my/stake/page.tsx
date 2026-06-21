@@ -7,7 +7,7 @@ import { SystemProgram } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, getAccount } from "@solana/spl-token";
 import BN from "bn.js";
 import { agentStakePda, vaultAta } from "@/lib/sdk";
-import { buildPrograms, ADDRESSES, FACILITATOR_URL, explorerTx } from "@/lib/chainpipe";
+import { buildPrograms, ADDRESSES, explorerTx, facilitatorPost } from "@/lib/chainpipe";
 import { C, usd } from "@/lib/theme";
 import { TierBadge } from "@/components/primitives";
 import { NetworkPanel } from "@/components/NetworkPanel";
@@ -71,8 +71,7 @@ export default function StakePage() {
     if (!wallet) return;
     setBusy("faucet"); setMsg(null); setError(null);
     try {
-      const res = await fetch(`${FACILITATOR_URL}/faucet`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ owner: wallet.publicKey.toBase58(), amount: 100 }) });
-      const j = await res.json(); if (!res.ok) throw new Error(j.error ?? "faucet failed");
+      const j = await facilitatorPost<{ signature: string }>("/faucet", { owner: wallet.publicKey.toBase58(), amount: 100 });
       setMsg(j.signature); await refresh();
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(null); }
   }

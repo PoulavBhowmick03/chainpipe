@@ -56,3 +56,36 @@ export const explorerTx = (sig: string) =>
   `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
 export const explorerAddr = (addr: string) =>
   `https://explorer.solana.com/address/${addr}?cluster=devnet`;
+
+/**
+ * POST JSON to the facilitator with robust failure handling: a dead gateway returns
+ * HTML/empty (not JSON), and a thrown fetch means the service is unreachable — both
+ * should surface a clean message, never an opaque `Unexpected token <` parse error.
+ */
+export async function facilitatorPost<T = unknown>(path: string, body: unknown): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`${FACILITATOR_URL}${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error("Couldn't reach the facilitator — it may be offline. Try again shortly.");
+  }
+  const text = await res.text();
+  let json: { error?: string; [k: string]: unknown } = {};
+  try { json = text ? JSON.parse(text) : {}; } catch { /* non-JSON (gateway error / HTML body) */ }
+  if (!res.ok) throw new Error(json.error || `facilitator ${path} failed (${res.status})`);
+  return json as T;
+}
+
+/**
+ * Hash the bytes at a delivery URI via the facilitator (server-side fetch) — a CORS-proof
+ * fallback for when the browser can't read an arbitrary cross-origin URL. Returns hex.
+ */
+export async function hashViaFacilitator(uri: string): Promise<string> {
+  const json = await facilitatorPost<{ resultHash: string }>("/hash", { uri });
+  if (!json.resultHash) throw new Error("facilitator did not return a hash");
+  return json.resultHash;
+}
