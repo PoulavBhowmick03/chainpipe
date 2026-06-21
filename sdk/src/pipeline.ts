@@ -1,5 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import BN from "bn.js";
+import { sha256 } from "@noble/hashes/sha256";
 import { Connection, Keypair, PublicKey, TransactionSignature } from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
@@ -45,6 +46,69 @@ export function encodeUri(uri: string): { bytes: number[]; len: number } {
 /** Decode the on-chain 96-byte URI buffer + length back to a string. */
 export function decodeUri(uri: number[] | Uint8Array, uriLen: number): string {
   return new TextDecoder().decode(Uint8Array.from(Array.from(uri).slice(0, uriLen)));
+}
+
+/** sha256 helper (cross-platform: browser + node). */
+export function sha256Bytes(data: Uint8Array): Uint8Array {
+  return sha256(data);
+}
+
+/**
+ * Canonical message an agent ed25519-signs to authorize a node's settlement AND
+ * bind it to a specific delivery. Layout:
+ *   pipeline(32) ‖ nodeIndex(1) ‖ jobId(32) ‖ resultHash(32) ‖ sha256(uriBytes)(32)
+ * The single source of truth shared by the SDK, facilitator verifier, and dashboard
+ * — so a signature cannot be replayed against a different output or retrieval pointer.
+ */
+export function deliveryMessage(
+  pipeline: PublicKey,
+  nodeIndex: number,
+  jobId: Uint8Array,
+  resultHash: Uint8Array,
+  uriBytes: Uint8Array
+): Uint8Array {
+  return Uint8Array.from([
+    ...pipeline.toBytes(),
+    nodeIndex & 0xff,
+    ...jobId,
+    ...resultHash,
+    ...sha256(uriBytes),
+  ]);
+}
+
+export interface DeliveryCheck {
+  ok: boolean;
+  uri: string;
+  expectedHash: string;
+  actualHash: string | null;
+  reason?: string;
+}
+
+/**
+ * Trustless re-verification of a delivered node: fetch the content addressed by the
+ * settlement's `uri`, recompute sha256, and compare to the on-chain `result_hash`.
+ * Anyone (consumer, third party) can run this — a mismatch is objective grounds to dispute.
+ * `ipfs://` URIs are resolved through `gateway` (default ipfs.io).
+ */
+export async function verifyDelivery(
+  settlement: NodeSettlement,
+  opts: { gateway?: string; fetchImpl?: typeof fetch } = {}
+): Promise<DeliveryCheck> {
+  const uri = decodeUri(settlement.uri as number[], settlement.uriLen as number);
+  const expectedHash = Buffer.from(settlement.resultHash as number[]).toString("hex");
+  const f = opts.fetchImpl ?? (globalThis.fetch as typeof fetch);
+  const gateway = opts.gateway ?? "https://ipfs.io/ipfs/";
+  const url = uri.startsWith("ipfs://") ? gateway + uri.slice("ipfs://".length) : uri;
+  try {
+    if (!f) return { ok: false, uri, expectedHash, actualHash: null, reason: "no fetch available" };
+    const resp = await f(url);
+    if (!resp.ok) return { ok: false, uri, expectedHash, actualHash: null, reason: `fetch ${resp.status}` };
+    const bytes = new Uint8Array(await resp.arrayBuffer());
+    const actualHash = Buffer.from(sha256(bytes)).toString("hex");
+    return { ok: actualHash === expectedHash, uri, expectedHash, actualHash };
+  } catch (e) {
+    return { ok: false, uri, expectedHash, actualHash: null, reason: String(e) };
+  }
 }
 
 export interface NodeInput {

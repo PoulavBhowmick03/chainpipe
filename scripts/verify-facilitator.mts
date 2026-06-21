@@ -26,7 +26,7 @@ import nacl from "tweetnacl";
 import { readFileSync } from "fs";
 import { homedir } from "os";
 import { strict as assert } from "assert";
-import { DEVNET_ADDRESSES, ChainPipeAddresses, stakeAndRegister, createPipeline, claimNode, getPipeline } from "@chainpipe/solana";
+import { DEVNET_ADDRESSES, ChainPipeAddresses, stakeAndRegister, createPipeline, claimNode, getPipeline, deliveryMessage } from "@chainpipe/solana";
 
 const USDC = 1_000_000;
 const RPC = process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
@@ -39,13 +39,16 @@ function loadKeypair(p: string): Keypair {
   return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(p.replace(/^~/, homedir()), "utf-8"))));
 }
 
+// Sign the canonical uri-bound deliveryMessage the facilitator now verifies.
+// Fast-path /complete uses an empty uri (resultHash zeros) for this smoke test.
 function completionMessage(
   pipeline: PublicKey,
   nodeIndex: number,
   jobId: Uint8Array,
-  resultHash: Uint8Array = new Uint8Array(32)
+  resultHash: Uint8Array = new Uint8Array(32),
+  uri = ""
 ): Uint8Array {
-  return Uint8Array.from([...pipeline.toBytes(), nodeIndex & 0xff, ...jobId, ...resultHash]);
+  return deliveryMessage(pipeline, nodeIndex, jobId, resultHash, new TextEncoder().encode(uri));
 }
 
 async function main() {

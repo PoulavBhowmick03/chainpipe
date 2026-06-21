@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useConnection, useWallet, useAnchorWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
-import { agentStakePda, registryConfigPda, pipelineConfigPda, dagAuthorityPda, nodePda } from "@/lib/sdk";
+import { agentStakePda, registryConfigPda, pipelineConfigPda, dagAuthorityPda, nodePda, deliveryMessage, sha256 } from "@/lib/sdk";
 import { buildPrograms, ADDRESSES, FACILITATOR_URL, explorerTx } from "@/lib/chainpipe";
 import { getPipelines, type PipelineRecord, type NodeRecord } from "@/lib/indexer";
 import { statusKey } from "@/lib/format";
@@ -28,6 +28,7 @@ export default function WorkPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uris, setUris] = useState<Record<string, string>>({});
 
   const refresh = useCallback(async () => {
     if (!wallet) return;
@@ -66,8 +67,14 @@ export default function WorkPage() {
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(null); }
   }
 
-  async function complete(j: Job) {
+  // Optimistic submission with proof-of-delivery: the agent provides a URL where the
+  // output is hosted; the dashboard FETCHES it and computes result_hash from the actual
+  // bytes (not self-reported), signs the uri-bound deliveryMessage, and opens the dispute
+  // window via the facilitator's /submit. Consumers verify + dispute on the pipeline page.
+  async function submit(j: Job) {
     if (!wallet || !signMessage) { setError("Wallet can't sign messages."); return; }
+    const uri = (uris[`${j.p.address}-${j.n.nodeIndex}`] ?? "").trim();
+    if (!uri) { setError("Paste the delivery URL (where your output is hosted) before submitting."); return; }
     const id = `s-${j.p.address}-${j.n.nodeIndex}`;
     setBusy(id); setMsg(null); setError(null);
     try {
@@ -75,12 +82,23 @@ export default function WorkPage() {
       const pipeline = new PublicKey(j.p.address);
       const node = await dag.account.pipelineNode.fetch(nodePda(ADDRESSES, pipeline, j.n.nodeIndex));
       const jobId = Uint8Array.from(node.jobId);
-      const message = Uint8Array.from([...pipeline.toBytes(), j.n.nodeIndex & 0xff, ...jobId, ...new Uint8Array(32)]);
+      // Fetch the hosted output and hash the actual bytes (honest, not self-reported).
+      const gw = uri.startsWith("ipfs://") ? "https://ipfs.io/ipfs/" + uri.slice(7) : uri;
+      const resp = await fetch(gw);
+      if (!resp.ok) throw new Error(`could not fetch delivery URL (${resp.status})`);
+      const bytes = new Uint8Array(await resp.arrayBuffer());
+      const resultHash = await sha256(bytes);
+      const uriBytes = new TextEncoder().encode(uri);
+      const message = await deliveryMessage(pipeline, j.n.nodeIndex, jobId, resultHash, uriBytes);
       const signature = await signMessage(message);
       const b64 = btoa(String.fromCharCode(...signature));
-      const res = await fetch(`${FACILITATOR_URL}/complete`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pipelinePda: j.p.address, nodeIndex: j.n.nodeIndex, agentSignature: b64 }) });
+      const resultHashHex = Buffer.from(resultHash).toString("hex");
+      const res = await fetch(`${FACILITATOR_URL}/submit`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pipelinePda: j.p.address, nodeIndex: j.n.nodeIndex, agentSignature: b64, resultHash: resultHashHex, uri }),
+      });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "facilitator rejected completion");
+      if (!res.ok) throw new Error(json.error ?? "facilitator rejected submission");
       setMsg(json.signature); await refresh();
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(null); }
   }
@@ -146,8 +164,16 @@ export default function WorkPage() {
                     </div>
                     <span className="mono" style={{ fontWeight: 600, fontSize: 17, color: C.blue }}>{usd(j.n.allocationUsdc, 2)}</span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
-                    <button onClick={() => complete(j)} disabled={busy !== null} style={{ padding: "7px 14px", borderRadius: 7, border: `1px solid ${C.line2}`, background: C.panel, color: C.hi, fontWeight: 500, fontSize: 12, cursor: "pointer" }}>{busy === `s-${j.p.address}-${j.n.nodeIndex}` ? "Submitting…" : "Submit completion"}</button>
+                  <input
+                    value={uris[`${j.p.address}-${j.n.nodeIndex}`] ?? ""}
+                    onChange={(e) => setUris((u) => ({ ...u, [`${j.p.address}-${j.n.nodeIndex}`]: e.target.value }))}
+                    placeholder="delivery URL (https:// or ipfs://) — output hashed on submit"
+                    className="mono"
+                    style={{ width: "100%", boxSizing: "border-box", marginBottom: 9, padding: "7px 9px", borderRadius: 6, border: `1px solid ${C.line}`, background: C.bg, color: C.tx, fontSize: 11 }}
+                  />
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span className="mono" style={{ fontSize: 10, color: C.faint }}>proof-of-delivery → {150} slot dispute window</span>
+                    <button onClick={() => submit(j)} disabled={busy !== null} style={{ padding: "7px 14px", borderRadius: 7, border: `1px solid ${C.line2}`, background: C.panel, color: C.hi, fontWeight: 500, fontSize: 12, cursor: "pointer" }}>{busy === `s-${j.p.address}-${j.n.nodeIndex}` ? "Submitting…" : "Submit + proof"}</button>
                   </div>
                 </div>
               ))}

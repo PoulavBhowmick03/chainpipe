@@ -124,13 +124,15 @@ app.post("/complete", async (req: Request, res: Response) => {
       }
     }
 
+    const uriComplete = typeof (req.body?.uri) === "string" ? req.body.uri : "";
     const v = await verifyCompletion(
       cfg.connection,
       pipeline,
       idx,
       decodeSignature(agentSignature),
       resultHashBytes,
-      cfg.addresses
+      cfg.addresses,
+      uriComplete
     );
     if (!v.ok || !v.node || !v.agent || !v.jobId) {
       return res.status(400).json({ error: v.reason ?? "verification failed" });
@@ -223,7 +225,8 @@ app.post("/submit", async (req: Request, res: Response) => {
       idx,
       decodeSignature(agentSignature),
       resultHashBytes,
-      cfg.addresses
+      cfg.addresses,
+      uriStr
     );
     if (!v.ok || !v.node || !v.agent || !v.jobId) {
       return res.status(400).json({ error: v.reason ?? "verification failed" });

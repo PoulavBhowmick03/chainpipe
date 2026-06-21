@@ -53,3 +53,57 @@ export const nodePda = (a: ChainPipeAddresses, pipeline: PublicKey, index: numbe
   PublicKey.findProgramAddressSync([enc("node"), pipeline.toBuffer(), Buffer.from([index])], a.dagEscrow)[0];
 export const vaultAta = (mint: PublicKey, ownerPda: PublicKey) =>
   getAssociatedTokenAddressSync(mint, ownerPda, true);
+export const settlementPda = (a: ChainPipeAddresses, node: PublicKey) =>
+  PublicKey.findProgramAddressSync([enc("settlement"), node.toBuffer()], a.dagEscrow)[0];
+
+// ── Proof-of-delivery (vendored from sdk/src/pipeline.ts; keep byte-compatible) ──
+export const DISPUTE_SLOTS = 150;
+export const MAX_URI_LEN = 96;
+
+export function encodeUri(uri: string): { bytes: number[]; len: number } {
+  const e = new TextEncoder().encode(uri);
+  if (e.length > MAX_URI_LEN) throw new Error(`uri exceeds ${MAX_URI_LEN} bytes`);
+  const bytes = new Array(MAX_URI_LEN).fill(0);
+  e.forEach((b, i) => (bytes[i] = b));
+  return { bytes, len: e.length };
+}
+export function decodeUri(uri: number[] | Uint8Array, uriLen: number): string {
+  return new TextDecoder().decode(Uint8Array.from(Array.from(uri).slice(0, uriLen)));
+}
+
+/** SHA-256 via Web Crypto (browser + Node 20+); no extra dependency. */
+export async function sha256(bytes: Uint8Array): Promise<Uint8Array> {
+  const d = await crypto.subtle.digest("SHA-256", bytes);
+  return new Uint8Array(d);
+}
+
+/** Canonical agent-signed message — MUST match sdk deliveryMessage byte layout:
+ *  pipeline(32) ‖ nodeIndex(1) ‖ jobId(32) ‖ resultHash(32) ‖ sha256(uriBytes)(32). */
+export async function deliveryMessage(
+  pipeline: PublicKey,
+  nodeIndex: number,
+  jobId: Uint8Array,
+  resultHash: Uint8Array,
+  uriBytes: Uint8Array
+): Promise<Uint8Array> {
+  const uriHash = await sha256(uriBytes);
+  return Uint8Array.from([...pipeline.toBytes(), nodeIndex & 0xff, ...jobId, ...resultHash, ...uriHash]);
+}
+
+/** Trustless re-check: fetch the delivery uri, recompute sha256, compare to result_hash. */
+export async function verifyDelivery(
+  uri: string,
+  resultHashHex: string,
+  gateway = "https://ipfs.io/ipfs/"
+): Promise<{ ok: boolean; actualHash: string | null; reason?: string }> {
+  const url = uri.startsWith("ipfs://") ? gateway + uri.slice("ipfs://".length) : uri;
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return { ok: false, actualHash: null, reason: `fetch ${resp.status}` };
+    const bytes = new Uint8Array(await resp.arrayBuffer());
+    const actualHash = Buffer.from(await sha256(bytes)).toString("hex");
+    return { ok: actualHash === resultHashHex, actualHash };
+  } catch (e) {
+    return { ok: false, actualHash: null, reason: String(e) };
+  }
+}
