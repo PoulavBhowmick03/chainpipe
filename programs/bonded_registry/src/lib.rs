@@ -232,12 +232,14 @@ pub mod bonded_registry {
     /// dag_escrow authority PDA may invoke this (enforced via signer check).
     pub fn slash_stake(ctx: Context<SlashStake>, job_id: [u8; 32], slash_bps: u16) -> Result<()> {
         require!(slash_bps <= 10_000, RegistryError::InvalidSlashBps);
-        // Per-incident cap, caller-independent (defends even if dag_escrow passes a high bps).
-        require!(slash_bps <= ctx.accounts.config.max_slash_bps, RegistryError::SlashExceedsCap);
         require!(
             ctx.accounts.dag_authority.key() == ctx.accounts.config.dag_escrow_authority,
             RegistryError::UnauthorizedCaller
         );
+        // Per-incident cap, caller-independent. CLAMP (don't reject): a cap below the
+        // configured slash rate must reduce the slash, never brick expire_node/resolve_dispute
+        // (which would otherwise revert and trap funds / leave bad agents un-slashable).
+        let slash_bps = slash_bps.min(ctx.accounts.config.max_slash_bps);
 
         let agent_stake_info = ctx.accounts.agent_stake.to_account_info();
         let agent_key;

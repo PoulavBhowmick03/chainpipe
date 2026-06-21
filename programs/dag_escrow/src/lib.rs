@@ -610,6 +610,9 @@ pub mod dag_escrow {
             let node = &ctx.accounts.node;
             require!(node.node_index == node_index, DagError::InvalidNodeAccount);
             require!(node.status == NodeStatus::Disputed, DagError::NodeNotDisputed);
+            // Parity with complete_node/finalize_node: the passed agent must be the node's
+            // agent, so payout (rejected) / slash (upheld) can't be misrouted by the arbiter.
+            require!(node.agent == ctx.accounts.agent.key(), DagError::AgentMismatch);
             (node.allocation_usdc, node.job_id, node.agent)
         };
         let score_delta = ctx.accounts.settlement.score_delta;
