@@ -13,6 +13,58 @@ export type DagEscrow = {
   },
   "instructions": [
     {
+      "name": "acceptOperator",
+      "docs": [
+        "Two-step operator transfer, step 2 — the proposed successor accepts, proving key",
+        "control. Prevents fat-fingering control to an unspendable address."
+      ],
+      "discriminator": [
+        216,
+        185,
+        116,
+        130,
+        254,
+        55,
+        57,
+        128
+      ],
+      "accounts": [
+        {
+          "name": "pipelineConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "newOperator",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "cancelPipeline",
       "docs": [
         "Consumer cancels a pipeline that has no claimed/settled nodes, recovering",
@@ -591,6 +643,33 @@ export type DagEscrow = {
         96
       ],
       "accounts": [
+        {
+          "name": "pipelineConfig",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
         {
           "name": "pipeline",
           "writable": true,
@@ -1483,6 +1562,126 @@ export type DagEscrow = {
       ]
     },
     {
+      "name": "migratePipelineConfig",
+      "docs": [
+        "One-time migration that grows a pre-hardening PipelineConfig to the current layout",
+        "and seeds the new fields with safe defaults. Idempotent (rejects if already migrated)."
+      ],
+      "discriminator": [
+        9,
+        155,
+        192,
+        123,
+        204,
+        254,
+        70,
+        183
+      ],
+      "accounts": [
+        {
+          "name": "pipelineConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "pipelineConfig"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "proposeOperator",
+      "docs": [
+        "Two-step operator transfer, step 1 — current operator proposes a successor",
+        "(e.g. a Squads multisig). No effect until the successor calls accept_operator."
+      ],
+      "discriminator": [
+        42,
+        183,
+        138,
+        176,
+        225,
+        0,
+        30,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "pipelineConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "pipelineConfig"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "newOperator",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
       "name": "resolveDispute",
       "docs": [
         "Arbiter (facilitator authority, v1) resolves a disputed node. Upheld →",
@@ -1753,6 +1952,66 @@ export type DagEscrow = {
       ]
     },
     {
+      "name": "setDisputeWindow",
+      "docs": [
+        "Operator tunes the dispute window (slots), bounded. Applies to NEW submissions only —",
+        "in-flight nodes keep the window snapshotted at their submit time."
+      ],
+      "discriminator": [
+        125,
+        232,
+        78,
+        47,
+        233,
+        47,
+        47,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "pipelineConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "pipelineConfig"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "disputeSlots",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "setFacilitatorAuthority",
       "docs": [
         "Operator rotates the facilitator authority (key rotation / decentralization)."
@@ -1808,6 +2067,66 @@ export type DagEscrow = {
         {
           "name": "newAuthority",
           "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "setPaused",
+      "docs": [
+        "Emergency stop / resume (operator-only). Pauses value-in + payout paths; refund and",
+        "dispute-resolution paths remain open so consumer funds can never be trapped."
+      ],
+      "discriminator": [
+        91,
+        60,
+        125,
+        192,
+        176,
+        225,
+        166,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "pipelineConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "pipelineConfig"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "paused",
+          "type": "bool"
         }
       ]
     },
@@ -2096,6 +2415,45 @@ export type DagEscrow = {
       ]
     },
     {
+      "name": "operatorChanged",
+      "discriminator": [
+        231,
+        79,
+        62,
+        226,
+        190,
+        139,
+        176,
+        51
+      ]
+    },
+    {
+      "name": "operatorProposed",
+      "discriminator": [
+        67,
+        39,
+        20,
+        67,
+        243,
+        168,
+        163,
+        30
+      ]
+    },
+    {
+      "name": "pausedSet",
+      "discriminator": [
+        171,
+        125,
+        127,
+        156,
+        233,
+        81,
+        68,
+        66
+      ]
+    },
+    {
       "name": "pipelineCancelled",
       "discriminator": [
         232,
@@ -2250,11 +2608,36 @@ export type DagEscrow = {
     },
     {
       "code": 6025,
+      "name": "paused",
+      "msg": "Protocol is paused"
+    },
+    {
+      "code": 6026,
+      "name": "invalidDisputeWindow",
+      "msg": "Dispute window out of bounds"
+    },
+    {
+      "code": 6027,
+      "name": "noPendingOperator",
+      "msg": "No pending operator to accept"
+    },
+    {
+      "code": 6028,
+      "name": "notPendingOperator",
+      "msg": "Signer is not the pending operator"
+    },
+    {
+      "code": 6029,
+      "name": "alreadyMigrated",
+      "msg": "Config already migrated"
+    },
+    {
+      "code": 6030,
       "name": "pipelineHasActivity",
       "msg": "Pipeline has claimed or settled nodes"
     },
     {
-      "code": 6026,
+      "code": 6031,
       "name": "mathOverflow",
       "msg": "Math overflow"
     }
@@ -2524,6 +2907,14 @@ export type DagEscrow = {
             "type": "u64"
           },
           {
+            "name": "disputeSlots",
+            "docs": [
+              "Dispute window snapshotted from PipelineConfig at submit time, so an operator",
+              "cannot shorten an in-flight node's window out from under the consumer."
+            ],
+            "type": "u64"
+          },
+          {
             "name": "scoreDelta",
             "type": "i16"
           },
@@ -2606,6 +2997,42 @@ export type DagEscrow = {
           {
             "name": "disputeUntil",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "operatorChanged",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "operatorProposed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "newOperator",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "pausedSet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "paused",
+            "type": "bool"
           }
         ]
       }
@@ -2702,6 +3129,35 @@ export type DagEscrow = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "version",
+            "docs": [
+              "Layout version; 0 = pre-hardening (needs migrate), CONFIG_VERSION = current."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "paused",
+            "docs": [
+              "Emergency stop: when true, value-in/payout instructions are blocked (refund +",
+              "dispute paths stay open)."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "disputeSlots",
+            "docs": [
+              "Operator-tunable dispute window (slots), snapshotted onto each NodeSettlement."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "pendingOperator",
+            "docs": [
+              "Two-step operator transfer target (default = none)."
+            ],
+            "type": "pubkey"
           }
         ]
       }
@@ -2835,6 +3291,24 @@ export type DagEscrow = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "maxSlashBps",
+            "docs": [
+              "Hard ceiling on any single slash (per incident), caller-independent."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "pendingOperator",
+            "docs": [
+              "Two-step operator transfer target (default = none)."
+            ],
+            "type": "pubkey"
           }
         ]
       }

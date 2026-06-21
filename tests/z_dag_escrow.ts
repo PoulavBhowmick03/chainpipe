@@ -130,6 +130,7 @@ describe("dag_escrow (integration)", () => {
         new BN(nonce)
       )
       .accountsPartial({
+        pipelineConfig: pipelineConfigPda,
         pipeline,
         consumer: consumer.publicKey,
         stakeMint: mint,
@@ -643,5 +644,54 @@ describe("dag_escrow (integration)", () => {
     assert.equal(after - before, 30 * USDC - fee, "agent paid alloc - fee");
     assert.deepEqual((await de.account.pipelineNode.fetch(nodePda(PH.pipeline, 0))).status, { settled: {} });
     assert.equal((await rb.account.agentReputation.fetch(rbRepPda(agentH.publicKey))).totalSettled, 1);
+  });
+
+  // ───────────────────────── Phase 15: production hardening ─────────────────────────
+  it("migrate_pipeline_config rejects when already migrated (fresh init = v1)", async () => {
+    await expectErr(
+      de.methods.migratePipelineConfig().accountsPartial({ pipelineConfig: pipelineConfigPda, operator: payer.publicKey }).rpc(),
+      "AlreadyMigrated"
+    );
+  });
+
+  it("set_dispute_window: bounds enforced + snapshotted per submission", async () => {
+    await expectErr(de.methods.setDisputeWindow(new anchor.BN(0)).accountsPartial({ pipelineConfig: pipelineConfigPda, operator: payer.publicKey }).rpc(), "InvalidDisputeWindow");
+    await de.methods.setDisputeWindow(new anchor.BN(300)).accountsPartial({ pipelineConfig: pipelineConfigPda, operator: payer.publicKey }).rpc();
+    const ag = await makeAgent(T1);
+    const PW = await createPipeline(91, [{ alloc: 10 * USDC, deadline: FAR, deps: 0, tier: 1 }]);
+    await claim(ag, PW.pipeline, 0);
+    await submitCompletion(PW.pipeline, 0, ag.publicKey, 100);
+    const s = await de.account.nodeSettlement.fetch(settlementPda(nodePda(PW.pipeline, 0)));
+    assert.equal(s.disputeSlots.toNumber(), 300, "window snapshotted from config at submit");
+    // restore default so later/again runs are unaffected
+    await de.methods.setDisputeWindow(new anchor.BN(150)).accountsPartial({ pipelineConfig: pipelineConfigPda, operator: payer.publicKey }).rpc();
+    const s2 = await de.account.pipelineConfig.fetch(pipelineConfigPda);
+    assert.equal(s2.disputeSlots.toNumber(), 150);
+    // in-flight node keeps its 300 snapshot even after the config changed
+    const s3 = await de.account.nodeSettlement.fetch(settlementPda(nodePda(PW.pipeline, 0)));
+    assert.equal(s3.disputeSlots.toNumber(), 300, "in-flight window immutable");
+  });
+
+  it("set_paused blocks create_pipeline; unpause restores", async () => {
+    await de.methods.setPaused(true).accountsPartial({ pipelineConfig: pipelineConfigPda, operator: payer.publicKey }).rpc();
+    await expectErr(createPipeline(92, [{ alloc: 10 * USDC, deadline: FAR, deps: 0, tier: 1 }]), "Paused");
+    await de.methods.setPaused(false).accountsPartial({ pipelineConfig: pipelineConfigPda, operator: payer.publicKey }).rpc();
+    const ok = await createPipeline(93, [{ alloc: 10 * USDC, deadline: FAR, deps: 0, tier: 1 }]);
+    assert.ok(ok.pipeline, "create works again after unpause");
+  });
+
+  it("two-step operator transfer: propose → accept (round-trip, state restored)", async () => {
+    const next = Keypair.generate();
+    await expectErr(de.methods.acceptOperator().accountsPartial({ pipelineConfig: pipelineConfigPda, newOperator: payer.publicKey }).rpc(), "NoPendingOperator");
+    await de.methods.proposeOperator(next.publicKey).accountsPartial({ pipelineConfig: pipelineConfigPda, operator: payer.publicKey }).rpc();
+    // wrong signer can't accept
+    const wrong = Keypair.generate();
+    await expectErr(de.methods.acceptOperator().accountsPartial({ pipelineConfig: pipelineConfigPda, newOperator: wrong.publicKey }).signers([wrong]).rpc(), "NotPendingOperator");
+    await de.methods.acceptOperator().accountsPartial({ pipelineConfig: pipelineConfigPda, newOperator: next.publicKey }).signers([next]).rpc();
+    assert.equal((await de.account.pipelineConfig.fetch(pipelineConfigPda)).operator.toBase58(), next.publicKey.toBase58());
+    // transfer back so the rest of the suite keeps its operator
+    await de.methods.proposeOperator(payer.publicKey).accountsPartial({ pipelineConfig: pipelineConfigPda, operator: next.publicKey }).signers([next]).rpc();
+    await de.methods.acceptOperator().accountsPartial({ pipelineConfig: pipelineConfigPda, newOperator: payer.publicKey }).rpc();
+    assert.equal((await de.account.pipelineConfig.fetch(pipelineConfigPda)).operator.toBase58(), payer.publicKey.toBase58());
   });
 });

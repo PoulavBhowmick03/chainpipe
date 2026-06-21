@@ -7,6 +7,58 @@
   },
   "instructions": [
     {
+      "name": "accept_operator",
+      "docs": [
+        "Two-step operator transfer, step 2 — the proposed successor accepts, proving key",
+        "control. Prevents fat-fingering control to an unspendable address."
+      ],
+      "discriminator": [
+        216,
+        185,
+        116,
+        130,
+        254,
+        55,
+        57,
+        128
+      ],
+      "accounts": [
+        {
+          "name": "pipeline_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_operator",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "cancel_pipeline",
       "docs": [
         "Consumer cancels a pipeline that has no claimed/settled nodes, recovering",
@@ -585,6 +637,33 @@
         96
       ],
       "accounts": [
+        {
+          "name": "pipeline_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
         {
           "name": "pipeline",
           "writable": true,
@@ -1477,6 +1556,126 @@
       ]
     },
     {
+      "name": "migrate_pipeline_config",
+      "docs": [
+        "One-time migration that grows a pre-hardening PipelineConfig to the current layout",
+        "and seeds the new fields with safe defaults. Idempotent (rejects if already migrated)."
+      ],
+      "discriminator": [
+        9,
+        155,
+        192,
+        123,
+        204,
+        254,
+        70,
+        183
+      ],
+      "accounts": [
+        {
+          "name": "pipeline_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "pipeline_config"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "propose_operator",
+      "docs": [
+        "Two-step operator transfer, step 1 — current operator proposes a successor",
+        "(e.g. a Squads multisig). No effect until the successor calls accept_operator."
+      ],
+      "discriminator": [
+        42,
+        183,
+        138,
+        176,
+        225,
+        0,
+        30,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "pipeline_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "pipeline_config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_operator",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
       "name": "resolve_dispute",
       "docs": [
         "Arbiter (facilitator authority, v1) resolves a disputed node. Upheld →",
@@ -1747,6 +1946,66 @@
       ]
     },
     {
+      "name": "set_dispute_window",
+      "docs": [
+        "Operator tunes the dispute window (slots), bounded. Applies to NEW submissions only —",
+        "in-flight nodes keep the window snapshotted at their submit time."
+      ],
+      "discriminator": [
+        125,
+        232,
+        78,
+        47,
+        233,
+        47,
+        47,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "pipeline_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "pipeline_config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "dispute_slots",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "set_facilitator_authority",
       "docs": [
         "Operator rotates the facilitator authority (key rotation / decentralization)."
@@ -1802,6 +2061,66 @@
         {
           "name": "new_authority",
           "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "set_paused",
+      "docs": [
+        "Emergency stop / resume (operator-only). Pauses value-in + payout paths; refund and",
+        "dispute-resolution paths remain open so consumer funds can never be trapped."
+      ],
+      "discriminator": [
+        91,
+        60,
+        125,
+        192,
+        176,
+        225,
+        166,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "pipeline_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  112,
+                  101,
+                  108,
+                  105,
+                  110,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "pipeline_config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "paused",
+          "type": "bool"
         }
       ]
     },
@@ -2090,6 +2409,45 @@
       ]
     },
     {
+      "name": "OperatorChanged",
+      "discriminator": [
+        231,
+        79,
+        62,
+        226,
+        190,
+        139,
+        176,
+        51
+      ]
+    },
+    {
+      "name": "OperatorProposed",
+      "discriminator": [
+        67,
+        39,
+        20,
+        67,
+        243,
+        168,
+        163,
+        30
+      ]
+    },
+    {
+      "name": "PausedSet",
+      "discriminator": [
+        171,
+        125,
+        127,
+        156,
+        233,
+        81,
+        68,
+        66
+      ]
+    },
+    {
       "name": "PipelineCancelled",
       "discriminator": [
         232,
@@ -2244,11 +2602,36 @@
     },
     {
       "code": 6025,
+      "name": "Paused",
+      "msg": "Protocol is paused"
+    },
+    {
+      "code": 6026,
+      "name": "InvalidDisputeWindow",
+      "msg": "Dispute window out of bounds"
+    },
+    {
+      "code": 6027,
+      "name": "NoPendingOperator",
+      "msg": "No pending operator to accept"
+    },
+    {
+      "code": 6028,
+      "name": "NotPendingOperator",
+      "msg": "Signer is not the pending operator"
+    },
+    {
+      "code": 6029,
+      "name": "AlreadyMigrated",
+      "msg": "Config already migrated"
+    },
+    {
+      "code": 6030,
       "name": "PipelineHasActivity",
       "msg": "Pipeline has claimed or settled nodes"
     },
     {
-      "code": 6026,
+      "code": 6031,
       "name": "MathOverflow",
       "msg": "Math overflow"
     }
@@ -2518,6 +2901,14 @@
             "type": "u64"
           },
           {
+            "name": "dispute_slots",
+            "docs": [
+              "Dispute window snapshotted from PipelineConfig at submit time, so an operator",
+              "cannot shorten an in-flight node's window out from under the consumer."
+            ],
+            "type": "u64"
+          },
+          {
             "name": "score_delta",
             "type": "i16"
           },
@@ -2600,6 +2991,42 @@
           {
             "name": "dispute_until",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OperatorChanged",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OperatorProposed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "new_operator",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PausedSet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "paused",
+            "type": "bool"
           }
         ]
       }
@@ -2696,6 +3123,35 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "version",
+            "docs": [
+              "Layout version; 0 = pre-hardening (needs migrate), CONFIG_VERSION = current."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "paused",
+            "docs": [
+              "Emergency stop: when true, value-in/payout instructions are blocked (refund +",
+              "dispute paths stay open)."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "dispute_slots",
+            "docs": [
+              "Operator-tunable dispute window (slots), snapshotted onto each NodeSettlement."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "pending_operator",
+            "docs": [
+              "Two-step operator transfer target (default = none)."
+            ],
+            "type": "pubkey"
           }
         ]
       }
@@ -2829,6 +3285,24 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "max_slash_bps",
+            "docs": [
+              "Hard ceiling on any single slash (per incident), caller-independent."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "pending_operator",
+            "docs": [
+              "Two-step operator transfer target (default = none)."
+            ],
+            "type": "pubkey"
           }
         ]
       }

@@ -12,9 +12,16 @@ use reputation_bridge::program::ReputationBridge;
 declare_id!("3FqvkzppD4ciwkGLrcNoTHUCeHwNbWtot18CkrBdXiJd");
 
 pub const MAX_NODES: usize = 16;
-/// Dispute window after a completion is submitted (devnet-sized ~60s; production
-/// would use a larger value, e.g. several hours of slots).
+/// Default dispute window after a completion is submitted (devnet-sized ~60s). Now a
+/// per-config, operator-tunable value (`PipelineConfig.dispute_slots`) snapshotted onto
+/// each NodeSettlement at submit time; this is only the default seed for init/migrate.
 pub const DISPUTE_SLOTS: u64 = 150;
+/// Bounds for `set_dispute_window` — never 0 (would allow instant finalize, no dispute)
+/// and never absurdly large (~24 days at 400ms/slot).
+pub const MIN_DISPUTE_SLOTS: u64 = 30;
+pub const MAX_DISPUTE_SLOTS: u64 = 5_184_000;
+/// Current PipelineConfig layout version (migrate_pipeline_config sets live accounts to this).
+pub const CONFIG_VERSION: u8 = 1;
 
 #[program]
 pub mod dag_escrow {
@@ -35,6 +42,11 @@ pub mod dag_escrow {
         cfg.fee_bps = fee_bps;
         cfg.dag_authority_bump = dag_bump;
         cfg.bump = ctx.bumps.pipeline_config;
+        // hardening defaults (fresh deploys start at current version → no migrate needed)
+        cfg.version = CONFIG_VERSION;
+        cfg.paused = false;
+        cfg.dispute_slots = DISPUTE_SLOTS;
+        cfg.pending_operator = Pubkey::default();
         Ok(())
     }
 
@@ -47,6 +59,60 @@ pub mod dag_escrow {
         Ok(())
     }
 
+    /// Emergency stop / resume (operator-only). Pauses value-in + payout paths; refund and
+    /// dispute-resolution paths remain open so consumer funds can never be trapped.
+    pub fn set_paused(ctx: Context<SetPaused>, paused: bool) -> Result<()> {
+        ctx.accounts.pipeline_config.paused = paused;
+        emit!(PausedSet { paused });
+        Ok(())
+    }
+
+    /// Operator tunes the dispute window (slots), bounded. Applies to NEW submissions only —
+    /// in-flight nodes keep the window snapshotted at their submit time.
+    pub fn set_dispute_window(ctx: Context<SetDisputeWindow>, dispute_slots: u64) -> Result<()> {
+        require!(
+            dispute_slots >= MIN_DISPUTE_SLOTS && dispute_slots <= MAX_DISPUTE_SLOTS,
+            DagError::InvalidDisputeWindow
+        );
+        ctx.accounts.pipeline_config.dispute_slots = dispute_slots;
+        Ok(())
+    }
+
+    /// Two-step operator transfer, step 1 — current operator proposes a successor
+    /// (e.g. a Squads multisig). No effect until the successor calls accept_operator.
+    pub fn propose_operator(ctx: Context<ProposeOperator>, new_operator: Pubkey) -> Result<()> {
+        ctx.accounts.pipeline_config.pending_operator = new_operator;
+        emit!(OperatorProposed { new_operator });
+        Ok(())
+    }
+
+    /// Two-step operator transfer, step 2 — the proposed successor accepts, proving key
+    /// control. Prevents fat-fingering control to an unspendable address.
+    pub fn accept_operator(ctx: Context<AcceptOperator>) -> Result<()> {
+        let cfg = &mut ctx.accounts.pipeline_config;
+        require!(cfg.pending_operator != Pubkey::default(), DagError::NoPendingOperator);
+        require!(
+            ctx.accounts.new_operator.key() == cfg.pending_operator,
+            DagError::NotPendingOperator
+        );
+        cfg.operator = cfg.pending_operator;
+        cfg.pending_operator = Pubkey::default();
+        emit!(OperatorChanged { operator: cfg.operator });
+        Ok(())
+    }
+
+    /// One-time migration that grows a pre-hardening PipelineConfig to the current layout
+    /// and seeds the new fields with safe defaults. Idempotent (rejects if already migrated).
+    pub fn migrate_pipeline_config(ctx: Context<MigratePipelineConfig>) -> Result<()> {
+        let cfg = &mut ctx.accounts.pipeline_config;
+        require!(cfg.version == 0, DagError::AlreadyMigrated);
+        cfg.version = CONFIG_VERSION;
+        cfg.paused = false;
+        cfg.dispute_slots = DISPUTE_SLOTS;
+        cfg.pending_operator = Pubkey::default();
+        Ok(())
+    }
+
     /// Create a DAG pipeline, lock the full budget into a vault, and create one
     /// PipelineNode account per node (passed as remaining_accounts in order).
     pub fn create_pipeline<'info>(
@@ -54,6 +120,7 @@ pub mod dag_escrow {
         node_configs: Vec<NodeConfig>,
         nonce: u64,
     ) -> Result<()> {
+        require!(!ctx.accounts.pipeline_config.paused, DagError::Paused);
         let n = node_configs.len();
         require!(n >= 1 && n <= MAX_NODES, DagError::InvalidNodeCount);
         require!(
@@ -161,6 +228,7 @@ pub mod dag_escrow {
     /// An agent claims a node once all dependencies are settled and its tier is
     /// sufficient. CPIs into bonded_registry to increment the open-job counter.
     pub fn claim_node(ctx: Context<ClaimNode>, node_index: u8) -> Result<()> {
+        require!(!ctx.accounts.pipeline_config.paused, DagError::Paused);
         require!(
             ctx.accounts.pipeline.status == PipelineStatus::Active,
             DagError::PipelineNotActive
@@ -230,6 +298,7 @@ pub mod dag_escrow {
         score_delta: i16,
         result_hash: [u8; 32],
     ) -> Result<()> {
+        require!(!ctx.accounts.pipeline_config.paused, DagError::Paused);
         require!(
             ctx.accounts.facilitator.key() == ctx.accounts.pipeline_config.facilitator_authority,
             DagError::UnauthorizedFacilitator
@@ -359,6 +428,7 @@ pub mod dag_escrow {
         uri: [u8; 96],
         uri_len: u8,
     ) -> Result<()> {
+        require!(!ctx.accounts.pipeline_config.paused, DagError::Paused);
         require!(
             ctx.accounts.facilitator.key() == ctx.accounts.pipeline_config.facilitator_authority,
             DagError::UnauthorizedFacilitator
@@ -371,12 +441,15 @@ pub mod dag_escrow {
             require!(node.status == NodeStatus::Claimed, DagError::NodeNotClaimed);
             require!(node.agent == ctx.accounts.agent.key(), DagError::AgentMismatch);
         }
+        // Snapshot the window from config so a later set_dispute_window can't shorten it.
+        let window = ctx.accounts.pipeline_config.dispute_slots;
         let s = &mut ctx.accounts.settlement;
         s.node = ctx.accounts.node.key();
         s.result_hash = result_hash;
         s.uri = uri;
         s.uri_len = uri_len;
         s.submitted_at_slot = clock.slot;
+        s.dispute_slots = window;
         s.score_delta = score_delta;
         s.disputed = false;
         s.bump = ctx.bumps.settlement;
@@ -389,7 +462,7 @@ pub mod dag_escrow {
             result_hash,
             uri,
             uri_len,
-            dispute_until: clock.slot.saturating_add(DISPUTE_SLOTS),
+            dispute_until: clock.slot.saturating_add(window),
         });
         Ok(())
     }
@@ -411,7 +484,7 @@ pub mod dag_escrow {
             require!(node.status == NodeStatus::Submitted, DagError::NodeNotSubmitted);
         }
         require!(
-            clock.slot <= ctx.accounts.settlement.submitted_at_slot.saturating_add(DISPUTE_SLOTS),
+            clock.slot <= ctx.accounts.settlement.submitted_at_slot.saturating_add(ctx.accounts.settlement.dispute_slots),
             DagError::DisputeWindowClosed
         );
         ctx.accounts.settlement.disputed = true;
@@ -432,8 +505,11 @@ pub mod dag_escrow {
             (node.allocation_usdc, node.job_id, node.agent)
         };
         require!(!ctx.accounts.settlement.disputed, DagError::NodeAlreadyDisputed);
+        // finalize is permissionless after the window; pausing must not block honest payout
+        // forever, but should hold during an active incident → guard here too.
+        require!(!ctx.accounts.pipeline_config.paused, DagError::Paused);
         require!(
-            clock.slot > ctx.accounts.settlement.submitted_at_slot.saturating_add(DISPUTE_SLOTS),
+            clock.slot > ctx.accounts.settlement.submitted_at_slot.saturating_add(ctx.accounts.settlement.dispute_slots),
             DagError::DisputeWindowOpen
         );
         let score_delta = ctx.accounts.settlement.score_delta;
@@ -906,6 +982,16 @@ pub struct PipelineConfig {
     pub fee_bps: u16,
     pub dag_authority_bump: u8,
     pub bump: u8,
+    // ── hardening fields (APPENDED; grown on live accounts via migrate_pipeline_config) ──
+    /// Layout version; 0 = pre-hardening (needs migrate), CONFIG_VERSION = current.
+    pub version: u8,
+    /// Emergency stop: when true, value-in/payout instructions are blocked (refund +
+    /// dispute paths stay open).
+    pub paused: bool,
+    /// Operator-tunable dispute window (slots), snapshotted onto each NodeSettlement.
+    pub dispute_slots: u64,
+    /// Two-step operator transfer target (default = none).
+    pub pending_operator: Pubkey,
 }
 
 #[account]
@@ -955,6 +1041,9 @@ pub struct NodeSettlement {
     pub uri: [u8; 96],
     pub uri_len: u8,
     pub submitted_at_slot: u64,
+    /// Dispute window snapshotted from PipelineConfig at submit time, so an operator
+    /// cannot shorten an in-flight node's window out from under the consumer.
+    pub dispute_slots: u64,
     pub score_delta: i16,
     pub disputed: bool,
     pub bump: u8,
@@ -965,6 +1054,52 @@ pub struct SetFacilitatorAuthority<'info> {
     #[account(mut, seeds = [b"pipeline_config"], bump = pipeline_config.bump, has_one = operator)]
     pub pipeline_config: Account<'info, PipelineConfig>,
     pub operator: Signer<'info>,
+}
+
+// Operator-only config mutations all share the has_one = operator guard.
+#[derive(Accounts)]
+pub struct SetPaused<'info> {
+    #[account(mut, seeds = [b"pipeline_config"], bump = pipeline_config.bump, has_one = operator)]
+    pub pipeline_config: Account<'info, PipelineConfig>,
+    pub operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct SetDisputeWindow<'info> {
+    #[account(mut, seeds = [b"pipeline_config"], bump = pipeline_config.bump, has_one = operator)]
+    pub pipeline_config: Account<'info, PipelineConfig>,
+    pub operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct ProposeOperator<'info> {
+    #[account(mut, seeds = [b"pipeline_config"], bump = pipeline_config.bump, has_one = operator)]
+    pub pipeline_config: Account<'info, PipelineConfig>,
+    pub operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct AcceptOperator<'info> {
+    #[account(mut, seeds = [b"pipeline_config"], bump = pipeline_config.bump)]
+    pub pipeline_config: Account<'info, PipelineConfig>,
+    pub new_operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct MigratePipelineConfig<'info> {
+    #[account(
+        mut,
+        seeds = [b"pipeline_config"],
+        bump = pipeline_config.bump,
+        has_one = operator,
+        realloc = 8 + PipelineConfig::INIT_SPACE,
+        realloc::payer = operator,
+        realloc::zero = false
+    )]
+    pub pipeline_config: Account<'info, PipelineConfig>,
+    #[account(mut)]
+    pub operator: Signer<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -985,6 +1120,8 @@ pub struct Initialize<'info> {
 #[derive(Accounts)]
 #[instruction(node_configs: Vec<NodeConfig>, nonce: u64)]
 pub struct CreatePipeline<'info> {
+    #[account(seeds = [b"pipeline_config"], bump = pipeline_config.bump)]
+    pub pipeline_config: Account<'info, PipelineConfig>,
     #[account(
         init,
         payer = consumer,
@@ -1217,28 +1354,30 @@ pub struct ResolveDispute<'info> {
 #[derive(Accounts)]
 #[instruction(node_index: u8)]
 pub struct ExpireNode<'info> {
+    // Heavy accounts are Boxed to keep try_accounts' stack frame under SBF's 4KB limit
+    // (the hardening fields widened PipelineConfig/RegistryConfig).
     #[account(seeds = [b"pipeline_config"], bump = pipeline_config.bump)]
-    pub pipeline_config: Account<'info, PipelineConfig>,
+    pub pipeline_config: Box<Account<'info, PipelineConfig>>,
     #[account(mut)]
-    pub pipeline: Account<'info, Pipeline>,
+    pub pipeline: Box<Account<'info, Pipeline>>,
     #[account(
         mut,
         seeds = [b"node", pipeline.key().as_ref(), &[node_index]],
         bump = node.bump
     )]
-    pub node: Account<'info, PipelineNode>,
+    pub node: Box<Account<'info, PipelineNode>>,
     #[account(
         mut,
         associated_token::mint = stake_mint,
         associated_token::authority = pipeline
     )]
-    pub vault: Account<'info, TokenAccount>,
-    pub stake_mint: Account<'info, Mint>,
+    pub vault: Box<Account<'info, TokenAccount>>,
+    pub stake_mint: Box<Account<'info, Mint>>,
     #[account(
         mut,
         constraint = consumer_token_account.owner == pipeline.consumer @ DagError::InvalidConsumerAccount
     )]
-    pub consumer_token_account: Account<'info, TokenAccount>,
+    pub consumer_token_account: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub caller: Signer<'info>,
     /// CHECK: dag_authority PDA, verified by seeds; signs CPIs.
@@ -1246,11 +1385,11 @@ pub struct ExpireNode<'info> {
     pub dag_authority: UncheckedAccount<'info>,
     // Optional slash/reputation accounts — required only if target was Claimed.
     #[account(mut)]
-    pub registry_config: Option<Account<'info, bonded_registry::RegistryConfig>>,
+    pub registry_config: Option<Box<Account<'info, bonded_registry::RegistryConfig>>>,
     #[account(mut)]
-    pub agent_stake: Option<Account<'info, bonded_registry::AgentStake>>,
+    pub agent_stake: Option<Box<Account<'info, bonded_registry::AgentStake>>>,
     #[account(mut)]
-    pub agent_stake_vault: Option<Account<'info, TokenAccount>>,
+    pub agent_stake_vault: Option<Box<Account<'info, TokenAccount>>>,
     pub bonded_registry_program: Option<Program<'info, BondedRegistry>>,
     /// CHECK: bridge config, validated by reputation_bridge CPI.
     #[account(mut)]
@@ -1360,6 +1499,21 @@ pub struct NodeResolved {
     pub upheld: bool,
 }
 
+#[event]
+pub struct PausedSet {
+    pub paused: bool,
+}
+
+#[event]
+pub struct OperatorProposed {
+    pub new_operator: Pubkey,
+}
+
+#[event]
+pub struct OperatorChanged {
+    pub operator: Pubkey,
+}
+
 #[error_code]
 pub enum DagError {
     #[msg("Fee BPS exceeds 100%")]
@@ -1412,6 +1566,16 @@ pub enum DagError {
     InvalidConsumerAccount,
     #[msg("Delivery URI length exceeds 96-byte buffer")]
     InvalidUri,
+    #[msg("Protocol is paused")]
+    Paused,
+    #[msg("Dispute window out of bounds")]
+    InvalidDisputeWindow,
+    #[msg("No pending operator to accept")]
+    NoPendingOperator,
+    #[msg("Signer is not the pending operator")]
+    NotPendingOperator,
+    #[msg("Config already migrated")]
+    AlreadyMigrated,
     #[msg("Pipeline has claimed or settled nodes")]
     PipelineHasActivity,
     #[msg("Math overflow")]

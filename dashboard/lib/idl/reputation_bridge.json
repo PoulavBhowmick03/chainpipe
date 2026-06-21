@@ -7,6 +7,52 @@
   },
   "instructions": [
     {
+      "name": "accept_operator",
+      "discriminator": [
+        216,
+        185,
+        116,
+        130,
+        254,
+        55,
+        57,
+        128
+      ],
+      "accounts": [
+        {
+          "name": "bridge_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_operator",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initialize",
       "docs": [
         "One-time operator setup. `dag_escrow_authority` is the dag_escrow CPI",
@@ -72,6 +118,120 @@
         {
           "name": "ema_alpha_bps",
           "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "migrate_bridge_config",
+      "docs": [
+        "One-time migration: grow a pre-hardening BridgeConfig and seed new fields."
+      ],
+      "discriminator": [
+        58,
+        20,
+        134,
+        143,
+        54,
+        144,
+        190,
+        179
+      ],
+      "accounts": [
+        {
+          "name": "bridge_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "bridge_config"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "propose_operator",
+      "docs": [
+        "Two-step operator transfer (propose; successor must accept)."
+      ],
+      "discriminator": [
+        42,
+        183,
+        138,
+        176,
+        225,
+        0,
+        30,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "bridge_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "bridge_config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_operator",
+          "type": "pubkey"
         }
       ]
     },
@@ -470,6 +630,21 @@
       "code": 6001,
       "name": "InvalidAlpha",
       "msg": "EMA alpha bps exceeds 100%"
+    },
+    {
+      "code": 6002,
+      "name": "NoPendingOperator",
+      "msg": "No pending operator to accept"
+    },
+    {
+      "code": 6003,
+      "name": "NotPendingOperator",
+      "msg": "Signer is not the pending operator"
+    },
+    {
+      "code": 6004,
+      "name": "AlreadyMigrated",
+      "msg": "Config already migrated"
     }
   ],
   "types": [
@@ -538,6 +713,14 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "pending_operator",
+            "type": "pubkey"
           }
         ]
       }

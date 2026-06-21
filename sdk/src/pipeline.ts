@@ -140,6 +140,7 @@ export async function createPipeline(
       new BN(nonce.toString())
     )
     .accountsPartial({
+      pipelineConfig: pipelineConfigPda(addresses),
       pipeline,
       consumer: consumer.publicKey,
       stakeMint: addresses.usdcMint,

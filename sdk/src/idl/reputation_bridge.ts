@@ -13,6 +13,52 @@ export type ReputationBridge = {
   },
   "instructions": [
     {
+      "name": "acceptOperator",
+      "discriminator": [
+        216,
+        185,
+        116,
+        130,
+        254,
+        55,
+        57,
+        128
+      ],
+      "accounts": [
+        {
+          "name": "bridgeConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "newOperator",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initialize",
       "docs": [
         "One-time operator setup. `dag_escrow_authority` is the dag_escrow CPI",
@@ -78,6 +124,120 @@ export type ReputationBridge = {
         {
           "name": "emaAlphaBps",
           "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "migrateBridgeConfig",
+      "docs": [
+        "One-time migration: grow a pre-hardening BridgeConfig and seed new fields."
+      ],
+      "discriminator": [
+        58,
+        20,
+        134,
+        143,
+        54,
+        144,
+        190,
+        179
+      ],
+      "accounts": [
+        {
+          "name": "bridgeConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "bridgeConfig"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "proposeOperator",
+      "docs": [
+        "Two-step operator transfer (propose; successor must accept)."
+      ],
+      "discriminator": [
+        42,
+        183,
+        138,
+        176,
+        225,
+        0,
+        30,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "bridgeConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "bridgeConfig"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "newOperator",
+          "type": "pubkey"
         }
       ]
     },
@@ -476,6 +636,21 @@ export type ReputationBridge = {
       "code": 6001,
       "name": "invalidAlpha",
       "msg": "EMA alpha bps exceeds 100%"
+    },
+    {
+      "code": 6002,
+      "name": "noPendingOperator",
+      "msg": "No pending operator to accept"
+    },
+    {
+      "code": 6003,
+      "name": "notPendingOperator",
+      "msg": "Signer is not the pending operator"
+    },
+    {
+      "code": 6004,
+      "name": "alreadyMigrated",
+      "msg": "Config already migrated"
     }
   ],
   "types": [
@@ -544,6 +719,14 @@ export type ReputationBridge = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "pendingOperator",
+            "type": "pubkey"
           }
         ]
       }

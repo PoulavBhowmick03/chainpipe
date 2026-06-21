@@ -5,7 +5,7 @@ import { useConnection, useAnchorWallet } from "@solana/wallet-adapter-react";
 import { SystemProgram } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import BN from "bn.js";
-import { pipelinePda, nodePda, vaultAta } from "@/lib/sdk";
+import { pipelinePda, nodePda, vaultAta, pipelineConfigPda } from "@/lib/sdk";
 import { buildPrograms, ADDRESSES, explorerTx } from "@/lib/chainpipe";
 import { C, usd } from "@/lib/theme";
 import { DagCanvas, type DagNode } from "@/components/DagCanvas";
@@ -59,7 +59,7 @@ export function PipelineBuilder() {
         return { allocationUsdc: new BN(Math.round(n.alloc * 1_000_000)), deadlineSlotsFromNow: new BN(Math.round(n.deadline * SLOTS_PER_HOUR)), dependencyMask: new BN(mask), requiredTier: n.tier };
       });
       const sig = await dag.methods.createPipeline(configs, new BN(nonce.toString())).accountsPartial({
-        pipeline, consumer: wallet.publicKey, stakeMint: ADDRESSES.usdcMint,
+        pipelineConfig: pipelineConfigPda(ADDRESSES), pipeline, consumer: wallet.publicKey, stakeMint: ADDRESSES.usdcMint,
         consumerTokenAccount: getAssociatedTokenAddressSync(ADDRESSES.usdcMint, wallet.publicKey),
         vault: vaultAta(ADDRESSES.usdcMint, pipeline), tokenProgram: TOKEN_PROGRAM_ID, associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
       }).remainingAccounts(nodePdas.map((pubkey) => ({ pubkey, isWritable: true, isSigner: false }))).rpc();

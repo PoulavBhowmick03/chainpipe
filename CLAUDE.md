@@ -107,7 +107,7 @@ validator, NOT the framework CLI. Use `PATH="$HOME/.avm/bin:$PATH" anchor …`
 - [x] **Phase 12** — Proof-of-delivery in dag_escrow — NodeSettlement uri/uri_len, submit_completion+InvalidUri, dispute_node reason_code, events; SDK encodeUri/decodeUri; `anchor test` 43/43
 - [~] **Phase 13** — Facilitator dispute routes (/submit,/finalize,/resolve,/settlement) + e2e dispute+proof demo — CODE DONE, builds green; live devnet upgrade deferred to funded session (BLOCKERS D6, batched w/ P16)
 - [x] **Phase 14** — Proof-of-delivery off-chain UX — SDK deliveryMessage/verifyDelivery, facilitator uri-binding + integrity check, dashboard /work upload+sign + SettlementPanel (verify/dispute/finalize); units 7/7, next build 0 errors
-- [ ] **Phase 15** — Production hardening: config realloc migrations, dispute-window/pause/slash-cap, two-step operator
+- [x] **Phase 15** — Production hardening — pause, configurable+snapshotted dispute window, slash cap, two-step operator transfer, realloc migrate_* across all 3 programs (Boxed ExpireNode to fix 4KB stack); anchor test 52/52
 - [ ] **Phase 16** — Hardening redeploy + run migrate_* + upgrade-authority→Squads runbook + docs
 - [ ] **Phase 17** — Grant packaging: honest README/CLAUDE.md, decentralization roadmap, npm publish prep
 

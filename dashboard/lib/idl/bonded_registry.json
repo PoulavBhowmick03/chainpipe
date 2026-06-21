@@ -7,6 +7,45 @@
   },
   "instructions": [
     {
+      "name": "accept_operator",
+      "discriminator": [
+        216,
+        185,
+        116,
+        130,
+        254,
+        55,
+        57,
+        128
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_operator",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "add_stake",
       "docs": [
         "Add to an existing stake (may upgrade the tier)."
@@ -637,6 +676,106 @@
       ]
     },
     {
+      "name": "migrate_registry_config",
+      "docs": [
+        "One-time migration: grow a pre-hardening RegistryConfig and seed new fields."
+      ],
+      "discriminator": [
+        103,
+        181,
+        226,
+        54,
+        185,
+        93,
+        44,
+        69
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "propose_operator",
+      "docs": [
+        "Two-step operator transfer (propose; successor must accept)."
+      ],
+      "discriminator": [
+        42,
+        183,
+        138,
+        176,
+        225,
+        0,
+        30,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_operator",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
       "name": "request_unstake",
       "docs": [
         "Begin the unstake cooldown. Reverts if the agent has open jobs."
@@ -737,6 +876,56 @@
         {
           "name": "dag_escrow_authority",
           "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "set_max_slash_bps",
+      "docs": [
+        "Operator sets the per-incident slash ceiling (≤ 100%)."
+      ],
+      "discriminator": [
+        98,
+        130,
+        145,
+        120,
+        194,
+        117,
+        96,
+        202
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "max_slash_bps",
+          "type": "u16"
         }
       ]
     },
@@ -1295,6 +1484,26 @@
       "code": 6007,
       "name": "MathOverflow",
       "msg": "Math overflow"
+    },
+    {
+      "code": 6008,
+      "name": "SlashExceedsCap",
+      "msg": "Slash BPS exceeds the configured per-incident cap"
+    },
+    {
+      "code": 6009,
+      "name": "NoPendingOperator",
+      "msg": "No pending operator to accept"
+    },
+    {
+      "code": 6010,
+      "name": "NotPendingOperator",
+      "msg": "Signer is not the pending operator"
+    },
+    {
+      "code": 6011,
+      "name": "AlreadyMigrated",
+      "msg": "Config already migrated"
     }
   ],
   "types": [
@@ -1366,6 +1575,24 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "max_slash_bps",
+            "docs": [
+              "Hard ceiling on any single slash (per incident), caller-independent."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "pending_operator",
+            "docs": [
+              "Two-step operator transfer target (default = none)."
+            ],
+            "type": "pubkey"
           }
         ]
       }

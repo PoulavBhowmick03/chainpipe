@@ -173,4 +173,28 @@ describe("reputation_bridge", () => {
     await complete(agent, -32768); // 5000 - 6553 = -1553 -> clamp 0
     assert.equal(await ema(agent), 0);
   });
+
+  // ───────────────────────── Phase 15: production hardening ─────────────────────────
+  const expectErr = async (p: Promise<unknown>, code: string) => {
+    try { await p; assert.fail(`expected ${code}`); }
+    catch (e) { assert.include(String((e as { message?: string }).message ?? e), code); }
+  };
+
+  it("migrate_bridge_config rejects when already migrated (fresh init = v1)", async () => {
+    await expectErr(
+      program.methods.migrateBridgeConfig().accountsPartial({ bridgeConfig: configPda, operator: provider.wallet.publicKey }).rpc(),
+      "AlreadyMigrated"
+    );
+  });
+
+  it("two-step operator transfer: propose → accept (round-trip)", async () => {
+    const next = Keypair.generate();
+    await expectErr(program.methods.acceptOperator().accountsPartial({ bridgeConfig: configPda, newOperator: provider.wallet.publicKey }).rpc(), "NoPendingOperator");
+    await program.methods.proposeOperator(next.publicKey).accountsPartial({ bridgeConfig: configPda, operator: provider.wallet.publicKey }).rpc();
+    await program.methods.acceptOperator().accountsPartial({ bridgeConfig: configPda, newOperator: next.publicKey }).signers([next]).rpc();
+    assert.equal((await program.account.bridgeConfig.fetch(configPda)).operator.toBase58(), next.publicKey.toBase58());
+    await program.methods.proposeOperator(provider.wallet.publicKey).accountsPartial({ bridgeConfig: configPda, operator: next.publicKey }).signers([next]).rpc();
+    await program.methods.acceptOperator().accountsPartial({ bridgeConfig: configPda, newOperator: provider.wallet.publicKey }).rpc();
+    assert.equal((await program.account.bridgeConfig.fetch(configPda)).operator.toBase58(), provider.wallet.publicKey.toBase58());
+  });
 });
