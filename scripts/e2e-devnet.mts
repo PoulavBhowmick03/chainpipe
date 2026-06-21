@@ -43,9 +43,18 @@ import {
   getPipeline,
   getAgentReputation,
   getAgentStake,
+  submitCompletion,
+  finalizeNode,
+  disputeNode,
+  resolveDispute,
+  getSettlement,
+  decodeUri,
+  DISPUTE_SLOTS,
 } from "@chainpipe/solana";
+import { createHash } from "crypto";
 
 const USDC = 1_000_000;
+const sha256 = (s: string) => new Uint8Array(createHash("sha256").update(s).digest());
 const RPC = process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
 const ex = (sig: string) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
 
@@ -176,6 +185,58 @@ async function main() {
   console.log("  ✓ Expire Tx:", ex(expSig.signature));
   console.log(`  ✓ Consumer refunded + slash: ${((consumerAfter - consumerBefore) / USDC).toFixed(2)} USDC`);
   console.log(`  ✓ Agent B stake after slash: ${(stakeB!.stakeAmount.toNumber() / USDC).toFixed(2)} USDC (tier ${stakeB!.tier})\n`);
+
+  // ── Optimistic settlement + proof-of-delivery demo ────────────────────────
+  // A second pipeline showing: submit_completion (with content-addressed delivery
+  // proof) → dispute within window → arbiter resolve, and → finalize after window.
+  console.log("\n── OPTIMISTIC SETTLEMENT + PROOF-OF-DELIVERY ──\n");
+  const PROOF_NONCE = BigInt(Date.now());
+  const proof = await createPipeline(
+    connection, consumer,
+    [
+      { allocationUsdc: BigInt(20 * USDC), deadlineSlotsFromNow: 5_000n, dependencyMask: 0n, requiredTier: 1 },
+      { allocationUsdc: BigInt(15 * USDC), deadlineSlotsFromNow: 5_000n, dependencyMask: 0n, requiredTier: 1 },
+    ],
+    addresses, PROOF_NONCE
+  );
+  console.log("[proof 1/4] Created 2-node pipeline:", ex(proof.signature));
+  await beat();
+
+  // Node 0: agent A submits a delivery (uri + sha256), consumer accepts (finalize after window).
+  await claimNode(connection, agentA, proof.pipelinePda, 0, addresses);
+  await beat();
+  const uri0 = "ipfs://bafkreigooddeliverynode0proofofdelivery";
+  const sub0 = await submitCompletion(connection, facilitator, proof.pipelinePda, 0, agentA.publicKey, 900, addresses, sha256(uri0 + ":payload"), uri0);
+  const set0 = await getSettlement(connection, proof.pipelinePda, 0, addresses);
+  console.log("[proof 2/4] Agent A submits Node 0 w/ delivery proof:", ex(sub0.signature));
+  console.log(`  ✓ uri: ${decodeUri(set0!.uri as number[], set0!.uriLen)}  (dispute window ${DISPUTE_SLOTS} slots)`);
+  await beat();
+
+  // Node 1: agent B submits, consumer disputes (hash mismatch), arbiter upholds → refund + slash.
+  await claimNode(connection, agentB, proof.pipelinePda, 1, addresses);
+  await beat();
+  const uri1 = "ipfs://bafkreibaddeliverynode1willbedisputed";
+  await submitCompletion(connection, facilitator, proof.pipelinePda, 1, agentB.publicKey, 800, addresses, sha256(uri1 + ":claimed"), uri1);
+  await beat();
+  const disp = await disputeNode(connection, consumer, proof.pipelinePda, 1, addresses, sha256("hash-mismatch"), 0);
+  const consBefore = Number((await getAccount(connection, consumerAta)).amount);
+  const resolved = await resolveDispute(connection, facilitator, proof.pipelinePda, 1, agentB.publicKey, true, operatorTreasury, addresses);
+  const consAfter = Number((await getAccount(connection, consumerAta)).amount);
+  console.log("[proof 3/4] Consumer disputes Node 1 → arbiter upholds → refund + slash");
+  console.log("  ✓ Dispute Tx:", ex(disp.signature));
+  console.log("  ✓ Resolve Tx:", ex(resolved.signature));
+  console.log(`  ✓ Consumer refunded + slash: ${((consAfter - consBefore) / USDC).toFixed(2)} USDC`);
+
+  // Finalize Node 0 once its dispute window elapses (permissionless payout).
+  const ready = Number(set0!.submittedAtSlot) + DISPUTE_SLOTS + 2;
+  process.stdout.write("  …waiting for Node 0 dispute window to elapse ");
+  while ((await connection.getSlot("confirmed")) < ready) { process.stdout.write("."); await sleep(2000); }
+  console.log("");
+  const fin = await finalizeNode(connection, facilitator, proof.pipelinePda, 0, agentA.publicKey, operatorTreasury, addresses);
+  const proofFinal = await getPipeline(connection, proof.pipelinePda, addresses);
+  console.log("[proof 4/4] Finalize Node 0 (no dispute) → agent paid + completion recorded");
+  console.log("  ✓ Finalize Tx:", ex(fin.signature));
+  console.log(`  ✓ Proof pipeline: ${Object.keys(proofFinal!.status)[0]} (settled ${proofFinal!.nodesSettled}, expired ${proofFinal!.nodesExpired})\n`);
 
   // Final state
   const finalP = await getPipeline(connection, pipelinePda, addresses);

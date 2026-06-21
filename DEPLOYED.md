@@ -91,6 +91,29 @@ Test mint: `8BPRrfsXT3FZUvxW5v5ctq8Q5moZinNu7eFR4gtFPxz1`
 | 2 | Active | `4pFdQSBSkhBR8Sjw5XNLDwsMxsmSuAAFx5s9Ezmd7vZa` |
 | 3 | PartiallyRefunded | `7LqDXqWtpW4RTvyhJ9x5spWzxHfuLLmmp6Ld4g7zaKiu` |
 
+## Hardening upgrade — dispute + proof-of-delivery + production hardening (Phases 11–16) — ✅ LIVE
+
+All three programs were upgraded in place on devnet with the optimistic-settlement **dispute
+layer**, content-addressed **proof-of-delivery**, and the **production-hardening** pass
+(pause, configurable+snapshotted dispute window, per-incident slash cap, two-step operator
+transfer). The three live config PDAs were grown to the hardened layout via a one-time manual
+realloc (`scripts/migrate-configs.mts`).
+
+| Config migration | migrate tx |
+|------------------|-----------|
+| dag_escrow `PipelineConfig` | `ff8yUQaTTfE95bxkBfm7ZVdCHtK2UhiP5SV11pBRaKAZMN6voVPTHe2yhbYFruMz3it2MgWHtggpzbw41WxvNSF` |
+| bonded_registry `RegistryConfig` | `4FqGFsGPbEPr6qgZs1A78FdR5aGfvU8dACPEr7QzSHDzDn3kf57GrjT8UUPAKmtawYY9z6kBezQ5YatmS13s2mbZ` |
+| reputation_bridge `BridgeConfig` | `3Ur8EkdAqTix2xCKqoJDgYwhoh3r5iaEQ7eqyQ2W2rQWN2WxTfvu3BUrZZ9ndt5FYgkEnatZWTvnHFrhabx8HAsa` |
+
+Verified live: `scripts/e2e-devnet.mts` runs the full lifecycle **including** optimistic
+submit-with-proof → dispute → arbiter-resolve and submit → finalize-after-window. Migrations
+are idempotent (re-running reports "already migrated"). Localnet `anchor test` 52/52.
+
+**Still pending (human/governance):** transfer upgrade authority + config operators to a
+**Squads multisig** (two-step `propose_operator`/`accept_operator` is built; co-sign is the
+human step), rotate the facilitator key to KMS, and record `<MULTISIG>` here — see the
+runbook in [`SECURITY.md`](./SECURITY.md).
+
 ## Reproduce
 
 ```bash

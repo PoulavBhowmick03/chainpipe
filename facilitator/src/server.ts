@@ -7,11 +7,14 @@ import {
   getPipeline,
   getAgentStake,
   getAgentReputation,
+  getSettlement,
+  decodeUri,
+  DISPUTE_SLOTS,
 } from "@chainpipe/solana";
 
 import { loadConfig } from "./config";
 import { verifyCompletion, verifyExpirable } from "./verifier";
-import { settleNode, expireOverdue } from "./settler";
+import { settleNode, expireOverdue, submitNode, finalizeOverdue, resolveNode } from "./settler";
 import { scoreDelta } from "./scorer";
 import { ReplayGuard } from "./replay";
 import { serialize } from "./serialize";
@@ -24,7 +27,7 @@ app.use(express.json());
 app.use(cors({ origin: process.env.CORS_ORIGIN ?? true }));
 
 const limiter = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true });
-app.use(["/complete", "/expire"], limiter);
+app.use(["/complete", "/expire", "/submit", "/finalize", "/resolve"], limiter);
 
 const faucetLimiter = rateLimit({ windowMs: 60_000, limit: 6, standardHeaders: true });
 app.use(["/faucet"], faucetLimiter);
@@ -121,13 +124,15 @@ app.post("/complete", async (req: Request, res: Response) => {
       }
     }
 
+    const uriComplete = typeof (req.body?.uri) === "string" ? req.body.uri : "";
     const v = await verifyCompletion(
       cfg.connection,
       pipeline,
       idx,
       decodeSignature(agentSignature),
       resultHashBytes,
-      cfg.addresses
+      cfg.addresses,
+      uriComplete
     );
     if (!v.ok || !v.node || !v.agent || !v.jobId) {
       return res.status(400).json({ error: v.reason ?? "verification failed" });
@@ -192,6 +197,145 @@ app.post("/expire", async (req: Request, res: Response) => {
       refundAmount: refundAmount.toString(),
       slashedAgent,
       explorer: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+    });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// Optimistic settlement step 1: submit a completion attestation + delivery proof,
+// opening the dispute window. No payout until /finalize (or /resolve). The agent's
+// ed25519 signature covers (pipeline ‖ nodeIndex ‖ jobId ‖ resultHash) — Phase 14
+// extends the signed message to also bind the uri.
+app.post("/submit", async (req: Request, res: Response) => {
+  try {
+    const { pipelinePda, nodeIndex, agentSignature, resultHash, uri } = req.body ?? {};
+    if (!pipelinePda || nodeIndex === undefined || !agentSignature) {
+      return res.status(400).json({ error: "pipelinePda, nodeIndex, agentSignature required" });
+    }
+    const pipeline = new PublicKey(pipelinePda);
+    const idx = Number(nodeIndex);
+    const resultHashBytes = new Uint8Array(32);
+    if (resultHash) resultHashBytes.set(decodeSignature(resultHash).slice(0, 32));
+    const uriStr = typeof uri === "string" ? uri : "";
+
+    const v = await verifyCompletion(
+      cfg.connection,
+      pipeline,
+      idx,
+      decodeSignature(agentSignature),
+      resultHashBytes,
+      cfg.addresses,
+      uriStr
+    );
+    if (!v.ok || !v.node || !v.agent || !v.jobId) {
+      return res.status(400).json({ error: v.reason ?? "verification failed" });
+    }
+    if (await replay.isReplay(v.jobId)) {
+      return res.status(409).json({ error: "job already recorded (replay)" });
+    }
+
+    const slot = await cfg.connection.getSlot("confirmed");
+    const delta = scoreDelta(slot, v.node.deadlineSlot.toNumber());
+    const { signature, settlementPda } = await submitNode(
+      cfg.connection,
+      cfg.facilitator,
+      pipeline,
+      idx,
+      v.agent,
+      delta,
+      cfg.addresses,
+      resultHashBytes,
+      uriStr
+    );
+    res.json({
+      signature,
+      settlementPda: settlementPda.toBase58(),
+      disputeUntil: slot + DISPUTE_SLOTS,
+      scoreDelta: delta,
+      explorer: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+    });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// Optimistic settlement step 2 (permissionless): finalize a submitted node after its
+// dispute window elapses with no dispute — pays the agent + records completion.
+app.post("/finalize", async (req: Request, res: Response) => {
+  try {
+    const { pipelinePda, nodeIndex } = req.body ?? {};
+    if (!pipelinePda || nodeIndex === undefined) {
+      return res.status(400).json({ error: "pipelinePda, nodeIndex required" });
+    }
+    const pipeline = new PublicKey(pipelinePda);
+    const idx = Number(nodeIndex);
+    const p = await getPipeline(cfg.connection, pipeline, cfg.addresses);
+    const node = p?.nodes[idx];
+    if (!node) return res.status(404).json({ error: "node not found" });
+    if (!("submitted" in node.status)) {
+      return res.status(400).json({ error: "node is not in Submitted state" });
+    }
+    const { signature } = await finalizeOverdue(
+      cfg.connection,
+      cfg.facilitator,
+      pipeline,
+      idx,
+      node.agent,
+      cfg.operatorTreasury,
+      cfg.addresses
+    );
+    res.json({ signature, explorer: `https://explorer.solana.com/tx/${signature}?cluster=devnet` });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// Arbiter (facilitator authority, v1) resolves a disputed node. upheld=true → refund
+// consumer + slash agent; upheld=false → settle + pay agent. v2 roadmap: decentralized arbiter.
+app.post("/resolve", async (req: Request, res: Response) => {
+  try {
+    const { pipelinePda, nodeIndex, upheld } = req.body ?? {};
+    if (!pipelinePda || nodeIndex === undefined || upheld === undefined) {
+      return res.status(400).json({ error: "pipelinePda, nodeIndex, upheld required" });
+    }
+    const pipeline = new PublicKey(pipelinePda);
+    const idx = Number(nodeIndex);
+    const p = await getPipeline(cfg.connection, pipeline, cfg.addresses);
+    const node = p?.nodes[idx];
+    if (!node) return res.status(404).json({ error: "node not found" });
+    if (!("disputed" in node.status)) {
+      return res.status(400).json({ error: "node is not in Disputed state" });
+    }
+    const { signature } = await resolveNode(
+      cfg.connection,
+      cfg.facilitator,
+      pipeline,
+      idx,
+      node.agent,
+      Boolean(upheld),
+      cfg.operatorTreasury,
+      cfg.addresses
+    );
+    res.json({ signature, upheld: Boolean(upheld), explorer: `https://explorer.solana.com/tx/${signature}?cluster=devnet` });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// Read a node's settlement (delivery proof + dispute window state).
+app.get("/settlement/:pipelinePda/:nodeIndex", async (req: Request, res: Response) => {
+  try {
+    const pipeline = new PublicKey(req.params.pipelinePda);
+    const idx = Number(req.params.nodeIndex);
+    const s = await getSettlement(cfg.connection, pipeline, idx, cfg.addresses);
+    if (!s) return res.status(404).json({ error: "settlement not found" });
+    res.json({
+      uri: decodeUri(s.uri as number[], s.uriLen),
+      resultHash: Buffer.from(s.resultHash as number[]).toString("hex"),
+      submittedAtSlot: Number(s.submittedAtSlot),
+      disputeUntil: Number(s.submittedAtSlot) + DISPUTE_SLOTS,
+      disputed: s.disputed,
     });
   } catch (e) {
     res.status(500).json({ error: String(e) });

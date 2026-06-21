@@ -6,13 +6,15 @@
 > facilitator + an indexer + a Next.js 15 dashboard. See [`DEPLOYED.md`](./DEPLOYED.md)
 > for live program IDs and [`BLOCKERS.md`](./BLOCKERS.md) for build/deploy notes.
 
-> **Status: devnet prototype.** Core flows are implemented, tested, and live, but
-> trust is currently centralized and value is play-money. Read
-> [`SECURITY.md`](./SECURITY.md) for the trust model and
-> [`AUDIT.md`](./AUDIT.md) for an honest production-readiness review. The
-> `reputation_bridge` program is ChainPipe's own; it is **designed to be composable
-> with** the official Solana 8004 / ATOM registry (forward integration, not a live
-> tie-in).
+> **Status: devnet prototype.** Core flows + an optimistic-settlement **dispute layer**
+> with **content-addressed proof-of-delivery** and a **production-hardening** pass
+> (emergency pause, configurable dispute window, per-incident slash cap, two-step operator
+> transfer) are implemented and tested (52 program tests). Trust is currently a centralized
+> facilitator-arbiter (v1) and value is play-money. Read [`SECURITY.md`](./SECURITY.md) for
+> the trust model, [`DECENTRALIZATION.md`](./DECENTRALIZATION.md) for the v2 roadmap, and
+> [`AUDIT.md`](./AUDIT.md) for an honest production-readiness review. The `reputation_bridge`
+> program is ChainPipe's own; it is **designed to be composable with** the official Solana
+> 8004 / ATOM registry (forward integration, not a live tie-in).
 >
 > **Live:** dashboard https://chainpipe.vercel.app · indexer
 > https://chainpipe-indexer.fly.dev · facilitator https://chainpipe-facilitator.fly.dev
@@ -36,6 +38,18 @@ A third program, **`reputation_bridge`**, records per-agent reputation (an EMA s
 a replay-guarded job ledger) and is **facilitator-gated**: only `dag_escrow`, via a
 program-derived signer (`[b"dag_authority"]`), can write reputation — so no one can forge
 a track record without a real settled job.
+
+### Optimistic settlement + proof-of-delivery
+
+Beyond instant `complete_node`, a node can settle **optimistically with a verifiable
+delivery proof**: the agent hosts its output at a content-addressed `uri`, signs
+`pipeline ‖ nodeIndex ‖ jobId ‖ sha256(output) ‖ sha256(uri)`, and `submit_completion`
+opens a dispute window. **Anyone** can fetch the `uri`, recompute the hash, and compare it
+to the on-chain `result_hash` — a mismatch (or an unresolvable `uri`) is objective grounds
+to `dispute_node`. No dispute → `finalize_node` pays the agent; a dispute →
+`resolve_dispute` (refund + slash, or settle). This makes delivery **integrity, availability,
+and authorship trustless**; only subjective "is it good enough" rulings still rest with the
+v1 facilitator-arbiter (see [`DECENTRALIZATION.md`](./DECENTRALIZATION.md)).
 
 ## Why Solana
 
@@ -71,7 +85,8 @@ flowchart LR
 - `facilitator/` — Express service: verifies on-chain state, settles/expires nodes, scores jobs.
 - `indexer/` — polls devnet, decodes accounts, serves REST + JSON persistence.
 - `dashboard/` — Next.js 15, wallet-adapter, 100% Solana-native (zero EVM).
-- `scripts/` — `initialize-programs`, `e2e-devnet`, `seed-devnet`.
+- `scripts/` — `initialize-programs`, `e2e-devnet` (incl. dispute + proof-of-delivery demo),
+  `seed-devnet`, `migrate-configs` (hardening migration), `verify-facilitator`.
 
 ## Deployed programs (Solana devnet)
 
@@ -89,8 +104,8 @@ Full config PDAs and tx signatures in [`DEPLOYED.md`](./DEPLOYED.md).
 # Toolchain: Anchor 0.31.1 (via avm), Solana CLI, Node 20+
 npm install
 
-# Build + test all three programs against a local validator (37 tests)
-anchor test
+# Build + test all three programs against a local validator (52 tests)
+anchor test    # uses avm anchor 0.31.1 — note: ~/.cargo/bin/anchor is a different tool
 
 # Run the full lifecycle on devnet (real transactions)
 npx tsx scripts/e2e-devnet.mts
@@ -133,6 +148,21 @@ const rep = await getAgentReputation(connection, agentPubkey, DEVNET_ADDRESSES);
 | Multi-job atomicity | ❌ per-job only | n/a | ✅ DAG escrow + cascade refunds |
 | Economic stake-for-trust | ❌ | ❌ | ✅ bonded registry + slashing |
 | Gated reputation writes | n/a | ❌ un-gated attestation | ✅ CPI-only via `dag_authority` |
+| Verifiable proof-of-delivery | ❌ | ❌ | ✅ content-addressed hash + dispute window |
+
+## Demo
+
+A 2–3 minute screen recording walks the full loop — faucet → stake → create pipeline →
+claim → submit-with-proof → (dispute | finalize) → reputation update. Recording script:
+
+1. `/my/stake` — faucet test USDC, stake to register at a tier.
+2. `/pipeline/create` — build a 2-node DAG, lock the budget.
+3. `/work` — claim a node, paste a delivery URL, **Submit + proof** (signs the delivery message).
+4. `/pipeline/[pda]` — as the consumer, **Verify delivery** (sha256 match), then either
+   **Dispute** (→ refund + slash) or let the window elapse and **Finalize** (→ agent paid).
+5. `/agent/[pubkey]` — see the updated EMA reputation.
+
+> _Video link: TBD (record against the live devnet deployment)._
 
 ## License
 

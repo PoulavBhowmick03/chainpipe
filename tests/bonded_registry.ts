@@ -340,4 +340,35 @@ describe("bonded_registry", () => {
     const agent = await newAgent(5_000_000); // 5 USDC
     await expectError(stake(agent, 5_000_000), "StakeTooLow");
   });
+
+  // ───────────────────────── Phase 15: production hardening ─────────────────────────
+  it("migrate_registry_config rejects when already migrated (fresh init = v1)", async () => {
+    await expectError(
+      program.methods.migrateRegistryConfig().accountsPartial({ config: configPda, operator: provider.wallet.publicKey }).rpc(),
+      "AlreadyMigrated"
+    );
+  });
+
+  it("set_max_slash_bps: validates ≤100% and updates the cap", async () => {
+    await expectError(
+      program.methods.setMaxSlashBps(20000).accountsPartial({ config: configPda, operator: provider.wallet.publicKey }).rpc(),
+      "InvalidSlashBps"
+    );
+    const before = (await program.account.registryConfig.fetch(configPda)).maxSlashBps;
+    await program.methods.setMaxSlashBps(500).accountsPartial({ config: configPda, operator: provider.wallet.publicKey }).rpc();
+    assert.equal((await program.account.registryConfig.fetch(configPda)).maxSlashBps, 500);
+    // restore so any slash bps stays within cap
+    await program.methods.setMaxSlashBps(before).accountsPartial({ config: configPda, operator: provider.wallet.publicKey }).rpc();
+  });
+
+  it("two-step operator transfer: propose → accept (round-trip)", async () => {
+    const next = Keypair.generate();
+    await expectError(program.methods.acceptOperator().accountsPartial({ config: configPda, newOperator: provider.wallet.publicKey }).rpc(), "NoPendingOperator");
+    await program.methods.proposeOperator(next.publicKey).accountsPartial({ config: configPda, operator: provider.wallet.publicKey }).rpc();
+    await program.methods.acceptOperator().accountsPartial({ config: configPda, newOperator: next.publicKey }).signers([next]).rpc();
+    assert.equal((await program.account.registryConfig.fetch(configPda)).operator.toBase58(), next.publicKey.toBase58());
+    await program.methods.proposeOperator(provider.wallet.publicKey).accountsPartial({ config: configPda, operator: next.publicKey }).signers([next]).rpc();
+    await program.methods.acceptOperator().accountsPartial({ config: configPda, newOperator: provider.wallet.publicKey }).rpc();
+    assert.equal((await program.account.registryConfig.fetch(configPda)).operator.toBase58(), provider.wallet.publicKey.toBase58());
+  });
 });

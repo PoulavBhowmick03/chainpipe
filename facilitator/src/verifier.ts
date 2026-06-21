@@ -1,6 +1,12 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import nacl from "tweetnacl";
-import { getPipeline, ChainPipeAddresses, PipelineNode } from "@chainpipe/solana";
+import {
+  getPipeline,
+  deliveryMessage,
+  sha256Bytes,
+  ChainPipeAddresses,
+  PipelineNode,
+} from "@chainpipe/solana";
 
 export interface CompletionVerification {
   ok: boolean;
@@ -10,22 +16,16 @@ export interface CompletionVerification {
   jobId?: Uint8Array;
 }
 
-/** Message an agent signs to authorize settlement of one node and commit to a
- *  result hash (proof-of-delivery commitment). */
-export function completionMessage(
-  pipeline: PublicKey,
-  nodeIndex: number,
-  jobId: Uint8Array,
-  resultHash: Uint8Array
-): Uint8Array {
-  return Uint8Array.from([...pipeline.toBytes(), nodeIndex & 0xff, ...jobId, ...resultHash]);
-}
-
 /**
- * Verify a completion request strictly against on-chain state:
+ * Verify a completion/submission request strictly against on-chain state + delivery proof:
  *  - node exists and is Claimed
- *  - the agent's ed25519 signature over (pipeline ‖ nodeIndex ‖ jobId) is valid
+ *  - the agent's ed25519 signature over the canonical `deliveryMessage`
+ *    (pipeline ‖ nodeIndex ‖ jobId ‖ resultHash ‖ sha256(uri)) is valid — this binds the
+ *    signature to BOTH the output hash and the retrieval pointer, so neither can be swapped.
+ *    Old-format signatures (without the uri binding) are therefore rejected.
  *  - the deadline has not passed
+ *  - if `uri` resolves and the fetched bytes hash != resultHash → reject (definitive mismatch).
+ *    Unreachable URIs are NOT rejected here (availability is the consumer's dispute lever).
  */
 export async function verifyCompletion(
   connection: Connection,
@@ -33,7 +33,8 @@ export async function verifyCompletion(
   nodeIndex: number,
   agentSignature: Uint8Array,
   resultHash: Uint8Array,
-  addresses: ChainPipeAddresses
+  addresses: ChainPipeAddresses,
+  uri: string = ""
 ): Promise<CompletionVerification> {
   const p = await getPipeline(connection, pipeline, addresses);
   if (!p) return { ok: false, reason: "pipeline not found" };
@@ -43,14 +44,42 @@ export async function verifyCompletion(
 
   const agent = node.agent;
   const jobId = Uint8Array.from(node.jobId);
-  const msg = completionMessage(pipeline, nodeIndex, jobId, resultHash);
+  const uriBytes = new TextEncoder().encode(uri);
+  const msg = deliveryMessage(pipeline, nodeIndex, jobId, resultHash, uriBytes);
   const sigOk = nacl.sign.detached.verify(msg, agentSignature, agent.toBytes());
-  if (!sigOk) return { ok: false, reason: "invalid agent signature" };
+  if (!sigOk) return { ok: false, reason: "invalid agent signature (must sign the uri-bound deliveryMessage)" };
 
   const slot = await connection.getSlot("confirmed");
   if (slot > node.deadlineSlot.toNumber()) return { ok: false, reason: "deadline has passed" };
 
+  // Definitive-mismatch integrity check (best-effort; gated on FACILITATOR_VERIFY_DELIVERY).
+  if (uri && (process.env.FACILITATOR_VERIFY_DELIVERY ?? "true") === "true") {
+    const mismatch = await deliveryHashMismatch(uri, resultHash);
+    if (mismatch) return { ok: false, reason: "result_hash does not match fetched output" };
+  }
+
   return { ok: true, node, agent, jobId };
+}
+
+/**
+ * Returns true only if the URI resolves AND its bytes hash differs from `resultHash`.
+ * Returns false on unreachable/unsupported URIs (don't block on availability — the
+ * consumer disputes unavailability on-chain within the window).
+ */
+export async function deliveryHashMismatch(uri: string, resultHash: Uint8Array): Promise<boolean> {
+  const gateway = process.env.IPFS_GATEWAY ?? "https://ipfs.io/ipfs/";
+  const url = uri.startsWith("ipfs://") ? gateway + uri.slice("ipfs://".length) : uri;
+  if (!/^https?:\/\//.test(url)) return false; // unsupported scheme → can't disprove
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return false; // unreachable → not a definitive mismatch
+    const bytes = new Uint8Array(await resp.arrayBuffer());
+    const actual = Buffer.from(sha256Bytes(bytes)).toString("hex");
+    const expected = Buffer.from(resultHash).toString("hex");
+    return actual !== expected;
+  } catch {
+    return false; // network error → not a definitive mismatch
+  }
 }
 
 /** Verify a node is past its deadline (for permissionless expiry). */

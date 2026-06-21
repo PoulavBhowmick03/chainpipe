@@ -12,6 +12,16 @@ use reputation_bridge::program::ReputationBridge;
 declare_id!("3FqvkzppD4ciwkGLrcNoTHUCeHwNbWtot18CkrBdXiJd");
 
 pub const MAX_NODES: usize = 16;
+/// Default dispute window after a completion is submitted (devnet-sized ~60s). Now a
+/// per-config, operator-tunable value (`PipelineConfig.dispute_slots`) snapshotted onto
+/// each NodeSettlement at submit time; this is only the default seed for init/migrate.
+pub const DISPUTE_SLOTS: u64 = 150;
+/// Bounds for `set_dispute_window` — never 0 (would allow instant finalize, no dispute)
+/// and never absurdly large (~24 days at 400ms/slot).
+pub const MIN_DISPUTE_SLOTS: u64 = 30;
+pub const MAX_DISPUTE_SLOTS: u64 = 5_184_000;
+/// Current PipelineConfig layout version (migrate_pipeline_config sets live accounts to this).
+pub const CONFIG_VERSION: u8 = 1;
 
 #[program]
 pub mod dag_escrow {
@@ -32,6 +42,11 @@ pub mod dag_escrow {
         cfg.fee_bps = fee_bps;
         cfg.dag_authority_bump = dag_bump;
         cfg.bump = ctx.bumps.pipeline_config;
+        // hardening defaults (fresh deploys start at current version → no migrate needed)
+        cfg.version = CONFIG_VERSION;
+        cfg.paused = false;
+        cfg.dispute_slots = DISPUTE_SLOTS;
+        cfg.pending_operator = Pubkey::default();
         Ok(())
     }
 
@@ -44,6 +59,84 @@ pub mod dag_escrow {
         Ok(())
     }
 
+    /// Emergency stop / resume (operator-only). Pauses value-in + payout paths; refund and
+    /// dispute-resolution paths remain open so consumer funds can never be trapped.
+    pub fn set_paused(ctx: Context<SetPaused>, paused: bool) -> Result<()> {
+        ctx.accounts.pipeline_config.paused = paused;
+        emit!(PausedSet { paused });
+        Ok(())
+    }
+
+    /// Operator tunes the dispute window (slots), bounded. Applies to NEW submissions only —
+    /// in-flight nodes keep the window snapshotted at their submit time.
+    pub fn set_dispute_window(ctx: Context<SetDisputeWindow>, dispute_slots: u64) -> Result<()> {
+        require!(
+            dispute_slots >= MIN_DISPUTE_SLOTS && dispute_slots <= MAX_DISPUTE_SLOTS,
+            DagError::InvalidDisputeWindow
+        );
+        ctx.accounts.pipeline_config.dispute_slots = dispute_slots;
+        Ok(())
+    }
+
+    /// Two-step operator transfer, step 1 — current operator proposes a successor
+    /// (e.g. a Squads multisig). No effect until the successor calls accept_operator.
+    pub fn propose_operator(ctx: Context<ProposeOperator>, new_operator: Pubkey) -> Result<()> {
+        ctx.accounts.pipeline_config.pending_operator = new_operator;
+        emit!(OperatorProposed { new_operator });
+        Ok(())
+    }
+
+    /// Two-step operator transfer, step 2 — the proposed successor accepts, proving key
+    /// control. Prevents fat-fingering control to an unspendable address.
+    pub fn accept_operator(ctx: Context<AcceptOperator>) -> Result<()> {
+        let cfg = &mut ctx.accounts.pipeline_config;
+        require!(cfg.pending_operator != Pubkey::default(), DagError::NoPendingOperator);
+        require!(
+            ctx.accounts.new_operator.key() == cfg.pending_operator,
+            DagError::NotPendingOperator
+        );
+        cfg.operator = cfg.pending_operator;
+        cfg.pending_operator = Pubkey::default();
+        emit!(OperatorChanged { operator: cfg.operator });
+        Ok(())
+    }
+
+    /// One-time migration that grows a pre-hardening PipelineConfig to the current layout
+    /// and seeds the new fields with safe defaults. Manual realloc (the account is smaller
+    /// than the new struct, so `Account<T>` can't deserialize it pre-grow). Idempotent:
+    /// rejects once the account already has the new size.
+    pub fn migrate_pipeline_config(ctx: Context<MigratePipelineConfig>) -> Result<()> {
+        let ai = ctx.accounts.pipeline_config.to_account_info();
+        let new_len = 8 + PipelineConfig::INIT_SPACE;
+        require!(ai.data_len() < new_len, DagError::AlreadyMigrated);
+        // operator is the first field after the 8-byte discriminator (offset 8..40)
+        {
+            let d = ai.try_borrow_data()?;
+            require!(&d[8..40] == ctx.accounts.operator.key().as_ref(), DagError::UnauthorizedOperator);
+        }
+        // Grow FIRST (runtime zero-fills new bytes), THEN fund — realloc after a CPI that
+        // references the account is rejected by the runtime.
+        ai.realloc(new_len, false)?;
+        let needed = Rent::get()?.minimum_balance(new_len).saturating_sub(ai.lamports());
+        if needed > 0 {
+            system_program::transfer(
+                CpiContext::new(
+                    ctx.accounts.system_program.to_account_info(),
+                    system_program::Transfer { from: ctx.accounts.operator.to_account_info(), to: ai.clone() },
+                ),
+                needed,
+            )?;
+        }
+        let mut data = ai.try_borrow_mut_data()?;
+        let mut cfg = PipelineConfig::try_deserialize(&mut &data[..])?;
+        cfg.version = CONFIG_VERSION;
+        cfg.paused = false;
+        cfg.dispute_slots = DISPUTE_SLOTS;
+        cfg.pending_operator = Pubkey::default();
+        cfg.try_serialize(&mut &mut data[..])?;
+        Ok(())
+    }
+
     /// Create a DAG pipeline, lock the full budget into a vault, and create one
     /// PipelineNode account per node (passed as remaining_accounts in order).
     pub fn create_pipeline<'info>(
@@ -51,6 +144,7 @@ pub mod dag_escrow {
         node_configs: Vec<NodeConfig>,
         nonce: u64,
     ) -> Result<()> {
+        require!(!ctx.accounts.pipeline_config.paused, DagError::Paused);
         let n = node_configs.len();
         require!(n >= 1 && n <= MAX_NODES, DagError::InvalidNodeCount);
         require!(
@@ -158,6 +252,7 @@ pub mod dag_escrow {
     /// An agent claims a node once all dependencies are settled and its tier is
     /// sufficient. CPIs into bonded_registry to increment the open-job counter.
     pub fn claim_node(ctx: Context<ClaimNode>, node_index: u8) -> Result<()> {
+        require!(!ctx.accounts.pipeline_config.paused, DagError::Paused);
         require!(
             ctx.accounts.pipeline.status == PipelineStatus::Active,
             DagError::PipelineNotActive
@@ -227,6 +322,7 @@ pub mod dag_escrow {
         score_delta: i16,
         result_hash: [u8; 32],
     ) -> Result<()> {
+        require!(!ctx.accounts.pipeline_config.paused, DagError::Paused);
         require!(
             ctx.accounts.facilitator.key() == ctx.accounts.pipeline_config.facilitator_authority,
             DagError::UnauthorizedFacilitator
@@ -343,6 +439,254 @@ pub mod dag_escrow {
             fee,
             result_hash,
         });
+        Ok(())
+    }
+
+    /// Optimistic settlement step 1: the facilitator submits a completion with an
+    /// agent-committed `result_hash` and starts the dispute window. No funds move.
+    pub fn submit_completion(
+        ctx: Context<SubmitCompletion>,
+        node_index: u8,
+        score_delta: i16,
+        result_hash: [u8; 32],
+        uri: [u8; 96],
+        uri_len: u8,
+    ) -> Result<()> {
+        require!(!ctx.accounts.pipeline_config.paused, DagError::Paused);
+        require!(
+            ctx.accounts.facilitator.key() == ctx.accounts.pipeline_config.facilitator_authority,
+            DagError::UnauthorizedFacilitator
+        );
+        require!((uri_len as usize) <= 96, DagError::InvalidUri);
+        let clock = Clock::get()?;
+        {
+            let node = &ctx.accounts.node;
+            require!(node.node_index == node_index, DagError::InvalidNodeAccount);
+            require!(node.status == NodeStatus::Claimed, DagError::NodeNotClaimed);
+            require!(node.agent == ctx.accounts.agent.key(), DagError::AgentMismatch);
+        }
+        // Snapshot the window from config so a later set_dispute_window can't shorten it.
+        let window = ctx.accounts.pipeline_config.dispute_slots;
+        let s = &mut ctx.accounts.settlement;
+        s.node = ctx.accounts.node.key();
+        s.result_hash = result_hash;
+        s.uri = uri;
+        s.uri_len = uri_len;
+        s.submitted_at_slot = clock.slot;
+        s.dispute_slots = window;
+        s.score_delta = score_delta;
+        s.disputed = false;
+        s.bump = ctx.bumps.settlement;
+        ctx.accounts.node.status = NodeStatus::Submitted;
+        ctx.accounts.node.settled_at_slot = clock.slot;
+        emit!(NodeSubmitted {
+            pipeline: ctx.accounts.pipeline.key(),
+            node_index,
+            agent: ctx.accounts.agent.key(),
+            result_hash,
+            uri,
+            uri_len,
+            dispute_until: clock.slot.saturating_add(window),
+        });
+        Ok(())
+    }
+
+    /// The consumer challenges a submitted node within the dispute window.
+    /// `reason_code`: 0 = HashMismatch, 1 = Unavailable, 2 = IncorrectOutput.
+    /// Codes 0/1 are objectively checkable against `uri`+`result_hash`; 2 is
+    /// subjective and resolves via the arbiter. Recorded for triage only.
+    pub fn dispute_node(
+        ctx: Context<DisputeNode>,
+        node_index: u8,
+        reason_hash: [u8; 32],
+        reason_code: u8,
+    ) -> Result<()> {
+        let clock = Clock::get()?;
+        {
+            let node = &ctx.accounts.node;
+            require!(node.node_index == node_index, DagError::InvalidNodeAccount);
+            require!(node.status == NodeStatus::Submitted, DagError::NodeNotSubmitted);
+        }
+        require!(
+            clock.slot <= ctx.accounts.settlement.submitted_at_slot.saturating_add(ctx.accounts.settlement.dispute_slots),
+            DagError::DisputeWindowClosed
+        );
+        ctx.accounts.settlement.disputed = true;
+        ctx.accounts.node.status = NodeStatus::Disputed;
+        emit!(NodeDisputed { pipeline: ctx.accounts.pipeline.key(), node_index, reason_hash, reason_code });
+        Ok(())
+    }
+
+    /// Permissionless finalize after the dispute window elapses with no dispute:
+    /// pays the agent (minus fee) + operator fee and records completion reputation.
+    pub fn finalize_node(ctx: Context<FinalizeNode>, node_index: u8) -> Result<()> {
+        let clock = Clock::get()?;
+        let (allocation, job_id, agent_key) = {
+            let node = &ctx.accounts.node;
+            require!(node.node_index == node_index, DagError::InvalidNodeAccount);
+            require!(node.status == NodeStatus::Submitted, DagError::NodeNotSubmitted);
+            require!(node.agent == ctx.accounts.agent.key(), DagError::AgentMismatch);
+            (node.allocation_usdc, node.job_id, node.agent)
+        };
+        require!(!ctx.accounts.settlement.disputed, DagError::NodeAlreadyDisputed);
+        // finalize is permissionless after the window; pausing must not block honest payout
+        // forever, but should hold during an active incident → guard here too.
+        require!(!ctx.accounts.pipeline_config.paused, DagError::Paused);
+        require!(
+            clock.slot > ctx.accounts.settlement.submitted_at_slot.saturating_add(ctx.accounts.settlement.dispute_slots),
+            DagError::DisputeWindowOpen
+        );
+        let score_delta = ctx.accounts.settlement.score_delta;
+
+        let fee_bps = ctx.accounts.pipeline_config.fee_bps as u64;
+        let fee = (allocation as u128 * fee_bps as u128 / 10_000) as u64;
+        let to_agent = allocation.saturating_sub(fee);
+        let consumer = ctx.accounts.pipeline.consumer;
+        let nonce = ctx.accounts.pipeline.nonce.to_le_bytes();
+        let pbump = ctx.accounts.pipeline.bump;
+        let psigner: &[&[&[u8]]] = &[&[b"pipeline", consumer.as_ref(), nonce.as_ref(), &[pbump]]];
+        let decimals = ctx.accounts.stake_mint.decimals;
+
+        token::transfer_checked(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                TransferChecked { from: ctx.accounts.vault.to_account_info(), mint: ctx.accounts.stake_mint.to_account_info(), to: ctx.accounts.agent_token_account.to_account_info(), authority: ctx.accounts.pipeline.to_account_info() },
+                psigner,
+            ),
+            to_agent,
+            decimals,
+        )?;
+        if fee > 0 {
+            token::transfer_checked(
+                CpiContext::new_with_signer(
+                    ctx.accounts.token_program.to_account_info(),
+                    TransferChecked { from: ctx.accounts.vault.to_account_info(), mint: ctx.accounts.stake_mint.to_account_info(), to: ctx.accounts.operator_treasury.to_account_info(), authority: ctx.accounts.pipeline.to_account_info() },
+                    psigner,
+                ),
+                fee,
+                decimals,
+            )?;
+        }
+
+        ctx.accounts.node.status = NodeStatus::Settled;
+        ctx.accounts.node.settled_at_slot = clock.slot;
+        {
+            let pipeline = &mut ctx.accounts.pipeline;
+            pipeline.nodes_settled = pipeline.nodes_settled.saturating_add(1);
+            pipeline.settled_mask |= 1u64 << node_index;
+            if pipeline.nodes_settled == pipeline.total_nodes {
+                pipeline.status = PipelineStatus::Completed;
+            } else if pipeline.nodes_settled + pipeline.nodes_expired == pipeline.total_nodes {
+                pipeline.status = PipelineStatus::PartiallyRefunded;
+            }
+        }
+
+        let dbump = ctx.accounts.pipeline_config.dag_authority_bump;
+        let dsigner: &[&[&[u8]]] = &[&[b"dag_authority", &[dbump]]];
+        bonded_registry::cpi::decrement_open_jobs(
+            CpiContext::new_with_signer(ctx.accounts.bonded_registry_program.to_account_info(), MutateOpenJobs { config: ctx.accounts.registry_config.to_account_info(), agent_stake: ctx.accounts.agent_stake.to_account_info(), dag_authority: ctx.accounts.dag_authority.to_account_info() }, dsigner),
+            true,
+        )?;
+        reputation_bridge::cpi::record_completion(
+            CpiContext::new_with_signer(ctx.accounts.reputation_bridge_program.to_account_info(), RecordOutcome { bridge_config: ctx.accounts.bridge_config.to_account_info(), agent_reputation: ctx.accounts.agent_reputation.to_account_info(), job_record: ctx.accounts.job_record.to_account_info(), agent: ctx.accounts.agent.to_account_info(), dag_authority: ctx.accounts.dag_authority.to_account_info(), payer: ctx.accounts.caller.to_account_info(), system_program: ctx.accounts.system_program.to_account_info() }, dsigner),
+            job_id,
+            score_delta,
+        )?;
+
+        emit!(NodeSettled { pipeline: ctx.accounts.pipeline.key(), node_index, agent: agent_key, paid: to_agent, fee, result_hash: ctx.accounts.settlement.result_hash });
+        Ok(())
+    }
+
+    /// Arbiter (facilitator authority, v1) resolves a disputed node. Upheld →
+    /// refund the consumer + slash the agent + record a failure. Rejected →
+    /// settle as normal (pay the agent, record completion).
+    pub fn resolve_dispute(ctx: Context<ResolveDispute>, node_index: u8, upheld: bool) -> Result<()> {
+        require!(
+            ctx.accounts.facilitator.key() == ctx.accounts.pipeline_config.facilitator_authority,
+            DagError::UnauthorizedArbiter
+        );
+        let clock = Clock::get()?;
+        let (allocation, job_id, agent_key) = {
+            let node = &ctx.accounts.node;
+            require!(node.node_index == node_index, DagError::InvalidNodeAccount);
+            require!(node.status == NodeStatus::Disputed, DagError::NodeNotDisputed);
+            // Parity with complete_node/finalize_node: the passed agent must be the node's
+            // agent, so payout (rejected) / slash (upheld) can't be misrouted by the arbiter.
+            require!(node.agent == ctx.accounts.agent.key(), DagError::AgentMismatch);
+            (node.allocation_usdc, node.job_id, node.agent)
+        };
+        let score_delta = ctx.accounts.settlement.score_delta;
+        let consumer = ctx.accounts.pipeline.consumer;
+        let nonce = ctx.accounts.pipeline.nonce.to_le_bytes();
+        let pbump = ctx.accounts.pipeline.bump;
+        let psigner: &[&[&[u8]]] = &[&[b"pipeline", consumer.as_ref(), nonce.as_ref(), &[pbump]]];
+        let decimals = ctx.accounts.stake_mint.decimals;
+        let dbump = ctx.accounts.pipeline_config.dag_authority_bump;
+        let dsigner: &[&[&[u8]]] = &[&[b"dag_authority", &[dbump]]];
+
+        if upheld {
+            // refund the node's allocation to the consumer
+            token::transfer_checked(
+                CpiContext::new_with_signer(ctx.accounts.token_program.to_account_info(), TransferChecked { from: ctx.accounts.vault.to_account_info(), mint: ctx.accounts.stake_mint.to_account_info(), to: ctx.accounts.consumer_token_account.to_account_info(), authority: ctx.accounts.pipeline.to_account_info() }, psigner),
+                allocation,
+                decimals,
+            )?;
+            // decrement open jobs + slash + record failure
+            bonded_registry::cpi::decrement_open_jobs(
+                CpiContext::new_with_signer(ctx.accounts.bonded_registry_program.to_account_info(), MutateOpenJobs { config: ctx.accounts.registry_config.to_account_info(), agent_stake: ctx.accounts.agent_stake.to_account_info(), dag_authority: ctx.accounts.dag_authority.to_account_info() }, dsigner),
+                false,
+            )?;
+            let slash_bps = ctx.accounts.registry_config.slash_bps;
+            bonded_registry::cpi::slash_stake(
+                CpiContext::new_with_signer(ctx.accounts.bonded_registry_program.to_account_info(), BrSlashStake { config: ctx.accounts.registry_config.to_account_info(), agent_stake: ctx.accounts.agent_stake.to_account_info(), stake_mint: ctx.accounts.stake_mint.to_account_info(), vault: ctx.accounts.agent_stake_vault.to_account_info(), consumer_token_account: ctx.accounts.consumer_token_account.to_account_info(), dag_authority: ctx.accounts.dag_authority.to_account_info(), token_program: ctx.accounts.token_program.to_account_info() }, dsigner),
+                job_id,
+                slash_bps,
+            )?;
+            reputation_bridge::cpi::record_failure(
+                CpiContext::new_with_signer(ctx.accounts.reputation_bridge_program.to_account_info(), RecordOutcome { bridge_config: ctx.accounts.bridge_config.to_account_info(), agent_reputation: ctx.accounts.agent_reputation.to_account_info(), job_record: ctx.accounts.job_record.to_account_info(), agent: ctx.accounts.agent.to_account_info(), dag_authority: ctx.accounts.dag_authority.to_account_info(), payer: ctx.accounts.facilitator.to_account_info(), system_program: ctx.accounts.system_program.to_account_info() }, dsigner),
+                job_id,
+            )?;
+            ctx.accounts.node.status = NodeStatus::Expired;
+            let pipeline = &mut ctx.accounts.pipeline;
+            pipeline.nodes_expired = pipeline.nodes_expired.saturating_add(1);
+            pipeline.status = PipelineStatus::PartiallyRefunded;
+        } else {
+            let fee_bps = ctx.accounts.pipeline_config.fee_bps as u64;
+            let fee = (allocation as u128 * fee_bps as u128 / 10_000) as u64;
+            let to_agent = allocation.saturating_sub(fee);
+            token::transfer_checked(
+                CpiContext::new_with_signer(ctx.accounts.token_program.to_account_info(), TransferChecked { from: ctx.accounts.vault.to_account_info(), mint: ctx.accounts.stake_mint.to_account_info(), to: ctx.accounts.agent_token_account.to_account_info(), authority: ctx.accounts.pipeline.to_account_info() }, psigner),
+                to_agent,
+                decimals,
+            )?;
+            if fee > 0 {
+                token::transfer_checked(
+                    CpiContext::new_with_signer(ctx.accounts.token_program.to_account_info(), TransferChecked { from: ctx.accounts.vault.to_account_info(), mint: ctx.accounts.stake_mint.to_account_info(), to: ctx.accounts.operator_treasury.to_account_info(), authority: ctx.accounts.pipeline.to_account_info() }, psigner),
+                    fee,
+                    decimals,
+                )?;
+            }
+            bonded_registry::cpi::decrement_open_jobs(
+                CpiContext::new_with_signer(ctx.accounts.bonded_registry_program.to_account_info(), MutateOpenJobs { config: ctx.accounts.registry_config.to_account_info(), agent_stake: ctx.accounts.agent_stake.to_account_info(), dag_authority: ctx.accounts.dag_authority.to_account_info() }, dsigner),
+                true,
+            )?;
+            reputation_bridge::cpi::record_completion(
+                CpiContext::new_with_signer(ctx.accounts.reputation_bridge_program.to_account_info(), RecordOutcome { bridge_config: ctx.accounts.bridge_config.to_account_info(), agent_reputation: ctx.accounts.agent_reputation.to_account_info(), job_record: ctx.accounts.job_record.to_account_info(), agent: ctx.accounts.agent.to_account_info(), dag_authority: ctx.accounts.dag_authority.to_account_info(), payer: ctx.accounts.facilitator.to_account_info(), system_program: ctx.accounts.system_program.to_account_info() }, dsigner),
+                job_id,
+                score_delta,
+            )?;
+            ctx.accounts.node.status = NodeStatus::Settled;
+            let pipeline = &mut ctx.accounts.pipeline;
+            pipeline.nodes_settled = pipeline.nodes_settled.saturating_add(1);
+            pipeline.settled_mask |= 1u64 << node_index;
+            if pipeline.nodes_settled == pipeline.total_nodes {
+                pipeline.status = PipelineStatus::Completed;
+            } else if pipeline.nodes_settled + pipeline.nodes_expired == pipeline.total_nodes {
+                pipeline.status = PipelineStatus::PartiallyRefunded;
+            }
+        }
+        ctx.accounts.node.settled_at_slot = clock.slot;
+        emit!(NodeResolved { pipeline: ctx.accounts.pipeline.key(), node_index, agent: agent_key, upheld });
         Ok(())
     }
 
@@ -649,6 +993,10 @@ pub enum PipelineStatus {
 pub enum NodeStatus {
     Pending,
     Claimed,
+    /// Completion submitted by the facilitator; in the dispute window, not yet paid.
+    Submitted,
+    /// Consumer challenged the submission; awaits arbiter resolution.
+    Disputed,
     Settled,
     Expired,
 }
@@ -661,6 +1009,16 @@ pub struct PipelineConfig {
     pub fee_bps: u16,
     pub dag_authority_bump: u8,
     pub bump: u8,
+    // ── hardening fields (APPENDED; grown on live accounts via migrate_pipeline_config) ──
+    /// Layout version; 0 = pre-hardening (needs migrate), CONFIG_VERSION = current.
+    pub version: u8,
+    /// Emergency stop: when true, value-in/payout instructions are blocked (refund +
+    /// dispute paths stay open).
+    pub paused: bool,
+    /// Operator-tunable dispute window (slots), snapshotted onto each NodeSettlement.
+    pub dispute_slots: u64,
+    /// Two-step operator transfer target (default = none).
+    pub pending_operator: Pubkey,
 }
 
 #[account]
@@ -694,11 +1052,75 @@ pub struct PipelineNode {
     pub bump: u8,
 }
 
+/// Companion account for the optimistic-settlement / dispute flow, created at
+/// submit_completion and closed at finalize/resolve. Kept separate so PipelineNode
+/// keeps its on-chain layout (no migration of existing nodes).
+#[account]
+#[derive(InitSpace)]
+pub struct NodeSettlement {
+    pub node: Pubkey,
+    /// sha256 of the delivered output bytes. Anyone can fetch `uri`, recompute
+    /// sha256, and prove a mismatch — this is what makes a dispute objective.
+    pub result_hash: [u8; 32],
+    /// Content-addressed retrieval pointer for the delivered output (IPFS CID,
+    /// Arweave id, or https URL). Fixed buffer keeps INIT_SPACE exact; `uri_len`
+    /// is the meaningful prefix length.
+    pub uri: [u8; 96],
+    pub uri_len: u8,
+    pub submitted_at_slot: u64,
+    /// Dispute window snapshotted from PipelineConfig at submit time, so an operator
+    /// cannot shorten an in-flight node's window out from under the consumer.
+    pub dispute_slots: u64,
+    pub score_delta: i16,
+    pub disputed: bool,
+    pub bump: u8,
+}
+
 #[derive(Accounts)]
 pub struct SetFacilitatorAuthority<'info> {
     #[account(mut, seeds = [b"pipeline_config"], bump = pipeline_config.bump, has_one = operator)]
     pub pipeline_config: Account<'info, PipelineConfig>,
     pub operator: Signer<'info>,
+}
+
+// Operator-only config mutations all share the has_one = operator guard.
+#[derive(Accounts)]
+pub struct SetPaused<'info> {
+    #[account(mut, seeds = [b"pipeline_config"], bump = pipeline_config.bump, has_one = operator)]
+    pub pipeline_config: Account<'info, PipelineConfig>,
+    pub operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct SetDisputeWindow<'info> {
+    #[account(mut, seeds = [b"pipeline_config"], bump = pipeline_config.bump, has_one = operator)]
+    pub pipeline_config: Account<'info, PipelineConfig>,
+    pub operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct ProposeOperator<'info> {
+    #[account(mut, seeds = [b"pipeline_config"], bump = pipeline_config.bump, has_one = operator)]
+    pub pipeline_config: Account<'info, PipelineConfig>,
+    pub operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct AcceptOperator<'info> {
+    #[account(mut, seeds = [b"pipeline_config"], bump = pipeline_config.bump)]
+    pub pipeline_config: Account<'info, PipelineConfig>,
+    pub new_operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct MigratePipelineConfig<'info> {
+    /// CHECK: PDA verified by seeds; deserialized/grown manually because the live account
+    /// is smaller than the new struct (Account<T> can't load it pre-realloc).
+    #[account(mut, seeds = [b"pipeline_config"], bump)]
+    pub pipeline_config: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub operator: Signer<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -719,6 +1141,8 @@ pub struct Initialize<'info> {
 #[derive(Accounts)]
 #[instruction(node_configs: Vec<NodeConfig>, nonce: u64)]
 pub struct CreatePipeline<'info> {
+    #[account(seeds = [b"pipeline_config"], bump = pipeline_config.bump)]
+    pub pipeline_config: Account<'info, PipelineConfig>,
     #[account(
         init,
         payer = consumer,
@@ -829,29 +1253,152 @@ pub struct CompleteNode<'info> {
 
 #[derive(Accounts)]
 #[instruction(node_index: u8)]
-pub struct ExpireNode<'info> {
+pub struct SubmitCompletion<'info> {
     #[account(seeds = [b"pipeline_config"], bump = pipeline_config.bump)]
     pub pipeline_config: Account<'info, PipelineConfig>,
-    #[account(mut)]
     pub pipeline: Account<'info, Pipeline>,
+    #[account(mut, seeds = [b"node", pipeline.key().as_ref(), &[node_index]], bump = node.bump)]
+    pub node: Account<'info, PipelineNode>,
+    #[account(mut)]
+    pub facilitator: Signer<'info>,
+    /// CHECK: agent identity; verified against node.agent.
+    pub agent: UncheckedAccount<'info>,
+    #[account(init, payer = facilitator, space = 8 + NodeSettlement::INIT_SPACE, seeds = [b"settlement", node.key().as_ref()], bump)]
+    pub settlement: Account<'info, NodeSettlement>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(node_index: u8)]
+pub struct DisputeNode<'info> {
+    #[account(has_one = consumer)]
+    pub pipeline: Account<'info, Pipeline>,
+    #[account(mut, seeds = [b"node", pipeline.key().as_ref(), &[node_index]], bump = node.bump)]
+    pub node: Account<'info, PipelineNode>,
+    #[account(mut, seeds = [b"settlement", node.key().as_ref()], bump = settlement.bump)]
+    pub settlement: Account<'info, NodeSettlement>,
+    pub consumer: Signer<'info>,
+}
+
+#[derive(Accounts)]
+#[instruction(node_index: u8)]
+pub struct FinalizeNode<'info> {
+    #[account(seeds = [b"pipeline_config"], bump = pipeline_config.bump)]
+    pub pipeline_config: Box<Account<'info, PipelineConfig>>,
+    #[account(mut)]
+    pub pipeline: Box<Account<'info, Pipeline>>,
+    #[account(mut, seeds = [b"node", pipeline.key().as_ref(), &[node_index]], bump = node.bump)]
+    pub node: Box<Account<'info, PipelineNode>>,
+    #[account(mut, seeds = [b"settlement", node.key().as_ref()], bump = settlement.bump, close = caller)]
+    pub settlement: Box<Account<'info, NodeSettlement>>,
+    #[account(mut)]
+    pub caller: Signer<'info>,
+    #[account(mut, associated_token::mint = stake_mint, associated_token::authority = pipeline)]
+    pub vault: Box<Account<'info, TokenAccount>>,
+    pub stake_mint: Box<Account<'info, Mint>>,
+    /// CHECK: agent identity; verified against node.agent.
+    pub agent: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub agent_token_account: Box<Account<'info, TokenAccount>>,
+    #[account(mut, constraint = operator_treasury.owner == pipeline_config.operator @ DagError::InvalidTreasury)]
+    pub operator_treasury: Box<Account<'info, TokenAccount>>,
+    /// CHECK: dag_authority PDA, verified by seeds; signs CPIs.
+    #[account(seeds = [b"dag_authority"], bump = pipeline_config.dag_authority_bump)]
+    pub dag_authority: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub registry_config: Box<Account<'info, bonded_registry::RegistryConfig>>,
+    #[account(mut)]
+    pub agent_stake: Box<Account<'info, bonded_registry::AgentStake>>,
+    pub bonded_registry_program: Program<'info, BondedRegistry>,
+    /// CHECK: bridge config, validated by reputation_bridge CPI.
+    #[account(mut)]
+    pub bridge_config: UncheckedAccount<'info>,
+    /// CHECK: agent reputation PDA.
+    #[account(mut)]
+    pub agent_reputation: UncheckedAccount<'info>,
+    /// CHECK: job record PDA.
+    #[account(mut)]
+    pub job_record: UncheckedAccount<'info>,
+    pub reputation_bridge_program: Program<'info, ReputationBridge>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(node_index: u8)]
+pub struct ResolveDispute<'info> {
+    #[account(seeds = [b"pipeline_config"], bump = pipeline_config.bump)]
+    pub pipeline_config: Box<Account<'info, PipelineConfig>>,
+    #[account(mut)]
+    pub pipeline: Box<Account<'info, Pipeline>>,
+    #[account(mut, seeds = [b"node", pipeline.key().as_ref(), &[node_index]], bump = node.bump)]
+    pub node: Box<Account<'info, PipelineNode>>,
+    #[account(mut, seeds = [b"settlement", node.key().as_ref()], bump = settlement.bump, close = facilitator)]
+    pub settlement: Box<Account<'info, NodeSettlement>>,
+    #[account(mut)]
+    pub facilitator: Signer<'info>,
+    #[account(mut, associated_token::mint = stake_mint, associated_token::authority = pipeline)]
+    pub vault: Box<Account<'info, TokenAccount>>,
+    pub stake_mint: Box<Account<'info, Mint>>,
+    /// CHECK: agent identity; verified against node.agent.
+    pub agent: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub agent_token_account: Box<Account<'info, TokenAccount>>,
+    #[account(mut, constraint = operator_treasury.owner == pipeline_config.operator @ DagError::InvalidTreasury)]
+    pub operator_treasury: Box<Account<'info, TokenAccount>>,
+    #[account(mut, constraint = consumer_token_account.owner == pipeline.consumer @ DagError::InvalidConsumerAccount)]
+    pub consumer_token_account: Box<Account<'info, TokenAccount>>,
+    /// CHECK: dag_authority PDA, verified by seeds; signs CPIs.
+    #[account(seeds = [b"dag_authority"], bump = pipeline_config.dag_authority_bump)]
+    pub dag_authority: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub registry_config: Box<Account<'info, bonded_registry::RegistryConfig>>,
+    #[account(mut)]
+    pub agent_stake: Box<Account<'info, bonded_registry::AgentStake>>,
+    #[account(mut)]
+    pub agent_stake_vault: Box<Account<'info, TokenAccount>>,
+    pub bonded_registry_program: Program<'info, BondedRegistry>,
+    /// CHECK: bridge config, validated by reputation_bridge CPI.
+    #[account(mut)]
+    pub bridge_config: UncheckedAccount<'info>,
+    /// CHECK: agent reputation PDA.
+    #[account(mut)]
+    pub agent_reputation: UncheckedAccount<'info>,
+    /// CHECK: job record PDA.
+    #[account(mut)]
+    pub job_record: UncheckedAccount<'info>,
+    pub reputation_bridge_program: Program<'info, ReputationBridge>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(node_index: u8)]
+pub struct ExpireNode<'info> {
+    // Heavy accounts are Boxed to keep try_accounts' stack frame under SBF's 4KB limit
+    // (the hardening fields widened PipelineConfig/RegistryConfig).
+    #[account(seeds = [b"pipeline_config"], bump = pipeline_config.bump)]
+    pub pipeline_config: Box<Account<'info, PipelineConfig>>,
+    #[account(mut)]
+    pub pipeline: Box<Account<'info, Pipeline>>,
     #[account(
         mut,
         seeds = [b"node", pipeline.key().as_ref(), &[node_index]],
         bump = node.bump
     )]
-    pub node: Account<'info, PipelineNode>,
+    pub node: Box<Account<'info, PipelineNode>>,
     #[account(
         mut,
         associated_token::mint = stake_mint,
         associated_token::authority = pipeline
     )]
-    pub vault: Account<'info, TokenAccount>,
-    pub stake_mint: Account<'info, Mint>,
+    pub vault: Box<Account<'info, TokenAccount>>,
+    pub stake_mint: Box<Account<'info, Mint>>,
     #[account(
         mut,
         constraint = consumer_token_account.owner == pipeline.consumer @ DagError::InvalidConsumerAccount
     )]
-    pub consumer_token_account: Account<'info, TokenAccount>,
+    pub consumer_token_account: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub caller: Signer<'info>,
     /// CHECK: dag_authority PDA, verified by seeds; signs CPIs.
@@ -859,11 +1406,11 @@ pub struct ExpireNode<'info> {
     pub dag_authority: UncheckedAccount<'info>,
     // Optional slash/reputation accounts — required only if target was Claimed.
     #[account(mut)]
-    pub registry_config: Option<Account<'info, bonded_registry::RegistryConfig>>,
+    pub registry_config: Option<Box<Account<'info, bonded_registry::RegistryConfig>>>,
     #[account(mut)]
-    pub agent_stake: Option<Account<'info, bonded_registry::AgentStake>>,
+    pub agent_stake: Option<Box<Account<'info, bonded_registry::AgentStake>>>,
     #[account(mut)]
-    pub agent_stake_vault: Option<Account<'info, TokenAccount>>,
+    pub agent_stake_vault: Option<Box<Account<'info, TokenAccount>>>,
     pub bonded_registry_program: Option<Program<'info, BondedRegistry>>,
     /// CHECK: bridge config, validated by reputation_bridge CPI.
     #[account(mut)]
@@ -946,6 +1493,48 @@ pub struct PipelineCancelled {
     pub refund_amount: u64,
 }
 
+#[event]
+pub struct NodeSubmitted {
+    pub pipeline: Pubkey,
+    pub node_index: u8,
+    pub agent: Pubkey,
+    pub result_hash: [u8; 32],
+    pub uri: [u8; 96],
+    pub uri_len: u8,
+    pub dispute_until: u64,
+}
+
+#[event]
+pub struct NodeDisputed {
+    pub pipeline: Pubkey,
+    pub node_index: u8,
+    pub reason_hash: [u8; 32],
+    pub reason_code: u8,
+}
+
+#[event]
+pub struct NodeResolved {
+    pub pipeline: Pubkey,
+    pub node_index: u8,
+    pub agent: Pubkey,
+    pub upheld: bool,
+}
+
+#[event]
+pub struct PausedSet {
+    pub paused: bool,
+}
+
+#[event]
+pub struct OperatorProposed {
+    pub new_operator: Pubkey,
+}
+
+#[event]
+pub struct OperatorChanged {
+    pub operator: Pubkey,
+}
+
 #[error_code]
 pub enum DagError {
     #[msg("Fee BPS exceeds 100%")]
@@ -972,6 +1561,18 @@ pub enum DagError {
     TierInsufficient,
     #[msg("Caller is not the configured facilitator")]
     UnauthorizedFacilitator,
+    #[msg("Caller is not the configured arbiter")]
+    UnauthorizedArbiter,
+    #[msg("Node is not in the Submitted state")]
+    NodeNotSubmitted,
+    #[msg("Node is not in the Disputed state")]
+    NodeNotDisputed,
+    #[msg("Dispute window is still open")]
+    DisputeWindowOpen,
+    #[msg("Dispute window has closed")]
+    DisputeWindowClosed,
+    #[msg("Node is already disputed")]
+    NodeAlreadyDisputed,
     #[msg("Node is not claimed")]
     NodeNotClaimed,
     #[msg("Node cannot be expired in its current state")]
@@ -984,6 +1585,20 @@ pub enum DagError {
     InvalidTreasury,
     #[msg("Consumer token account has wrong owner")]
     InvalidConsumerAccount,
+    #[msg("Delivery URI length exceeds 96-byte buffer")]
+    InvalidUri,
+    #[msg("Protocol is paused")]
+    Paused,
+    #[msg("Dispute window out of bounds")]
+    InvalidDisputeWindow,
+    #[msg("No pending operator to accept")]
+    NoPendingOperator,
+    #[msg("Signer is not the pending operator")]
+    NotPendingOperator,
+    #[msg("Config already migrated")]
+    AlreadyMigrated,
+    #[msg("Signer is not the config operator")]
+    UnauthorizedOperator,
     #[msg("Pipeline has claimed or settled nodes")]
     PipelineHasActivity,
     #[msg("Math overflow")]

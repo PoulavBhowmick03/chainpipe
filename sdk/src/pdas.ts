@@ -40,6 +40,10 @@ export const nodePda = (a: ChainPipeAddresses, pipeline: PublicKey, index: numbe
     a.dagEscrow
   )[0];
 
+/** Companion settlement PDA created at submit_completion time. */
+export const settlementPda = (a: ChainPipeAddresses, node: PublicKey) =>
+  PublicKey.findProgramAddressSync([enc("settlement"), node.toBuffer()], a.dagEscrow)[0];
+
 /** Vault is an ATA owned by an off-curve PDA (stake vault or pipeline vault). */
 export const vaultAta = (mint: PublicKey, ownerPda: PublicKey) =>
   getAssociatedTokenAddressSync(mint, ownerPda, true);

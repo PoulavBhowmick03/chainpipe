@@ -4,7 +4,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { PublicKey } from "@solana/web3.js";
 
-import { DEVNET_ADDRESSES, pipelinePda, agentStakePda, dagAuthorityPda } from "../../sdk/dist/index.js";
+import { sha256 } from "@noble/hashes/sha256";
+import {
+  DEVNET_ADDRESSES, pipelinePda, agentStakePda, dagAuthorityPda,
+  deliveryMessage, verifyDelivery, encodeUri, decodeUri,
+} from "../../sdk/dist/index.js";
 import { scoreDelta } from "../../facilitator/dist/scorer.js";
 import { computeStats, serialize } from "../../indexer/dist/decoder.js";
 
@@ -41,4 +45,49 @@ test("indexer serialize converts PublicKey + bigint", () => {
   assert.equal(out.owner, pk.toBase58());
   assert.equal(out.n, "5");
   assert.equal(out.nested[0], pk.toBase58());
+});
+
+test("encodeUri / decodeUri round-trip into the 96-byte buffer", () => {
+  const uri = "ipfs://bafkreigooddeliveryproof";
+  const { bytes, len } = encodeUri(uri);
+  assert.equal(bytes.length, 96);
+  assert.equal(len, Buffer.from(uri, "utf8").length);
+  assert.equal(decodeUri(bytes, len), uri);
+  assert.throws(() => encodeUri("x".repeat(97)));
+});
+
+test("deliveryMessage layout is 32+1+32+32+32 and binds uri via sha256", () => {
+  const pipeline = new PublicKey("5cpcXjLZHhntiqhNNX1Yay7SghhcALsQcwH2WJCs3VUm");
+  const jobId = new Uint8Array(32).fill(1);
+  const resultHash = new Uint8Array(32).fill(2);
+  const uriBytes = new TextEncoder().encode("ipfs://cid");
+  const msg = deliveryMessage(pipeline, 3, jobId, resultHash, uriBytes);
+  assert.equal(msg.length, 32 + 1 + 32 + 32 + 32);
+  assert.equal(msg[32], 3); // node index byte
+  // last 32 bytes are sha256(uriBytes) — binding the retrieval pointer
+  assert.deepEqual(Array.from(msg.slice(-32)), Array.from(sha256(uriBytes)));
+  // changing the uri changes the signed message (no signature replay across deliveries)
+  const other = deliveryMessage(pipeline, 3, jobId, resultHash, new TextEncoder().encode("ipfs://other"));
+  assert.notDeepEqual(Array.from(msg.slice(-32)), Array.from(other.slice(-32)));
+});
+
+test("verifyDelivery: ok on hash match, fail on mutated byte", async () => {
+  const payload = new Uint8Array([10, 20, 30, 40, 50]);
+  const goodHash = sha256(payload);
+  const uriBuf = encodeUri("https://example.test/output.bin");
+  const stubFetch = async () => ({ ok: true, arrayBuffer: async () => payload.buffer.slice(payload.byteOffset, payload.byteOffset + payload.byteLength) });
+
+  const okCheck = await verifyDelivery(
+    { uri: uriBuf.bytes, uriLen: uriBuf.len, resultHash: Array.from(goodHash) },
+    { fetchImpl: stubFetch }
+  );
+  assert.equal(okCheck.ok, true);
+  assert.equal(okCheck.actualHash, Buffer.from(goodHash).toString("hex"));
+
+  const badHash = new Uint8Array(32).fill(7);
+  const badCheck = await verifyDelivery(
+    { uri: uriBuf.bytes, uriLen: uriBuf.len, resultHash: Array.from(badHash) },
+    { fetchImpl: stubFetch }
+  );
+  assert.equal(badCheck.ok, false);
 });

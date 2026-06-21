@@ -93,6 +93,24 @@ Update these as you go:
 - [x] **Phase 9** — E2E devnet script (full loop with real tx signatures) — runs clean; stake×3 tiers → pipeline → settle+fee+rep → tier-gated claim → expire+slash+failure+refund
 - [x] **Phase 10** — Seed script + README + DEPLOYED.md finalization — 5 agents + 3 pipelines seeded; indexer confirmed non-zero (4 pipelines, 11 agents, minTier filter works)
 
+### POST-AUDIT CONTINUATION (Phases 11–17)
+
+A 2026-06-21 end-to-end audit found an uncommitted/half-integrated trust-dispute layer
+and several P0 gaps. These phases finish + harden + package it. Plan:
+`~/.claude/plans/i-have-the-entire-moonlit-badger.md`.
+
+**TOOLCHAIN NOTE:** the `anchor` on PATH (`~/.cargo/bin/anchor`) is the Sigma Prime SSV
+validator, NOT the framework CLI. Use `PATH="$HOME/.avm/bin:$PATH" anchor …`
+(avm-managed anchor-cli 0.31.1) for all build/test/deploy.
+
+- [x] **Phase 11** — Unblock: IDL sync (target/ → sdk + dashboard), SDK build fixed, all builds green, `anchor test` 41/41 (incl. 4 dispute tests)
+- [x] **Phase 12** — Proof-of-delivery in dag_escrow — NodeSettlement uri/uri_len, submit_completion+InvalidUri, dispute_node reason_code, events; SDK encodeUri/decodeUri; `anchor test` 43/43
+- [x] **Phase 13** — Facilitator dispute routes (/submit,/finalize,/resolve,/settlement) + e2e dispute+proof demo — LIVE on devnet (dag_escrow upgraded; e2e verified)
+- [x] **Phase 14** — Proof-of-delivery off-chain UX — SDK deliveryMessage/verifyDelivery, facilitator uri-binding + integrity check, dashboard /work upload+sign + SettlementPanel (verify/dispute/finalize); units 7/7, next build 0 errors
+- [x] **Phase 15** — Production hardening — pause, configurable+snapshotted dispute window, slash cap, two-step operator transfer, realloc migrate_* across all 3 programs (Boxed ExpireNode to fix 4KB stack); anchor test 52/52
+- [x] **Phase 16** — all 3 programs upgraded on devnet + migrate_* run (manual realloc) + e2e green live; migrate tx sigs in DEPLOYED.md. Squads multisig handoff = documented human step (SECURITY.md)
+- [x] **Phase 17** — Grant packaging — honest README (dispute/proof/hardening, demo script), DECENTRALIZATION.md roadmap, AUDIT/CLAUDE test counts reconciled (52), SDK npm pack clean (publish = human step)
+
 ---
 
 ## PHASE 0: Repo Scaffold
@@ -1148,8 +1166,8 @@ All phases must show `[x] DONE`. If any show `[ ]` or `[~]`, continue working.
 
 ### Final Verification Checklist — Phase 10
 
-- [x] All 10 phases show `[x] DONE` in CLAUDE.md phase tracker
-- [x] `anchor test` passes (all 37 tests across 3 programs)
+- [x] All 10 phases show `[x] DONE` in CLAUDE.md phase tracker (see Post-Audit Continuation 11–17 above)
+- [x] `anchor test` passes (52 tests across 3 programs after the dispute/proof/hardening layers; was 37)
 - [x] `cd sdk && npm run build` passes
 - [x] `cd facilitator && npm run build` passes
 - [x] `cd dashboard && next build` passes

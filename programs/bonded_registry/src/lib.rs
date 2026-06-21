@@ -27,6 +27,11 @@ pub mod bonded_registry {
         cfg.slash_bps = slash_bps;
         cfg.cooldown_slots = cooldown_slots;
         cfg.bump = ctx.bumps.config;
+        // hardening defaults: cap starts at 100% (no extra restriction beyond the existing
+        // <=10000 guard); operators opt into a tighter ceiling via set_max_slash_bps.
+        cfg.version = REGISTRY_CONFIG_VERSION;
+        cfg.max_slash_bps = 10_000;
+        cfg.pending_operator = Pubkey::default();
         Ok(())
     }
 
@@ -36,6 +41,61 @@ pub mod bonded_registry {
         dag_escrow_authority: Pubkey,
     ) -> Result<()> {
         ctx.accounts.config.dag_escrow_authority = dag_escrow_authority;
+        Ok(())
+    }
+
+    /// Operator sets the per-incident slash ceiling (≤ 100%).
+    pub fn set_max_slash_bps(ctx: Context<SetMaxSlashBps>, max_slash_bps: u16) -> Result<()> {
+        require!(max_slash_bps <= 10_000, RegistryError::InvalidSlashBps);
+        ctx.accounts.config.max_slash_bps = max_slash_bps;
+        Ok(())
+    }
+
+    /// Two-step operator transfer (propose; successor must accept).
+    pub fn propose_operator(ctx: Context<ProposeOperator>, new_operator: Pubkey) -> Result<()> {
+        ctx.accounts.config.pending_operator = new_operator;
+        Ok(())
+    }
+
+    pub fn accept_operator(ctx: Context<AcceptOperator>) -> Result<()> {
+        let cfg = &mut ctx.accounts.config;
+        require!(cfg.pending_operator != Pubkey::default(), RegistryError::NoPendingOperator);
+        require!(
+            ctx.accounts.new_operator.key() == cfg.pending_operator,
+            RegistryError::NotPendingOperator
+        );
+        cfg.operator = cfg.pending_operator;
+        cfg.pending_operator = Pubkey::default();
+        Ok(())
+    }
+
+    /// One-time migration: grow a pre-hardening RegistryConfig and seed new fields.
+    /// Manual realloc (live account smaller than the new struct). Idempotent by size.
+    pub fn migrate_registry_config(ctx: Context<MigrateRegistryConfig>) -> Result<()> {
+        let ai = ctx.accounts.config.to_account_info();
+        let new_len = RegistryConfig::LEN;
+        require!(ai.data_len() < new_len, RegistryError::AlreadyMigrated);
+        {
+            let d = ai.try_borrow_data()?;
+            require!(&d[8..40] == ctx.accounts.operator.key().as_ref(), RegistryError::UnauthorizedOperator);
+        }
+        ai.realloc(new_len, false)?;
+        let needed = Rent::get()?.minimum_balance(new_len).saturating_sub(ai.lamports());
+        if needed > 0 {
+            anchor_lang::system_program::transfer(
+                CpiContext::new(
+                    ctx.accounts.system_program.to_account_info(),
+                    anchor_lang::system_program::Transfer { from: ctx.accounts.operator.to_account_info(), to: ai.clone() },
+                ),
+                needed,
+            )?;
+        }
+        let mut data = ai.try_borrow_mut_data()?;
+        let mut cfg = RegistryConfig::try_deserialize(&mut &data[..])?;
+        cfg.version = REGISTRY_CONFIG_VERSION;
+        cfg.max_slash_bps = 10_000;
+        cfg.pending_operator = Pubkey::default();
+        cfg.try_serialize(&mut &mut data[..])?;
         Ok(())
     }
 
@@ -176,6 +236,10 @@ pub mod bonded_registry {
             ctx.accounts.dag_authority.key() == ctx.accounts.config.dag_escrow_authority,
             RegistryError::UnauthorizedCaller
         );
+        // Per-incident cap, caller-independent. CLAMP (don't reject): a cap below the
+        // configured slash rate must reduce the slash, never brick expire_node/resolve_dispute
+        // (which would otherwise revert and trap funds / leave bad agents un-slashable).
+        let slash_bps = slash_bps.min(ctx.accounts.config.max_slash_bps);
 
         let agent_stake_info = ctx.accounts.agent_stake.to_account_info();
         let agent_key;
@@ -286,11 +350,19 @@ pub struct RegistryConfig {
     pub slash_bps: u16,
     pub cooldown_slots: u64,
     pub bump: u8,
+    // ── hardening fields (APPENDED; grown on live accounts via migrate_registry_config) ──
+    pub version: u8,
+    /// Hard ceiling on any single slash (per incident), caller-independent.
+    pub max_slash_bps: u16,
+    /// Two-step operator transfer target (default = none).
+    pub pending_operator: Pubkey,
 }
 
 impl RegistryConfig {
-    pub const LEN: usize = 8 + 32 + 32 + 2 + 8 + 1;
+    pub const LEN: usize = 8 + 32 + 32 + 2 + 8 + 1 + 1 + 2 + 32;
 }
+
+pub const REGISTRY_CONFIG_VERSION: u8 = 1;
 
 #[account]
 pub struct AgentStake {
@@ -329,6 +401,38 @@ pub struct SetDagEscrowAuthority<'info> {
     #[account(mut, seeds = [b"config"], bump = config.bump, has_one = operator)]
     pub config: Account<'info, RegistryConfig>,
     pub operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct SetMaxSlashBps<'info> {
+    #[account(mut, seeds = [b"config"], bump = config.bump, has_one = operator)]
+    pub config: Account<'info, RegistryConfig>,
+    pub operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct ProposeOperator<'info> {
+    #[account(mut, seeds = [b"config"], bump = config.bump, has_one = operator)]
+    pub config: Account<'info, RegistryConfig>,
+    pub operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct AcceptOperator<'info> {
+    #[account(mut, seeds = [b"config"], bump = config.bump)]
+    pub config: Account<'info, RegistryConfig>,
+    pub new_operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct MigrateRegistryConfig<'info> {
+    /// CHECK: PDA verified by seeds; deserialized/grown manually (live account smaller
+    /// than the new struct).
+    #[account(mut, seeds = [b"config"], bump)]
+    pub config: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub operator: Signer<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -506,4 +610,14 @@ pub enum RegistryError {
     AgentNotRegistered,
     #[msg("Math overflow")]
     MathOverflow,
+    #[msg("Slash BPS exceeds the configured per-incident cap")]
+    SlashExceedsCap,
+    #[msg("No pending operator to accept")]
+    NoPendingOperator,
+    #[msg("Signer is not the pending operator")]
+    NotPendingOperator,
+    #[msg("Config already migrated")]
+    AlreadyMigrated,
+    #[msg("Signer is not the config operator")]
+    UnauthorizedOperator,
 }

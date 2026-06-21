@@ -10,6 +10,7 @@ import { toDagNodes } from "@/lib/adapt";
 import { explorerAddr } from "@/lib/chainpipe";
 import { DagCanvas } from "@/components/DagCanvas";
 import { StatusTag } from "@/components/primitives";
+import { SettlementPanel } from "@/components/SettlementPanel";
 
 export default function PipelinePage() {
   const { pda } = useParams<{ pda: string }>();
@@ -82,6 +83,7 @@ export default function PipelinePage() {
               {resolved ? "All nodes resolved. The escrow is fully settled or refunded." : "If a claimed or pending node misses its deadline, anyone can expire it — the refund cascades atomically to every downstream node and back to the consumer."}
             </div>
           </div>
+          <SettlementPanel p={p} />
           <div style={{ border: `1px solid ${C.line}`, borderRadius: 10, overflow: "hidden" }}>
             {p.nodes.map((n) => {
               const st = statusKey(n.status);

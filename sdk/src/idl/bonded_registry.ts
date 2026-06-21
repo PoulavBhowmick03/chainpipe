@@ -13,6 +13,45 @@ export type BondedRegistry = {
   },
   "instructions": [
     {
+      "name": "acceptOperator",
+      "discriminator": [
+        216,
+        185,
+        116,
+        130,
+        254,
+        55,
+        57,
+        128
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "newOperator",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "addStake",
       "docs": [
         "Add to an existing stake (may upgrade the tier)."
@@ -643,6 +682,106 @@ export type BondedRegistry = {
       ]
     },
     {
+      "name": "migrateRegistryConfig",
+      "docs": [
+        "One-time migration: grow a pre-hardening RegistryConfig and seed new fields."
+      ],
+      "discriminator": [
+        103,
+        181,
+        226,
+        54,
+        185,
+        93,
+        44,
+        69
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "proposeOperator",
+      "docs": [
+        "Two-step operator transfer (propose; successor must accept)."
+      ],
+      "discriminator": [
+        42,
+        183,
+        138,
+        176,
+        225,
+        0,
+        30,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "newOperator",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
       "name": "requestUnstake",
       "docs": [
         "Begin the unstake cooldown. Reverts if the agent has open jobs."
@@ -743,6 +882,56 @@ export type BondedRegistry = {
         {
           "name": "dagEscrowAuthority",
           "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "setMaxSlashBps",
+      "docs": [
+        "Operator sets the per-incident slash ceiling (≤ 100%)."
+      ],
+      "discriminator": [
+        98,
+        130,
+        145,
+        120,
+        194,
+        117,
+        96,
+        202
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "maxSlashBps",
+          "type": "u16"
         }
       ]
     },
@@ -1301,6 +1490,26 @@ export type BondedRegistry = {
       "code": 6007,
       "name": "mathOverflow",
       "msg": "Math overflow"
+    },
+    {
+      "code": 6008,
+      "name": "slashExceedsCap",
+      "msg": "Slash BPS exceeds the configured per-incident cap"
+    },
+    {
+      "code": 6009,
+      "name": "noPendingOperator",
+      "msg": "No pending operator to accept"
+    },
+    {
+      "code": 6010,
+      "name": "notPendingOperator",
+      "msg": "Signer is not the pending operator"
+    },
+    {
+      "code": 6011,
+      "name": "alreadyMigrated",
+      "msg": "Config already migrated"
     }
   ],
   "types": [
@@ -1372,6 +1581,24 @@ export type BondedRegistry = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "maxSlashBps",
+            "docs": [
+              "Hard ceiling on any single slash (per incident), caller-independent."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "pendingOperator",
+            "docs": [
+              "Two-step operator transfer target (default = none)."
+            ],
+            "type": "pubkey"
           }
         ]
       }

@@ -28,6 +28,8 @@ pub mod reputation_bridge {
         cfg.dag_escrow_authority = dag_escrow_authority;
         cfg.ema_alpha_bps = ema_alpha_bps;
         cfg.bump = ctx.bumps.bridge_config;
+        cfg.version = BRIDGE_CONFIG_VERSION;
+        cfg.pending_operator = Pubkey::default();
         Ok(())
     }
 
@@ -37,6 +39,53 @@ pub mod reputation_bridge {
         dag_escrow_authority: Pubkey,
     ) -> Result<()> {
         ctx.accounts.bridge_config.dag_escrow_authority = dag_escrow_authority;
+        Ok(())
+    }
+
+    /// Two-step operator transfer (propose; successor must accept).
+    pub fn propose_operator(ctx: Context<ProposeOperator>, new_operator: Pubkey) -> Result<()> {
+        ctx.accounts.bridge_config.pending_operator = new_operator;
+        Ok(())
+    }
+
+    pub fn accept_operator(ctx: Context<AcceptOperator>) -> Result<()> {
+        let cfg = &mut ctx.accounts.bridge_config;
+        require!(cfg.pending_operator != Pubkey::default(), BridgeError::NoPendingOperator);
+        require!(
+            ctx.accounts.new_operator.key() == cfg.pending_operator,
+            BridgeError::NotPendingOperator
+        );
+        cfg.operator = cfg.pending_operator;
+        cfg.pending_operator = Pubkey::default();
+        Ok(())
+    }
+
+    /// One-time migration: grow a pre-hardening BridgeConfig and seed new fields.
+    /// Manual realloc (live account smaller than the new struct). Idempotent by size.
+    pub fn migrate_bridge_config(ctx: Context<MigrateBridgeConfig>) -> Result<()> {
+        let ai = ctx.accounts.bridge_config.to_account_info();
+        let new_len = BridgeConfig::LEN;
+        require!(ai.data_len() < new_len, BridgeError::AlreadyMigrated);
+        {
+            let d = ai.try_borrow_data()?;
+            require!(&d[8..40] == ctx.accounts.operator.key().as_ref(), BridgeError::UnauthorizedOperator);
+        }
+        ai.realloc(new_len, false)?;
+        let needed = Rent::get()?.minimum_balance(new_len).saturating_sub(ai.lamports());
+        if needed > 0 {
+            anchor_lang::system_program::transfer(
+                CpiContext::new(
+                    ctx.accounts.system_program.to_account_info(),
+                    anchor_lang::system_program::Transfer { from: ctx.accounts.operator.to_account_info(), to: ai.clone() },
+                ),
+                needed,
+            )?;
+        }
+        let mut data = ai.try_borrow_mut_data()?;
+        let mut cfg = BridgeConfig::try_deserialize(&mut &data[..])?;
+        cfg.version = BRIDGE_CONFIG_VERSION;
+        cfg.pending_operator = Pubkey::default();
+        cfg.try_serialize(&mut &mut data[..])?;
         Ok(())
     }
 
@@ -137,10 +186,15 @@ pub struct BridgeConfig {
     pub dag_escrow_authority: Pubkey,
     pub ema_alpha_bps: u16,
     pub bump: u8,
+    // ── hardening (APPENDED; grown on live accounts via migrate_bridge_config) ──
+    pub version: u8,
+    pub pending_operator: Pubkey,
 }
 impl BridgeConfig {
-    pub const LEN: usize = 8 + 32 + 32 + 32 + 2 + 1;
+    pub const LEN: usize = 8 + 32 + 32 + 32 + 2 + 1 + 1 + 32;
 }
+
+pub const BRIDGE_CONFIG_VERSION: u8 = 1;
 
 #[account]
 pub struct AgentReputation {
@@ -198,6 +252,31 @@ pub struct SetDagEscrowAuthority<'info> {
 }
 
 #[derive(Accounts)]
+pub struct ProposeOperator<'info> {
+    #[account(mut, seeds = [b"bridge_config"], bump = bridge_config.bump, has_one = operator)]
+    pub bridge_config: Account<'info, BridgeConfig>,
+    pub operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct AcceptOperator<'info> {
+    #[account(mut, seeds = [b"bridge_config"], bump = bridge_config.bump)]
+    pub bridge_config: Account<'info, BridgeConfig>,
+    pub new_operator: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct MigrateBridgeConfig<'info> {
+    /// CHECK: PDA verified by seeds; deserialized/grown manually (live account smaller
+    /// than the new struct).
+    #[account(mut, seeds = [b"bridge_config"], bump)]
+    pub bridge_config: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub operator: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
 #[instruction(job_id: [u8; 32])]
 pub struct RecordOutcome<'info> {
     #[account(seeds = [b"bridge_config"], bump = bridge_config.bump)]
@@ -249,4 +328,12 @@ pub enum BridgeError {
     UnauthorizedCaller,
     #[msg("EMA alpha bps exceeds 100%")]
     InvalidAlpha,
+    #[msg("No pending operator to accept")]
+    NoPendingOperator,
+    #[msg("Signer is not the pending operator")]
+    NotPendingOperator,
+    #[msg("Config already migrated")]
+    AlreadyMigrated,
+    #[msg("Signer is not the config operator")]
+    UnauthorizedOperator,
 }
