@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "description": "SDK for ChainPipe — atomic multi-agent pipeline escrow, bonded trust, and verifiable proof-of-delivery on Solana",
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/PoulavBhowmick03/chainpipe.git", "directory": "sdk" },
+  "repository": { "type": "git", "url": "git+https://github.com/PoulavBhowmick03/chainpipe.git", "directory": "sdk" },
   "keywords": ["solana", "anchor", "escrow", "agents", "x402", "reputation", "proof-of-delivery"],
   "files": ["dist"],
   "main": "dist/index.js",
