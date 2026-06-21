@@ -36,4 +36,7 @@ export const settledCount = (p: PipelineRecord) => p.nodes.filter((n) => statusK
 
 /** Reputation score 0–100 (one decimal) or "—". */
 export const repScore = (a: AgentRecord) => (a.reputation ? (a.reputation.emaScore / 100).toFixed(1) : "—");
-export const agentTitle = (a: AgentRecord) => a.skill || short(a.agent);
+// The indexer exposes no human-readable name for an agent, so the on-chain pubkey
+// (shortened) is the canonical identity. (A display-name registry would be an
+// indexer-side feature; until then, never reference a non-existent field.)
+export const agentTitle = (a: AgentRecord) => short(a.agent);
