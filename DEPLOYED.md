@@ -91,30 +91,28 @@ Test mint: `8BPRrfsXT3FZUvxW5v5ctq8Q5moZinNu7eFR4gtFPxz1`
 | 2 | Active | `4pFdQSBSkhBR8Sjw5XNLDwsMxsmSuAAFx5s9Ezmd7vZa` |
 | 3 | PartiallyRefunded | `7LqDXqWtpW4RTvyhJ9x5spWzxHfuLLmmp6Ld4g7zaKiu` |
 
-## Pending upgrade — dispute + proof-of-delivery (Phases 11–16)
+## Hardening upgrade — dispute + proof-of-delivery + production hardening (Phases 11–16) — ✅ LIVE
 
-The `dag_escrow` program has been extended on-chain (localnet-verified, `anchor test`
-43/43) with an optimistic settlement + dispute layer and content-addressed
-proof-of-delivery. The live devnet upgrade is **pending a funded deploy session** (see
-BLOCKERS.md **D6** — staging buffer needs ~3.6 SOL; faucet rate-limited). The programdata
-account was pre-extended by 140,000 bytes (now 530,800) in preparation. The funded session
-will, in one batch: upgrade `dag_escrow` (Phase 13) + all 3 programs & run `migrate_*`
-(Phase 16), then record the new program hashes, migration tx sigs, and realloc'd config
-sizes here.
+All three programs were upgraded in place on devnet with the optimistic-settlement **dispute
+layer**, content-addressed **proof-of-delivery**, and the **production-hardening** pass
+(pause, configurable+snapshotted dispute window, per-incident slash cap, two-step operator
+transfer). The three live config PDAs were grown to the hardened layout via a one-time manual
+realloc (`scripts/migrate-configs.mts`).
 
-**Ready-to-run ops (funded session):**
-```bash
-# 1. deploy hardened binaries (all 3) — needs ~3.6 SOL buffer per upgrade
-for P in dag_escrow bonded_registry reputation_bridge; do
-  solana program deploy target/deploy/$P.so --program-id keys/$P.json --url devnet
-done
-# 2. grow + seed the live config PDAs (idempotent)
-npx tsx scripts/migrate-configs.mts
-# 3. re-seed demo state + verify the dispute/proof e2e
-npx tsx scripts/seed-devnet.mts && npx tsx scripts/e2e-devnet.mts
-# 4. (governance) transfer upgrade authority + config operators → Squads (see SECURITY.md runbook)
-```
-Migration & Squads handoff steps are detailed in `SECURITY.md`.
+| Config migration | migrate tx |
+|------------------|-----------|
+| dag_escrow `PipelineConfig` | `ff8yUQaTTfE95bxkBfm7ZVdCHtK2UhiP5SV11pBRaKAZMN6voVPTHe2yhbYFruMz3it2MgWHtggpzbw41WxvNSF` |
+| bonded_registry `RegistryConfig` | `4FqGFsGPbEPr6qgZs1A78FdR5aGfvU8dACPEr7QzSHDzDn3kf57GrjT8UUPAKmtawYY9z6kBezQ5YatmS13s2mbZ` |
+| reputation_bridge `BridgeConfig` | `3Ur8EkdAqTix2xCKqoJDgYwhoh3r5iaEQ7eqyQ2W2rQWN2WxTfvu3BUrZZ9ndt5FYgkEnatZWTvnHFrhabx8HAsa` |
+
+Verified live: `scripts/e2e-devnet.mts` runs the full lifecycle **including** optimistic
+submit-with-proof → dispute → arbiter-resolve and submit → finalize-after-window. Migrations
+are idempotent (re-running reports "already migrated"). Localnet `anchor test` 52/52.
+
+**Still pending (human/governance):** transfer upgrade authority + config operators to a
+**Squads multisig** (two-step `propose_operator`/`accept_operator` is built; co-sign is the
+human step), rotate the facilitator key to KMS, and record `<MULTISIG>` here — see the
+runbook in [`SECURITY.md`](./SECURITY.md).
 
 ## Reproduce
 

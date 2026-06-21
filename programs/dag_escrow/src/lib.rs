@@ -102,14 +102,38 @@ pub mod dag_escrow {
     }
 
     /// One-time migration that grows a pre-hardening PipelineConfig to the current layout
-    /// and seeds the new fields with safe defaults. Idempotent (rejects if already migrated).
+    /// and seeds the new fields with safe defaults. Manual realloc (the account is smaller
+    /// than the new struct, so `Account<T>` can't deserialize it pre-grow). Idempotent:
+    /// rejects once the account already has the new size.
     pub fn migrate_pipeline_config(ctx: Context<MigratePipelineConfig>) -> Result<()> {
-        let cfg = &mut ctx.accounts.pipeline_config;
-        require!(cfg.version == 0, DagError::AlreadyMigrated);
+        let ai = ctx.accounts.pipeline_config.to_account_info();
+        let new_len = 8 + PipelineConfig::INIT_SPACE;
+        require!(ai.data_len() < new_len, DagError::AlreadyMigrated);
+        // operator is the first field after the 8-byte discriminator (offset 8..40)
+        {
+            let d = ai.try_borrow_data()?;
+            require!(&d[8..40] == ctx.accounts.operator.key().as_ref(), DagError::UnauthorizedOperator);
+        }
+        // Grow FIRST (runtime zero-fills new bytes), THEN fund — realloc after a CPI that
+        // references the account is rejected by the runtime.
+        ai.realloc(new_len, false)?;
+        let needed = Rent::get()?.minimum_balance(new_len).saturating_sub(ai.lamports());
+        if needed > 0 {
+            system_program::transfer(
+                CpiContext::new(
+                    ctx.accounts.system_program.to_account_info(),
+                    system_program::Transfer { from: ctx.accounts.operator.to_account_info(), to: ai.clone() },
+                ),
+                needed,
+            )?;
+        }
+        let mut data = ai.try_borrow_mut_data()?;
+        let mut cfg = PipelineConfig::try_deserialize(&mut &data[..])?;
         cfg.version = CONFIG_VERSION;
         cfg.paused = false;
         cfg.dispute_slots = DISPUTE_SLOTS;
         cfg.pending_operator = Pubkey::default();
+        cfg.try_serialize(&mut &mut data[..])?;
         Ok(())
     }
 
@@ -1087,16 +1111,10 @@ pub struct AcceptOperator<'info> {
 
 #[derive(Accounts)]
 pub struct MigratePipelineConfig<'info> {
-    #[account(
-        mut,
-        seeds = [b"pipeline_config"],
-        bump = pipeline_config.bump,
-        has_one = operator,
-        realloc = 8 + PipelineConfig::INIT_SPACE,
-        realloc::payer = operator,
-        realloc::zero = false
-    )]
-    pub pipeline_config: Account<'info, PipelineConfig>,
+    /// CHECK: PDA verified by seeds; deserialized/grown manually because the live account
+    /// is smaller than the new struct (Account<T> can't load it pre-realloc).
+    #[account(mut, seeds = [b"pipeline_config"], bump)]
+    pub pipeline_config: UncheckedAccount<'info>,
     #[account(mut)]
     pub operator: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -1576,6 +1594,8 @@ pub enum DagError {
     NotPendingOperator,
     #[msg("Config already migrated")]
     AlreadyMigrated,
+    #[msg("Signer is not the config operator")]
+    UnauthorizedOperator,
     #[msg("Pipeline has claimed or settled nodes")]
     PipelineHasActivity,
     #[msg("Math overflow")]

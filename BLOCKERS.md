@@ -1,6 +1,18 @@
 # BLOCKERS
 
-## D6 — Devnet deploy of dispute+proof dag_escrow blocked on faucet rate limit (Phase 13/16)
+## D6 — Devnet deploy of dispute+proof+hardening — ✅ RESOLVED (2026-06-21)
+
+**Resolution:** user funded the deploy wallet with 30 SOL. All 3 programs were
+`solana program extend`-ed to fit the hardened binaries and upgraded on devnet; the 3 config
+PDAs were grown via `scripts/migrate-configs.mts`. Two migration bugs found + fixed during the
+live run: (1) Anchor's `realloc` constraint deserializes `Account<T>` at the *old* (smaller)
+size before reallocating → switched the migrate handlers to `UncheckedAccount` + manual
+realloc; (2) `realloc` must run *before* the rent-funding CPI (a CPI freezes the account's
+data length) → reordered. `e2e-devnet.mts` (incl. dispute + proof-of-delivery) is green on the
+live hardened deployment; migrate tx sigs recorded in DEPLOYED.md. Only the Squads multisig
+governance handoff remains (documented human step in SECURITY.md).
+
+### Original report — Devnet deploy blocked on faucet rate limit (Phase 13/16)
 
 **Date:** 2026-06-21
 

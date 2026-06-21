@@ -70,12 +70,32 @@ pub mod bonded_registry {
     }
 
     /// One-time migration: grow a pre-hardening RegistryConfig and seed new fields.
+    /// Manual realloc (live account smaller than the new struct). Idempotent by size.
     pub fn migrate_registry_config(ctx: Context<MigrateRegistryConfig>) -> Result<()> {
-        let cfg = &mut ctx.accounts.config;
-        require!(cfg.version == 0, RegistryError::AlreadyMigrated);
+        let ai = ctx.accounts.config.to_account_info();
+        let new_len = RegistryConfig::LEN;
+        require!(ai.data_len() < new_len, RegistryError::AlreadyMigrated);
+        {
+            let d = ai.try_borrow_data()?;
+            require!(&d[8..40] == ctx.accounts.operator.key().as_ref(), RegistryError::UnauthorizedOperator);
+        }
+        ai.realloc(new_len, false)?;
+        let needed = Rent::get()?.minimum_balance(new_len).saturating_sub(ai.lamports());
+        if needed > 0 {
+            anchor_lang::system_program::transfer(
+                CpiContext::new(
+                    ctx.accounts.system_program.to_account_info(),
+                    anchor_lang::system_program::Transfer { from: ctx.accounts.operator.to_account_info(), to: ai.clone() },
+                ),
+                needed,
+            )?;
+        }
+        let mut data = ai.try_borrow_mut_data()?;
+        let mut cfg = RegistryConfig::try_deserialize(&mut &data[..])?;
         cfg.version = REGISTRY_CONFIG_VERSION;
         cfg.max_slash_bps = 10_000;
         cfg.pending_operator = Pubkey::default();
+        cfg.try_serialize(&mut &mut data[..])?;
         Ok(())
     }
 
@@ -404,16 +424,10 @@ pub struct AcceptOperator<'info> {
 
 #[derive(Accounts)]
 pub struct MigrateRegistryConfig<'info> {
-    #[account(
-        mut,
-        seeds = [b"config"],
-        bump = config.bump,
-        has_one = operator,
-        realloc = RegistryConfig::LEN,
-        realloc::payer = operator,
-        realloc::zero = false
-    )]
-    pub config: Account<'info, RegistryConfig>,
+    /// CHECK: PDA verified by seeds; deserialized/grown manually (live account smaller
+    /// than the new struct).
+    #[account(mut, seeds = [b"config"], bump)]
+    pub config: UncheckedAccount<'info>,
     #[account(mut)]
     pub operator: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -602,4 +616,6 @@ pub enum RegistryError {
     NotPendingOperator,
     #[msg("Config already migrated")]
     AlreadyMigrated,
+    #[msg("Signer is not the config operator")]
+    UnauthorizedOperator,
 }
