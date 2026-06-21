@@ -103,7 +103,7 @@ export function DagCanvas({
   );
 
   return (
-    <div ref={wrap} style={{ overflow: "auto", flex: 1, minHeight: height }}>
+    <div ref={wrap} className="dag-scroll" style={{ overflowX: "auto", overflowY: "hidden", flex: 1, minWidth: 0, minHeight: height }}>
       <div
         ref={field}
         style={{
