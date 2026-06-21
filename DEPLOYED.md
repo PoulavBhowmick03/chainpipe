@@ -91,6 +91,17 @@ Test mint: `8BPRrfsXT3FZUvxW5v5ctq8Q5moZinNu7eFR4gtFPxz1`
 | 2 | Active | `4pFdQSBSkhBR8Sjw5XNLDwsMxsmSuAAFx5s9Ezmd7vZa` |
 | 3 | PartiallyRefunded | `7LqDXqWtpW4RTvyhJ9x5spWzxHfuLLmmp6Ld4g7zaKiu` |
 
+## Pending upgrade — dispute + proof-of-delivery (Phases 11–16)
+
+The `dag_escrow` program has been extended on-chain (localnet-verified, `anchor test`
+43/43) with an optimistic settlement + dispute layer and content-addressed
+proof-of-delivery. The live devnet upgrade is **pending a funded deploy session** (see
+BLOCKERS.md **D6** — staging buffer needs ~3.6 SOL; faucet rate-limited). The programdata
+account was pre-extended by 140,000 bytes (now 530,800) in preparation. The funded session
+will, in one batch: upgrade `dag_escrow` (Phase 13) + all 3 programs & run `migrate_*`
+(Phase 16), then record the new program hashes, migration tx sigs, and realloc'd config
+sizes here.
+
 ## Reproduce
 
 ```bash
