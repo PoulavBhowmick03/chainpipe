@@ -22,9 +22,9 @@ export function ParallaxHero({ children }: { children: ReactNode }) {
     const apply = () => {
       raf = 0;
       // depth: far drifts most, foreground barely — opposite sign for "pop".
-      if (far.current) far.current.style.transform = `translate3d(${mx * 14}px, ${my * 14 + sy * 0.06}px, 0)`;
-      if (mid.current) mid.current.style.transform = `translate3d(${mx * 7}px, ${my * 7 + sy * 0.03}px, 0)`;
-      if (fore.current) fore.current.style.transform = `translate3d(${mx * -3}px, ${my * -3}px, 0)`;
+      if (far.current) far.current.style.transform = `translate3d(${mx * 26}px, ${my * 22 + sy * 0.12}px, 0)`;
+      if (mid.current) mid.current.style.transform = `translate3d(${mx * 14}px, ${my * 12 + sy * 0.06}px, 0)`;
+      if (fore.current) fore.current.style.transform = `translate3d(${mx * -4}px, ${my * -4}px, 0)`;
     };
     const schedule = () => { if (!raf) raf = requestAnimationFrame(apply); };
 
@@ -60,35 +60,35 @@ export function ParallaxHero({ children }: { children: ReactNode }) {
           inset: "-12% -8%",
           zIndex: 0,
           animation: "cpDrift 26s linear infinite",
-          opacity: 0.7,
+          opacity: 1,
         }}
       />
-      {/* mid: faint value-conduits with flowing dashes */}
+      {/* mid: value-conduits with flowing dashes — clearly visible depth */}
       <svg
         ref={mid as unknown as React.RefObject<SVGSVGElement>}
         className="px-layer"
         aria-hidden
         viewBox="0 0 1200 460"
         preserveAspectRatio="xMidYMid slice"
-        style={{ position: "absolute", inset: 0, zIndex: 1, width: "100%", height: "100%", opacity: 0.5 }}
+        style={{ position: "absolute", inset: 0, zIndex: 1, width: "100%", height: "100%", opacity: 0.9 }}
       >
         <defs>
           <linearGradient id="cpEdge" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" stopColor="#14f195" stopOpacity="0" />
-            <stop offset="0.5" stopColor="#14f195" stopOpacity="0.5" />
-            <stop offset="1" stopColor="#4d9fff" stopOpacity="0.2" />
+            <stop offset="0.5" stopColor="#14f195" stopOpacity="0.85" />
+            <stop offset="1" stopColor="#4d9fff" stopOpacity="0.35" />
           </linearGradient>
         </defs>
-        {[80, 190, 300, 410].map((y, i) => (
+        {[70, 150, 230, 310, 390].map((y, i) => (
           <g key={y}>
-            <path d={`M-40 ${y} C 300 ${y - 40}, 520 ${y + 60}, 1240 ${y - 20}`} fill="none" stroke="#1b212b" strokeWidth="1" />
+            <path d={`M-40 ${y} C 300 ${y - 50}, 520 ${y + 70}, 1240 ${y - 24}`} fill="none" stroke="#222a36" strokeWidth="1.25" />
             <path
               className="cp-conduit"
-              d={`M-40 ${y} C 300 ${y - 40}, 520 ${y + 60}, 1240 ${y - 20}`}
+              d={`M-40 ${y} C 300 ${y - 50}, 520 ${y + 70}, 1240 ${y - 24}`}
               fill="none"
               stroke="url(#cpEdge)"
-              strokeWidth="1.5"
-              style={{ animationDelay: `${i * 0.4}s` }}
+              strokeWidth="2"
+              style={{ animationDelay: `${i * 0.35}s` }}
             />
           </g>
         ))}

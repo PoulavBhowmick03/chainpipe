@@ -239,9 +239,9 @@ input[type="range"]::-webkit-slider-thumb {
   transition: transform 180ms var(--ease);
 }
 .px-grid {
-  background-image: radial-gradient(circle at 1px 1px, rgba(108, 118, 137, 0.16) 1px, transparent 0);
-  background-size: 34px 34px;
-  mask-image: radial-gradient(ellipse 90% 70% at 50% 40%, #000 35%, transparent 78%);
+  background-image: radial-gradient(circle at 1px 1px, rgba(120, 132, 152, 0.32) 1px, transparent 0);
+  background-size: 30px 30px;
+  mask-image: radial-gradient(ellipse 95% 80% at 50% 40%, #000 45%, transparent 82%);
 }
 
 /* Value-flow conduit dashes (mid layer / DAG edges). */
