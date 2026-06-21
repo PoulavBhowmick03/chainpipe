@@ -3,18 +3,11 @@ import { getStats, getAgents, getPipelines, type Stats, type AgentRecord, type P
 import { C, usd, usdC, short, tapeSeq } from "@/lib/theme";
 import { repScore, agentTitle, nodeStatuses, settledCount } from "@/lib/adapt";
 import { pipelineColor, pipelineLabel } from "@/lib/theme";
-import { DagCanvas, type DagNode } from "@/components/DagCanvas";
 import { TierBadge, OutcomeTape, SegBar } from "@/components/primitives";
 import { ParallaxHero } from "@/components/ParallaxHero";
+import { HeroDag } from "@/components/HeroDag";
 
 export const dynamic = "force-dynamic";
-
-const HERO: DagNode[] = [
-  { id: 0, label: "0", title: "data-fetch", allocStr: "30.00", statusShort: "SETTLED", agentStr: "Bz4k…gK2", tier: 2, deps: [], status: "settled" },
-  { id: 1, label: "1", title: "code-gen", allocStr: "60.00", statusShort: "CLAIMED", agentStr: "Ag1z…QvB", tier: 3, deps: [0], status: "claimed" },
-  { id: 2, label: "2", title: "report-synth", allocStr: "40.00", statusShort: "PENDING", agentStr: "—", tier: 2, deps: [1], status: "pending" },
-  { id: 3, label: "3", title: "image-gen", allocStr: "20.00", statusShort: "PENDING", agentStr: "—", tier: 1, deps: [0], status: "pending" },
-];
 
 export default async function Home() {
   let stats: Stats | null = null;
@@ -72,7 +65,7 @@ export default async function Home() {
                 <div style={{ flex: 1 }} />
                 <span className="mono" style={{ fontWeight: 500, fontSize: 10, color: C.green }}>ACTIVE</span>
               </div>
-              <DagCanvas nodes={HERO} height={300} />
+              <HeroDag height={300} />
             </div>
           </div>
         </div>

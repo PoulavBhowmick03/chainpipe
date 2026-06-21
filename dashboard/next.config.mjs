@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  devIndicators: false,
   eslint: { ignoreDuringBuilds: true },
   // The @solana/wallet-adapter packages bundle a nested @types/react@19 whose
   // ReactNode (incl. Promise) clashes with this app's React 18 — a harmless
