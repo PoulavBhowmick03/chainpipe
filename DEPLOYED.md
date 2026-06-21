@@ -102,6 +102,20 @@ will, in one batch: upgrade `dag_escrow` (Phase 13) + all 3 programs & run `migr
 (Phase 16), then record the new program hashes, migration tx sigs, and realloc'd config
 sizes here.
 
+**Ready-to-run ops (funded session):**
+```bash
+# 1. deploy hardened binaries (all 3) — needs ~3.6 SOL buffer per upgrade
+for P in dag_escrow bonded_registry reputation_bridge; do
+  solana program deploy target/deploy/$P.so --program-id keys/$P.json --url devnet
+done
+# 2. grow + seed the live config PDAs (idempotent)
+npx tsx scripts/migrate-configs.mts
+# 3. re-seed demo state + verify the dispute/proof e2e
+npx tsx scripts/seed-devnet.mts && npx tsx scripts/e2e-devnet.mts
+# 4. (governance) transfer upgrade authority + config operators → Squads (see SECURITY.md runbook)
+```
+Migration & Squads handoff steps are detailed in `SECURITY.md`.
+
 ## Reproduce
 
 ```bash
