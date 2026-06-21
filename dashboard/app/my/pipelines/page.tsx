@@ -9,6 +9,7 @@ import { C, usd, usdC, short, pipelineColor, pipelineLabel } from "@/lib/theme";
 import { statusKey } from "@/lib/format";
 import { nodeStatuses, settledCount } from "@/lib/adapt";
 import { SegBar, StatStrip } from "@/components/primitives";
+import { NetworkPanel } from "@/components/NetworkPanel";
 
 const num = (s: string) => Number(s) / 1e6;
 const amtOf = (p: PipelineRecord, kinds: string[]) =>
@@ -48,10 +49,13 @@ export default function MyPipelinesPage() {
       )}
 
       {!publicKey ? (
-        <div className="surface" style={{ padding: 54, textAlign: "center" }}>
-          <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 6 }}>Connect a wallet</div>
-          <div className="mono" style={{ fontSize: 12, color: C.dim, marginBottom: 20 }}>Pipelines you&apos;ve created appear here.</div>
-          <button onClick={() => setVisible(true)} className="lift" style={{ padding: "9px 16px", borderRadius: 7, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Connect wallet</button>
+        <div>
+          <div className="surface" style={{ padding: 40, textAlign: "center" }}>
+            <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 6 }}>Connect a wallet</div>
+            <div className="mono" style={{ fontSize: 12, color: C.dim, marginBottom: 20 }}>Your pipelines appear here. Meanwhile, here&apos;s what&apos;s live across the network.</div>
+            <button onClick={() => setVisible(true)} className="lift" style={{ padding: "9px 16px", borderRadius: 7, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Connect wallet</button>
+          </div>
+          <NetworkPanel />
         </div>
       ) : !pipelines ? (
         <div className="surface" style={{ padding: 40, textAlign: "center" }}><span className="mono cp-blink" style={{ color: C.dim, fontSize: 12 }}>Loading your pipelines…</span></div>

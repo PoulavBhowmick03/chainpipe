@@ -8,6 +8,7 @@ import { C, usdC, short, tapeSeq } from "@/lib/theme";
 import { agentTitle } from "@/lib/adapt";
 import { explorerAddr } from "@/lib/chainpipe";
 import { TierBadge, OutcomeTape, Gauge } from "@/components/primitives";
+import { NetworkPanel } from "@/components/NetworkPanel";
 
 export default function AgentPage() {
   const { pubkey } = useParams<{ pubkey: string }>();
@@ -89,6 +90,7 @@ export default function AgentPage() {
           </div>
         </div>
       </div>
+      <NetworkPanel title="ELSEWHERE ON THE NETWORK" />
     </div>
   );
 }

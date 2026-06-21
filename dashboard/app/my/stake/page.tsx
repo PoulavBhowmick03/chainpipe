@@ -10,6 +10,7 @@ import { agentStakePda, vaultAta } from "@/lib/sdk";
 import { buildPrograms, ADDRESSES, FACILITATOR_URL, explorerTx } from "@/lib/chainpipe";
 import { C, usd } from "@/lib/theme";
 import { TierBadge } from "@/components/primitives";
+import { NetworkPanel } from "@/components/NetworkPanel";
 
 const REQ: Record<number, number> = { 1: 10, 2: 100, 3: 1000 };
 const THRESH = [10, 100, 1000];
@@ -125,6 +126,7 @@ export default function StakePage() {
         Slashing: a failed claimed node forfeits a share of your stake to the consumer · Unstaking is blocked while you have open jobs and clears after a cooldown.
       </div>
       <button onClick={() => setVisible(true)} className="lift" style={{ padding: "11px 18px", borderRadius: 8, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}>Connect wallet to stake</button>
+      <NetworkPanel />
     </div>
   );
 

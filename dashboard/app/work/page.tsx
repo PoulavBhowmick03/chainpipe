@@ -12,6 +12,7 @@ import { statusKey } from "@/lib/format";
 import { C, usd, short } from "@/lib/theme";
 import { depsOf } from "@/lib/adapt";
 import { TierBadge } from "@/components/primitives";
+import { NetworkPanel } from "@/components/NetworkPanel";
 
 type Job = { p: PipelineRecord; n: NodeRecord };
 const SYSTEM = "11111111111111111111111111111111";
@@ -125,6 +126,7 @@ export default function WorkPage() {
         ))}
       </div>
       <button onClick={() => setVisible(true)} className="lift" style={{ padding: "11px 18px", borderRadius: 8, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}>Connect wallet to find work</button>
+      <NetworkPanel title="OPEN WORK · LIVE ON THE NETWORK" />
     </div>
   );
 
