@@ -20,6 +20,21 @@ const SYSTEM = "11111111111111111111111111111111";
 const depsSettled = (p: PipelineRecord, n: NodeRecord) =>
   depsOf(n.dependencyMask).every((i) => statusKey(p.nodes[i]?.status) === "settled");
 
+const gateway = (u: string) => (u.startsWith("ipfs://") ? "https://ipfs.io/ipfs/" + u.slice(7) : u);
+
+/** The job spec an agent needs to actually do the work: what to build + input data. */
+function SpecBlock({ n }: { n: NodeRecord }) {
+  if (!n.description && !n.inputUri) {
+    return <div className="mono" style={{ fontSize: 11, color: C.faint, fontStyle: "italic", margin: "2px 0 12px", paddingLeft: 10, borderLeft: `2px solid ${C.line}` }}>No task spec published for this node.</div>;
+  }
+  return (
+    <div className="mono" style={{ fontSize: 11, color: C.tx, lineHeight: 1.5, margin: "2px 0 12px", paddingLeft: 10, borderLeft: `2px solid ${C.line2}` }}>
+      {n.description && <div style={{ marginBottom: n.inputUri ? 6 : 0 }}>{n.description}</div>}
+      {n.inputUri && <a href={gateway(n.inputUri)} target="_blank" rel="noreferrer" style={{ color: C.green, textDecoration: "none" }}>input data ↗</a>}
+    </div>
+  );
+}
+
 export default function WorkPage() {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
@@ -172,11 +187,12 @@ export default function WorkPage() {
                 <div key={`${j.p.address}-${j.n.nodeIndex}`} className="surface lift" style={{ padding: 15 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 12 }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 3 }}>node {j.n.nodeIndex}</div>
+                      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 3 }}>{j.n.skill || `node ${j.n.nodeIndex}`}</div>
                       <div className="mono" style={{ fontSize: 10, color: C.dim }}>{short(j.p.address)} · node {j.n.nodeIndex}</div>
                     </div>
                     <span className="mono" style={{ fontWeight: 600, fontSize: 17, color: C.green }}>{usd(j.n.allocationUsdc, 2)}</span>
                   </div>
+                  <SpecBlock n={j.n} />
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <TierBadge tier={j.n.requiredTier} />
                     <button onClick={() => claim(j)} disabled={busy !== null} className="lift" style={{ padding: "7px 16px", borderRadius: 7, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>{busy === `c-${j.p.address}-${j.n.nodeIndex}` ? "Claiming…" : "Claim"}</button>
@@ -197,11 +213,12 @@ export default function WorkPage() {
                 <div key={`${j.p.address}-${j.n.nodeIndex}`} className="surface" style={{ borderLeft: `2px solid ${C.blue}`, padding: 15, boxShadow: `inset 0 1px 0 rgba(255,255,255,.03), inset 3px 0 8px -3px ${C.blue}` }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 12 }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 3 }}>node {j.n.nodeIndex}</div>
+                      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 3 }}>{j.n.skill || `node ${j.n.nodeIndex}`}</div>
                       <div className="mono" style={{ fontSize: 10, color: C.dim }}>{short(j.p.address)} · node {j.n.nodeIndex}</div>
                     </div>
                     <span className="mono" style={{ fontWeight: 600, fontSize: 17, color: C.blue }}>{usd(j.n.allocationUsdc, 2)}</span>
                   </div>
+                  <SpecBlock n={j.n} />
                   <input
                     value={uris[`${j.p.address}-${j.n.nodeIndex}`] ?? ""}
                     onChange={(e) => setUris((u) => ({ ...u, [`${j.p.address}-${j.n.nodeIndex}`]: e.target.value }))}

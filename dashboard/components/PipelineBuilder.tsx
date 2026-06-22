@@ -1,27 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { useConnection, useAnchorWallet } from "@solana/wallet-adapter-react";
+import { useConnection, useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
 import { SystemProgram } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import BN from "bn.js";
 import { pipelinePda, nodePda, vaultAta, pipelineConfigPda } from "@/lib/sdk";
 import { buildPrograms, ADDRESSES, explorerTx } from "@/lib/chainpipe";
+import { specMessage, postSpec, type NodeSpecInput } from "@/lib/indexer";
 import { C, usd } from "@/lib/theme";
 import { DagCanvas, type DagNode } from "@/components/DagCanvas";
 
 const SKILLS = ["code-gen", "data-fetch", "report-synthesis", "image-gen", "audio-transcribe"];
 const SLOTS_PER_HOUR = 9000;
 
-interface Draft { id: number; skill: string; alloc: number; deadline: number; tier: number; deps: number[] }
+interface Draft { id: number; skill: string; alloc: number; deadline: number; tier: number; deps: number[]; description: string; inputUri: string }
 
 export function PipelineBuilder() {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
+  const { signMessage } = useWallet();
   const [nodes, setNodes] = useState<Draft[]>([
-    { id: 1, skill: "data-fetch", alloc: 30, deadline: 6, tier: 1, deps: [] },
-    { id: 2, skill: "code-gen", alloc: 60, deadline: 14, tier: 1, deps: [1] },
-    { id: 3, skill: "report-synthesis", alloc: 40, deadline: 24, tier: 1, deps: [2] },
+    { id: 1, skill: "data-fetch", alloc: 30, deadline: 6, tier: 1, deps: [], description: "", inputUri: "" },
+    { id: 2, skill: "code-gen", alloc: 60, deadline: 14, tier: 1, deps: [1], description: "", inputUri: "" },
+    { id: 3, skill: "report-synthesis", alloc: 40, deadline: 24, tier: 1, deps: [2], description: "", inputUri: "" },
   ]);
   const [budget, setBudget] = useState(200);
   const [sel, setSel] = useState<number | null>(1);
@@ -38,7 +40,7 @@ export function PipelineBuilder() {
   const selNode = nodes.find((n) => n.id === sel) || null;
 
   const upd = (id: number, f: keyof Draft, v: number | string) => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, [f]: v } : n)));
-  const addNode = () => { const id = nextId; setNodes((ns) => [...ns, { id, skill: "data-fetch", alloc: 20, deadline: 24, tier: 1, deps: [] }]); setNextId(id + 1); setSel(id); };
+  const addNode = () => { const id = nextId; setNodes((ns) => [...ns, { id, skill: "data-fetch", alloc: 20, deadline: 24, tier: 1, deps: [], description: "", inputUri: "" }]); setNextId(id + 1); setSel(id); };
   const removeNode = (id: number) => { setNodes((ns) => ns.filter((n) => n.id !== id).map((n) => ({ ...n, deps: n.deps.filter((d) => d !== id) }))); setSel(null); };
   const toggleDep = (id: number, dep: number) => setNodes((ns) => ns.map((n) => (n.id === id ? { ...n, deps: n.deps.includes(dep) ? n.deps.filter((d) => d !== dep) : [...n.deps, dep] } : n)));
 
@@ -72,7 +74,18 @@ export function PipelineBuilder() {
         consumerTokenAccount: getAssociatedTokenAddressSync(ADDRESSES.usdcMint, wallet.publicKey),
         vault: vaultAta(ADDRESSES.usdcMint, pipeline), tokenProgram: TOKEN_PROGRAM_ID, associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId,
       }).remainingAccounts(nodePdas.map((pubkey) => ({ pubkey, isWritable: true, isSigner: false }))).rpc();
-      setResult({ sig, pda: pipeline.toBase58() });
+      const pda = pipeline.toBase58();
+      setResult({ sig, pda });
+      // Publish the per-node job specs (what each agent must build) — consumer-signed so
+      // they can't be forged, stored off-chain by the indexer. Best-effort: a failure here
+      // never undoes the on-chain pipeline.
+      try {
+        if (signMessage) {
+          const specs: NodeSpecInput[] = nodes.map((n, i) => ({ nodeIndex: i, skill: n.skill, description: n.description.trim(), inputUri: n.inputUri.trim() }));
+          const sigBytes = await signMessage(specMessage(pda, specs));
+          await postSpec(pda, wallet.publicKey.toBase58(), btoa(String.fromCharCode(...sigBytes)), specs);
+        }
+      } catch { /* spec publish is non-fatal */ }
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
   }
 
@@ -119,6 +132,23 @@ export function PipelineBuilder() {
             <select value={selNode.skill} onChange={(e) => upd(selNode.id, "skill", e.target.value)} className="field" style={{ width: "100%", fontFamily: "var(--font-geist)", fontSize: 13, marginBottom: 14 }}>
               {SKILLS.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
+            <label style={lbl}>TASK · WHAT THE AGENT MUST DELIVER</label>
+            <textarea
+              value={selNode.description}
+              onChange={(e) => upd(selNode.id, "description", e.target.value)}
+              placeholder="e.g. Transcribe the audio at the input URL to a clean .txt; output the transcript file."
+              rows={3}
+              className="field mono"
+              style={{ width: "100%", boxSizing: "border-box", fontSize: 11.5, lineHeight: 1.5, color: C.tx, marginBottom: 14, resize: "vertical" }}
+            />
+            <label style={lbl}>INPUT URL <span style={{ color: C.faint }}>(optional — data the agent works from)</span></label>
+            <input
+              value={selNode.inputUri}
+              onChange={(e) => upd(selNode.id, "inputUri", e.target.value)}
+              placeholder="https:// or ipfs://"
+              className="field mono"
+              style={{ width: "100%", boxSizing: "border-box", fontSize: 11.5, color: C.tx, marginBottom: 14 }}
+            />
             <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
               <div style={{ flex: 1 }}><label style={lbl}>ALLOC USDC</label><input type="number" value={selNode.alloc} onChange={(e) => upd(selNode.id, "alloc", Math.max(0, Number(e.target.value) || 0))} className="field mono" style={{ width: "100%", fontWeight: 500, fontSize: 13 }} /></div>
               <div style={{ flex: 1 }}><label style={lbl}>DEADLINE H</label><input type="number" value={selNode.deadline} onChange={(e) => upd(selNode.id, "deadline", Math.max(1, Number(e.target.value) || 1))} className="field mono" style={{ width: "100%", fontWeight: 500, fontSize: 13 }} /></div>
