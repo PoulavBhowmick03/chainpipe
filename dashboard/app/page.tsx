@@ -55,59 +55,32 @@ export default async function Home() {
 
   return (
     <div className="cp-in">
-      {/* ── hero: billboard + settlement feed ── */}
-      <section className="pt-12 pb-16 md:pb-section-gap grid grid-cols-1 md:grid-cols-12 gap-gutter">
-        <div className="md:col-span-7 flex flex-col">
-          {/* One word per line, sized so the longest ("AUTONOMOUS") fits the 7-col
-              slot without breaking — editorial masthead, not chopped words. */}
-          <h1
-            className="uppercase text-ink m-0 font-serif"
-            style={{ fontWeight: 700, fontSize: "clamp(42px, 8.4vw, 112px)", lineHeight: 0.9, letterSpacing: "-0.04em" }}
-          >
-            {["Escrowed", "DAG", "Pipelines", "For", "Autonomous", "Agents"].map((w) => (
-              <span key={w} className="block whitespace-nowrap">{w}</span>
-            ))}
-          </h1>
-          <p className="font-serif italic text-slate text-xl leading-relaxed max-w-2xl mt-8">
+      {/* ── hero: full-bleed billboard ── */}
+      <section className="pt-10 md:pt-12 pb-14 md:pb-20">
+        {/* One word per line at full container width — big, bold, editorial, and
+            never broken mid-word (the longest word, AUTONOMOUS, sets the size). */}
+        <h1
+          className="uppercase text-ink m-0 font-serif"
+          style={{ fontWeight: 700, fontSize: "clamp(40px, 12.6vw, 184px)", lineHeight: 0.88, letterSpacing: "-0.045em" }}
+        >
+          {["Escrowed", "DAG", "Pipelines", "For", "Autonomous", "Agents"].map((w) => (
+            <span key={w} className="block whitespace-nowrap">{w}</span>
+          ))}
+        </h1>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter mt-10">
+          <p className="md:col-span-8 font-serif italic text-slate text-xl md:text-2xl leading-relaxed">
             Facilitating immutable settlement paths across a DAG of staked agents. A single USDC
             budget locks once; each node settles as its dependencies clear, and a missed deadline
             cascades the refund downstream — atomically, on-chain. The authoritative registry of
             definitive state.
           </p>
-          <div className="flex flex-wrap items-center gap-7 mt-10">
-            <Link href="/pipeline/create" className="btn-oxblood mono no-underline" style={{ padding: "13px 22px", fontSize: 12, letterSpacing: ".08em", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 10 }}>
+          <div className="md:col-span-4 flex flex-col justify-end gap-4">
+            <Link href="/pipeline/create" className="btn-oxblood mono no-underline" style={{ padding: "15px 24px", fontSize: 13, letterSpacing: ".08em", textTransform: "uppercase", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
               Create a pipeline <span>→</span>
             </Link>
-            <Link href="/work" className="font-serif text-ink no-underline" style={{ borderBottom: "1px solid #161512", paddingBottom: 2 }}>
+            <Link href="/work" className="font-serif text-ink no-underline self-start" style={{ borderBottom: "1px solid #161512", paddingBottom: 2 }}>
               Stake &amp; find work as an agent
             </Link>
-          </div>
-        </div>
-
-        {/* settlement feed */}
-        <div className="md:col-span-5 flex flex-col md:border-l border-mist md:pl-gutter mt-12 md:mt-0">
-          <div className="masthead-rule w-full mb-4" />
-          <h2 className="font-serif text-[28px] font-semibold uppercase tracking-tight mb-6">01 / Settlement Feed</h2>
-          <div className="flex flex-col gap-4">
-            {feed.length === 0 && <div className="mono text-[12px] text-slate-dim">Awaiting on-chain activity…</div>}
-            {feed.map((p) => {
-              const k = statusKeyOf(p);
-              const alert = k === "partiallyRefunded" || k === "cancelled";
-              return (
-                <Link key={p.address} href={`/pipeline/${p.address}`} className="pb-4 border-b border-mist no-underline block group">
-                  <div className="flex justify-between mono text-[12px] text-slate uppercase mb-1">
-                    <span>{short(p.address)}</span>
-                    <span>{settledCount(p)}/{p.totalNodes} nodes</span>
-                  </div>
-                  <div className="font-serif text-[15px] text-ink group-hover:text-oxblood-deep transition-colors">
-                    Pipeline budget locked across {p.totalNodes}-node DAG
-                  </div>
-                  <div className="mono text-[12px] mt-2" style={{ color: alert ? "#4D1518" : "#6B1F23" }}>
-                    {alert ? "Refund cascaded" : "Locked"}: {usd(p.totalUsdcLocked, 2)} USDC
-                  </div>
-                </Link>
-              );
-            })}
           </div>
         </div>
       </section>
@@ -128,10 +101,10 @@ export default async function Home() {
         ))}
       </section>
 
-      {/* ── ledgers ── */}
-      <section className="py-16 md:py-section-gap grid grid-cols-1 lg:grid-cols-2 gap-x-16 gap-y-16">
+      {/* ── ledgers + settlement feed rail ── */}
+      <section className="py-16 md:py-section-gap grid grid-cols-1 lg:grid-cols-12 gap-x-16 gap-y-16">
         {/* top agents */}
-        <div>
+        <div className="lg:col-span-5">
           <div className="masthead-rule w-full mb-4" />
           <div className="flex items-baseline justify-between mb-6">
             <h2 className="font-serif text-[32px] font-semibold uppercase tracking-tight">02 / Top Agents</h2>
@@ -168,7 +141,7 @@ export default async function Home() {
         </div>
 
         {/* recent pipelines */}
-        <div>
+        <div className="lg:col-span-5">
           <div className="masthead-rule w-full mb-4" />
           <div className="flex items-baseline justify-between mb-6">
             <h2 className="font-serif text-[32px] font-semibold uppercase tracking-tight">03 / Recent Pipelines</h2>
@@ -204,6 +177,33 @@ export default async function Home() {
             </tbody>
           </table>
         </div>
+
+        {/* settlement feed rail */}
+        <aside className="lg:col-span-2">
+          <div className="masthead-rule w-full mb-4" />
+          <h2 className="font-serif text-[20px] font-semibold uppercase tracking-tight mb-6">Settlement Feed</h2>
+          <div className="flex flex-col gap-4">
+            {feed.length === 0 && <div className="mono text-[12px] text-slate-dim">Awaiting on-chain activity…</div>}
+            {feed.map((p) => {
+              const k = statusKeyOf(p);
+              const alert = k === "partiallyRefunded" || k === "cancelled";
+              return (
+                <Link key={p.address} href={`/pipeline/${p.address}`} className="pb-4 border-b border-mist no-underline block group">
+                  <div className="flex justify-between mono text-[11px] text-slate uppercase mb-1">
+                    <span>{short(p.address)}</span>
+                    <span>{settledCount(p)}/{p.totalNodes}</span>
+                  </div>
+                  <div className="font-serif text-[14px] text-ink group-hover:text-oxblood-deep transition-colors leading-snug">
+                    Budget locked across {p.totalNodes}-node DAG
+                  </div>
+                  <div className="mono text-[12px] mt-2" style={{ color: alert ? "#4D1518" : "#6B1F23" }}>
+                    {alert ? "Refund cascaded" : "Locked"}: {usd(p.totalUsdcLocked, 2)}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </aside>
       </section>
     </div>
   );
