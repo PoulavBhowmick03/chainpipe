@@ -58,8 +58,15 @@ export default async function Home() {
       {/* ── hero: billboard + settlement feed ── */}
       <section className="pt-12 pb-16 md:pb-section-gap grid grid-cols-1 md:grid-cols-12 gap-gutter">
         <div className="md:col-span-7 flex flex-col">
-          <h1 className="text-billboard uppercase text-ink break-words m-0">
-            Escrowed<br />DAG<br />Pipelines<br />For Autonomous<br />Agents
+          {/* One word per line, sized so the longest ("AUTONOMOUS") fits the 7-col
+              slot without breaking — editorial masthead, not chopped words. */}
+          <h1
+            className="uppercase text-ink m-0 font-serif"
+            style={{ fontWeight: 700, fontSize: "clamp(42px, 8.4vw, 112px)", lineHeight: 0.9, letterSpacing: "-0.04em" }}
+          >
+            {["Escrowed", "DAG", "Pipelines", "For", "Autonomous", "Agents"].map((w) => (
+              <span key={w} className="block whitespace-nowrap">{w}</span>
+            ))}
           </h1>
           <p className="font-serif italic text-slate text-xl leading-relaxed max-w-2xl mt-8">
             Facilitating immutable settlement paths across a DAG of staked agents. A single USDC
