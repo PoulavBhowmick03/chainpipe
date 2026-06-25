@@ -32,17 +32,20 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${serif.variable} ${mono.variable}`}>
-      <body className="font-sans bg-ink text-ink">
+      <body className="font-sans bg-linen text-ink">
         <Providers>
           {/* Opaque content plane sits above the fixed footer and reserves space below
-              itself (margin = footer height) so the footer is revealed as you reach the end. */}
+              itself (margin = footer height) so the footer is revealed as you reach the end.
+              The ambient glow is a SINGLE viewport-fixed radial (background-attachment: fixed),
+              so it reads as constant top-down lighting and can never "stop" mid-scroll. */}
           <div
             className="relative z-10 bg-linen flex flex-col min-h-screen"
             style={{
               marginBottom: "var(--footer-h)",
               backgroundColor: "#100c0c",
               backgroundImage:
-                "radial-gradient(115% 75% at 6% -4%, rgba(203,90,96,0.16), transparent 58%), radial-gradient(80% 55% at 102% 102%, rgba(120,28,33,0.12), transparent 60%)",
+                "radial-gradient(130% 95% at 50% -8%, rgba(203,90,96,0.13), rgba(120,28,33,0.05) 42%, transparent 72%)",
+              backgroundAttachment: "fixed",
             }}
           >
             <NavBar />

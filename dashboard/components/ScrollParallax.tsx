@@ -32,12 +32,36 @@ export function ScrollParallax() {
     return () => { window.removeEventListener("scroll", onScroll); if (raf) cancelAnimationFrame(raf); };
   }, []);
 
+  // Embers drift up at varied rates as you scroll. They're stacked top-to-bottom and
+  // spaced ~one viewport apart so something is always entering from below — combined with
+  // the viewport-fixed ambient on the content plane, the page never shows a dark band.
+  const embers: { top: string; x: string; size: string; speed: string; color: string }[] = [
+    { top: "-15%", x: "left:-10%", size: "60vw", speed: "0.20", color: "rgba(203,90,96,0.26)" },
+    { top: "32%", x: "right:-14%", size: "54vw", speed: "0.45", color: "rgba(150,40,46,0.24)" },
+    { top: "82%", x: "left:4%", size: "52vw", speed: "0.66", color: "rgba(203,90,96,0.20)" },
+    { top: "130%", x: "right:-6%", size: "50vw", speed: "0.34", color: "rgba(168,46,52,0.22)" },
+    { top: "185%", x: "left:-4%", size: "48vw", speed: "0.55", color: "rgba(120,28,33,0.20)" },
+  ];
   return (
     <div ref={ref} aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden" style={{ zIndex: 0 }}>
-      <div data-speed="0.12" className="px-layer absolute" style={{ top: "-12%", left: "-8%", width: "72vw", height: "72vw", background: "radial-gradient(circle at center, rgba(203,90,96,0.20), transparent 60%)" }} />
-      <div data-speed="0.30" className="px-layer absolute" style={{ top: "26%", right: "-18%", width: "62vw", height: "62vw", background: "radial-gradient(circle at center, rgba(120,28,33,0.18), transparent 62%)" }} />
-      <div data-speed="0.5" className="px-layer absolute" style={{ top: "70%", left: "6%", width: "58vw", height: "58vw", background: "radial-gradient(circle at center, rgba(203,90,96,0.12), transparent 60%)" }} />
-      <div data-speed="0.22" className="px-layer absolute" style={{ top: "120%", right: "4%", width: "50vw", height: "50vw", background: "radial-gradient(circle at center, rgba(150,40,46,0.14), transparent 62%)" }} />
+      {embers.map((e, i) => {
+        const [side, val] = e.x.split(":");
+        return (
+          <div
+            key={i}
+            data-speed={e.speed}
+            className="px-layer absolute"
+            style={{
+              top: e.top,
+              [side]: val,
+              width: e.size,
+              height: e.size,
+              background: `radial-gradient(circle at center, ${e.color}, transparent 62%)`,
+              filter: "blur(8px)",
+            } as React.CSSProperties}
+          />
+        );
+      })}
     </div>
   );
 }

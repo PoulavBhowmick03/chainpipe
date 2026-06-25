@@ -44,13 +44,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  /* ATMOSPHERE, not decoration: one large warm-red glow anchored top-left where the
-     billboard sits, fading to near-black. A second faint ember bottom-right for depth. */
-  background-color: #100c0c;
-  background-image:
-    radial-gradient(120% 80% at 8% -8%, rgba(203, 90, 96, 0.16), transparent 60%),
-    radial-gradient(90% 70% at 100% 108%, rgba(120, 28, 33, 0.14), transparent 62%);
-  background-attachment: fixed;
+  background: #100c0c; /* solid; the ambient glow lives on the content plane (viewport-fixed) */
 }
 ::selection {
   background: var(--oxblood-deep);
