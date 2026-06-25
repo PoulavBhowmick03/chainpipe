@@ -16,7 +16,7 @@ const REQ: Record<number, number> = { 1: 10, 2: 100, 3: 1000 };
 const THRESH = [10, 100, 1000];
 
 /** Stepped tier-capacity gauge: three segments (T1/T2/T3); each fills as stake climbs
- *  toward its threshold, lit green once met. Reads like a machine's power bars. */
+ *  toward its threshold, lit oxblood once met. Flat, ledger-grade. */
 function TierCapacity({ stakeUsd }: { stakeUsd: number }) {
   const next = THRESH.find((t) => stakeUsd < t);
   return (
@@ -29,20 +29,48 @@ function TierCapacity({ stakeUsd }: { stakeUsd: number }) {
           const col = met ? C.green : frac > 0 ? C.hi : C.line2;
           return (
             <div key={t} style={{ flex: 1 }}>
-              <div style={{ position: "relative", height: 7, background: C.bg0, borderRadius: 3, overflow: "hidden", boxShadow: "inset 0 1px 2px rgba(0,0,0,.6)" }}>
-                <div style={{ position: "absolute", inset: 0, width: frac * 100 + "%", background: `linear-gradient(90deg,${col}55,${col})`, boxShadow: frac > 0 ? `0 0 8px ${col}66` : "none", transition: "width .3s var(--ease)" }} />
+              <div style={{ position: "relative", height: 6, background: C.bg, border: `1px solid ${C.line}`, overflow: "hidden" }}>
+                <div style={{ position: "absolute", inset: 0, width: frac * 100 + "%", background: col, transition: "width .3s var(--ease)" }} />
               </div>
-              <div className="mono" style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 9, color: met ? C.green : C.faint }}>
+              <div className="mono" style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: met ? C.green : C.faint }}>
                 <span>T{i + 1}</span><span>≥{t.toLocaleString()}</span>
               </div>
             </div>
           );
         })}
       </div>
-      <div className="mono" style={{ fontSize: 11, color: C.dim, marginTop: 10 }}>
+      <div className="mono" style={{ fontSize: 12, color: C.dim, marginTop: 12 }}>
         {next ? <>Bond <span style={{ color: C.hi }}>{usd((next - stakeUsd) * 1e6, 2)}</span> more to reach T{THRESH.indexOf(next) + 1}.</> : <span style={{ color: C.green }}>Maximum tier — full capacity.</span>}
       </div>
     </div>
+  );
+}
+
+/** Trust-tier reference ledger — shared by both states. */
+function TierTable({ heading }: { heading: string }) {
+  return (
+    <section>
+      <div className="masthead-rule w-full mb-4" />
+      <h2 className="font-serif text-[28px] font-semibold uppercase tracking-tight mb-5">{heading}</h2>
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="border-y border-mist">
+            <th className="py-3 font-serif text-[13px] font-semibold uppercase tracking-wider">Tier</th>
+            <th className="py-3 font-serif text-[13px] font-semibold uppercase tracking-wider">Claims Up To</th>
+            <th className="py-3 text-right font-serif text-[13px] font-semibold uppercase tracking-wider">Bond ≥</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[1, 2, 3].map((t) => (
+            <tr key={t} className="border-b border-mist">
+              <td className="py-4"><TierBadge tier={t} /></td>
+              <td className="py-4 font-serif text-[15px] text-ink">Tier {t} nodes</td>
+              <td className="py-4 text-right mono text-[14px]" style={{ color: t === 3 ? C.green : C.hi }}>{usd(REQ[t] * 1e6, 0)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   );
 }
 
@@ -101,113 +129,157 @@ export default function StakePage() {
   }
 
   if (!wallet) return (
-    <div className="cp-in" style={{ padding: "28px 0 80px" }}>
-      <div className="mono" style={{ fontWeight: 500, fontSize: 11, letterSpacing: ".14em", color: C.dim, marginBottom: 6 }}>/my/stake</div>
-      <h1 className="display" style={{ fontSize: 24, margin: "0 0 6px" }}>Bond stake, earn trust</h1>
-      <p style={{ color: C.dim, fontSize: 13, margin: "0 0 24px", lineHeight: 1.55, maxWidth: 480 }}>Agents stake USDC for a trust tier. Tier gates the value of work you can claim; failing a claimed node slashes your stake to the wronged consumer.</p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
-        <div style={{ flex: "1 1 440px", minWidth: 320 }}>
-          <div className="surface" style={{ overflow: "hidden", padding: 0, marginBottom: 16 }}>
-            <div className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".12em", color: C.dim, padding: "13px 16px", borderBottom: `1px solid ${C.line}` }}>TRUST TIERS</div>
-            {[3, 2, 1].map((t) => (
-              <div key={t} style={{ display: "flex", alignItems: "center", gap: 16, padding: "15px 16px", borderBottom: t === 1 ? "none" : `1px solid ${C.line}` }}>
-                <TierBadge tier={t} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>Tier {t}</div>
-                  <div className="mono" style={{ fontSize: 11, color: C.dim }}>claims nodes requiring up to T{t}</div>
-                </div>
-                <div className="mono" style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 10, color: C.dim, letterSpacing: ".08em" }}>BOND ≥</div>
-                  <div style={{ fontWeight: 600, fontSize: 17, color: t === 3 ? C.green : C.hi }}>{usd(REQ[t] * 1e6, 0)}</div>
-                </div>
-              </div>
-            ))}
+    <div className="cp-in pt-12 pb-16 md:pb-section-gap">
+      <header className="mb-12 md:mb-20">
+        <div className="masthead-rule w-full mb-4" />
+        <h1 className="text-billboard uppercase text-ink break-words leading-none m-0">Stake</h1>
+        <p className="font-serif italic text-slate text-lg max-w-3xl mt-6">
+          Agents bond USDC for a trust tier. Tier gates the value of work you can claim; failing a
+          claimed node slashes your stake to the wronged consumer.
+        </p>
+      </header>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter lg:gap-12">
+        <div className="lg:col-span-5 flex flex-col gap-8">
+          <div>
+            <TierTable heading="01 / Trust Tiers" />
+            <p className="mono text-[12px] text-slate leading-relaxed mt-5">
+              Slashing: a failed claimed node forfeits a share of your stake to the consumer.
+              Unstaking is blocked while you have open jobs and clears after a cooldown.
+            </p>
+            <button onClick={() => setVisible(true)} className="btn-oxblood mono mt-6" style={{ padding: "13px 22px", fontSize: 12, letterSpacing: ".08em", textTransform: "uppercase", alignSelf: "flex-start" }}>
+              Connect wallet to stake
+            </button>
           </div>
-          <div className="mono" style={{ fontSize: 11, color: C.faint, lineHeight: 1.6, marginBottom: 22 }}>
-            Slashing: a failed claimed node forfeits a share of your stake to the consumer · Unstaking is blocked while you have open jobs and clears after a cooldown.
-          </div>
-          <button onClick={() => setVisible(true)} className="lift" style={{ padding: "11px 18px", borderRadius: 8, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}>Connect wallet to stake</button>
         </div>
-        <div style={{ flex: "1 1 440px", minWidth: 320 }}>
-          <NetworkPanel mt={0} />
+        <div className="lg:col-span-7">
+          <NetworkPanel mt={0} title="Live On The Network" />
         </div>
       </div>
     </div>
   );
 
   const bal = (usdcBal ?? 0) / 1e6;
-  const badge = (active: boolean) => ({ width: 24, height: 24, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-geist-mono)", fontWeight: 600, fontSize: 12, flex: "none", background: active ? C.hi : C.line, color: active ? C.bg0 : C.dim } as React.CSSProperties);
   const canReg = bal >= REQ[stakeTier];
   const locked = (stake?.openJobs ?? 0) > 0;
 
   return (
-    <div className="cp-in" style={{ padding: "28px 0 80px", maxWidth: 600 }}>
-      <div className="mono" style={{ fontWeight: 500, fontSize: 11, letterSpacing: ".14em", color: C.dim, marginBottom: 6 }}>/my/stake</div>
-      <h1 className="display" style={{ fontSize: 24, margin: "0 0 6px" }}>My stake</h1>
-      <p style={{ color: C.dim, fontSize: 13, margin: "0 0 26px", lineHeight: 1.55 }}>Bond USDC for a trust tier. Tier gates which nodes you can claim; failure slashes your stake to the wronged consumer.</p>
-
-      {stake ? (
-        <div className="surface-raised" style={{ padding: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-            <TierBadge tier={stake.tier} />
-            <div style={{ textAlign: "right" }}>
-              <div className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".1em", color: C.dim }}>BONDED STAKE</div>
-              <div className="mono display" style={{ fontSize: 30 }}>{usd(stake.amount, 2)}</div>
+    <div className="cp-in pt-12 pb-16 md:pb-section-gap">
+      <header className="mb-12 md:mb-20">
+        <div className="masthead-rule w-full mb-4" />
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h1 className="text-billboard uppercase text-ink break-words leading-none m-0">Stake</h1>
+          <div className="flex gap-10 pb-2">
+            <div className="flex flex-col text-right">
+              <span className="mono text-[12px] text-slate uppercase">Bonded Stake</span>
+              <span className="mono text-[14px] text-ink mt-1">{stake ? usd(stake.amount, 2) : "0.00"} USDC</span>
+            </div>
+            <div className="flex flex-col text-right">
+              <span className="mono text-[12px] text-slate uppercase">USDC Balance</span>
+              <span className="mono text-[14px] text-ink mt-1">{usd(usdcBal ?? 0, 2)}</span>
             </div>
           </div>
+        </div>
+        <p className="font-serif italic text-slate text-lg max-w-3xl mt-6">
+          Bond USDC for a trust tier. Tier gates which nodes you can claim; failure slashes your
+          stake to the wronged consumer.
+        </p>
+      </header>
 
-          <div className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".12em", color: C.dim, marginBottom: 12 }}>TIER CAPACITY</div>
-          <div style={{ marginBottom: 18 }}><TierCapacity stakeUsd={Number(stake.amount) / 1e6} /></div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter lg:gap-12">
+        {stake ? (
+          /* ── staked: position ── */
+          <>
+            <section className="lg:col-span-7 flex flex-col">
+              <div className="masthead-rule w-full mb-4" />
+              <h2 className="font-serif text-[28px] font-semibold uppercase tracking-tight mb-6">01 / Position</h2>
 
-          <div className="surface" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", overflow: "hidden", marginBottom: 16, padding: 0 }}>
-            <div style={{ padding: 13, borderRight: `1px solid ${C.line}` }}>
-              <div className="mono" style={{ fontWeight: 500, fontSize: 10, color: C.dim, marginBottom: 6 }}>STAKE LOCK</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: locked ? C.blue : C.green, boxShadow: `0 0 7px ${locked ? C.blue : C.green}` }} />
-                <span className="mono" style={{ fontWeight: 500, fontSize: 13, color: locked ? C.blue : C.green }}>{locked ? `LOCKED · ${stake.openJobs} job(s)` : "UNLOCKED"}</span>
+              <div className="flex items-end justify-between border border-ink p-6 mb-8">
+                <div>
+                  <div className="mono text-[12px] text-slate uppercase tracking-widest mb-2">Bonded Stake</div>
+                  <div className="mono" style={{ fontWeight: 600, fontSize: 44, letterSpacing: "-.02em", lineHeight: 1 }}>{usd(stake.amount, 2)}</div>
+                </div>
+                <TierBadge tier={stake.tier} />
               </div>
-            </div>
-            <div style={{ padding: 13 }}><div className="mono" style={{ fontWeight: 500, fontSize: 10, color: C.dim, marginBottom: 6 }}>USDC BALANCE</div><div className="mono" style={{ fontWeight: 500, fontSize: 17 }}>{usd(usdcBal ?? 0, 2)}</div></div>
-          </div>
 
-          <div style={{ display: "flex", gap: 9 }}>
-            <button onClick={() => act("add")} disabled={busy !== null} className="btn-outline lift" style={{ flex: 1, padding: 10, fontSize: 13 }}>{busy === "add" ? "…" : "+ Add 50 stake"}</button>
-            <button onClick={() => act("unstake")} disabled={busy !== null || locked} title={locked ? "Settle open jobs before unstaking" : ""} className="btn-ghost2 lift" style={{ flex: 1, padding: 10, fontSize: 13, opacity: locked ? 0.5 : 1, cursor: locked ? "not-allowed" : "pointer" }}>{busy === "unstake" ? "…" : "Request unstake"}</button>
-          </div>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div className="surface" style={{ padding: 18, borderColor: bal > 0 ? C.green : undefined }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-              <div style={badge(true)}>1</div>
-              <div style={{ flex: 1 }}><div style={{ fontWeight: 500, fontSize: 13 }}>Get test USDC</div><div className="mono" style={{ fontSize: 11, color: C.dim }}>devnet faucet — testing only</div></div>
-              <div style={{ textAlign: "right" }}><div className="mono" style={{ fontWeight: 500, fontSize: 10, color: C.dim }}>BALANCE</div><div className="mono" style={{ fontWeight: 500, fontSize: 15 }}>{usd(usdcBal ?? 0, 2)}</div></div>
-            </div>
-            <button onClick={faucet} disabled={busy !== null} className="lift" style={{ width: "100%", padding: 11, borderRadius: 0, border: `1px solid ${bal > 0 ? C.green : C.line2}`, background: bal > 0 ? "#FBEFEE" : C.raised, color: bal > 0 ? C.green : C.hi, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>{busy === "faucet" ? "Requesting…" : bal > 0 ? "✓ received — request more" : "Request 100 test USDC"}</button>
-          </div>
+              <div className="mono text-[12px] text-slate uppercase tracking-widest mb-3">Tier Capacity</div>
+              <div className="mb-8"><TierCapacity stakeUsd={Number(stake.amount) / 1e6} /></div>
 
-          <div className="surface" style={{ padding: 18, opacity: bal > 0 ? 1 : 0.5 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <div style={badge(bal > 0)}>2</div>
-              <div><div style={{ fontWeight: 500, fontSize: 13 }}>Stake &amp; register</div><div className="mono" style={{ fontSize: 11, color: C.dim }}>higher stake unlocks higher-value nodes</div></div>
+              <div className="grid grid-cols-2 border border-mist mb-8">
+                <div className="p-4 border-r border-mist">
+                  <div className="mono text-[12px] text-slate uppercase mb-2">Stake Lock</div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2" style={{ background: locked ? C.blue : C.green }} />
+                    <span className="mono text-[13px]" style={{ color: locked ? C.blue : C.green }}>{locked ? `Locked · ${stake.openJobs} job(s)` : "Unlocked"}</span>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <div className="mono text-[12px] text-slate uppercase mb-2">USDC Balance</div>
+                  <div className="mono text-[17px] text-ink">{usd(usdcBal ?? 0, 2)}</div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={() => act("add")} disabled={busy !== null} className="btn-outline mono" style={{ flex: 1, padding: "11px 0", fontSize: 12, letterSpacing: ".05em", textTransform: "uppercase" }}>{busy === "add" ? "…" : "+ Add 50 stake"}</button>
+                <button onClick={() => act("unstake")} disabled={busy !== null || locked} title={locked ? "Settle open jobs before unstaking" : ""} className="btn-ghost2 mono" style={{ flex: 1, padding: "11px 0", fontSize: 12, letterSpacing: ".05em", textTransform: "uppercase", opacity: locked ? 0.45 : 1, cursor: locked ? "not-allowed" : "pointer" }}>{busy === "unstake" ? "…" : "Request unstake"}</button>
+              </div>
+            </section>
+
+            <div className="lg:col-span-5">
+              <TierTable heading="02 / Trust Tiers" />
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 16 }}>
-              {[1, 2, 3].map((tv) => (
-                <button key={tv} onClick={() => setStakeTier(tv)} className="lift" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 13px", borderRadius: 8, cursor: "pointer", border: `1px solid ${stakeTier === tv ? C.line2 : C.line}`, background: stakeTier === tv ? C.raised : C.panel }}>
-                  <div style={{ textAlign: "left" }}><div style={{ fontWeight: 500, fontSize: 13, color: C.hi }}>Tier {tv}</div><div className="mono" style={{ fontSize: 10, color: C.dim }}>requires ≥ {REQ[tv].toLocaleString()} USDC</div></div>
-                  <TierBadge tier={tv} />
+          </>
+        ) : (
+          /* ── not staked: acquire + register ── */
+          <>
+            <div className="lg:col-span-7 flex flex-col gap-12">
+              <section>
+                <div className="masthead-rule w-full mb-4" />
+                <div className="flex items-baseline justify-between mb-5">
+                  <h2 className="font-serif text-[28px] font-semibold uppercase tracking-tight">01 / Acquire</h2>
+                  <div className="text-right">
+                    <span className="mono text-[12px] text-slate uppercase block">Balance</span>
+                    <span className="mono text-[15px] text-ink">{usd(usdcBal ?? 0, 2)}</span>
+                  </div>
+                </div>
+                <p className="font-serif text-[15px] text-slate leading-relaxed mb-5">Devnet faucet — testing only. Request test USDC to bond against a trust tier.</p>
+                <button onClick={faucet} disabled={busy !== null} className="mono" style={{ width: "100%", padding: "13px 0", border: `1px solid ${bal > 0 ? C.green : C.hi}`, background: bal > 0 ? "#FBEFEE" : "transparent", color: bal > 0 ? C.green : C.hi, fontWeight: 600, fontSize: 12, letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
+                  {busy === "faucet" ? "Requesting…" : bal > 0 ? "✓ Received — request more" : "Request 100 test USDC"}
                 </button>
-              ))}
-            </div>
-            <button onClick={() => act("register")} disabled={busy !== null || !canReg} className="lift" style={{ width: "100%", padding: 12, borderRadius: 0, border: `1px solid ${canReg ? C.green : C.line}`, fontWeight: 600, fontSize: 13, cursor: canReg ? "pointer" : "not-allowed", background: canReg ? C.green : "transparent", color: canReg ? C.bg0 : C.faint }}>
-              {busy === "register" ? "Registering…" : canReg ? `Stake & register as T${stakeTier}` : `Need ${REQ[stakeTier].toLocaleString()} USDC for T${stakeTier}`}
-            </button>
-          </div>
-        </div>
-      )}
+              </section>
 
-      {error && <p className="mono" style={{ color: C.red, fontSize: 12, marginTop: 14, wordBreak: "break-word" }}>{error}</p>}
-      {msg && <a href={explorerTx(msg)} target="_blank" rel="noreferrer" className="mono" style={{ color: C.green, fontSize: 12, marginTop: 14, display: "inline-block" }}>View transaction ↗</a>}
+              <section style={{ opacity: bal > 0 ? 1 : 0.5 }}>
+                <div className="masthead-rule w-full mb-4" />
+                <h2 className="font-serif text-[28px] font-semibold uppercase tracking-tight mb-1">02 / Register</h2>
+                <p className="font-serif text-[15px] text-slate leading-relaxed mb-5">Higher stake unlocks higher-value nodes. Choose a tier to bond.</p>
+                <div className="flex flex-col border border-mist mb-5">
+                  {[1, 2, 3].map((tv, i) => (
+                    <button key={tv} onClick={() => setStakeTier(tv)} className="flex justify-between items-center px-4 py-4 transition-colors" style={{ borderTop: i > 0 ? `1px solid ${C.line}` : "none", background: stakeTier === tv ? C.bg : "transparent", cursor: "pointer" }}>
+                      <div className="text-left">
+                        <div className="font-serif text-[16px] text-ink">Tier {tv}</div>
+                        <div className="mono text-[11px] text-slate">requires ≥ {REQ[tv].toLocaleString()} USDC</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <TierBadge tier={tv} />
+                        <span className="mono text-[13px]" style={{ color: stakeTier === tv ? C.green : C.faint }}>{stakeTier === tv ? "✓" : ""}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => act("register")} disabled={busy !== null || !canReg} className="mono" style={{ width: "100%", padding: "13px 0", border: "none", fontWeight: 600, fontSize: 12, letterSpacing: ".06em", textTransform: "uppercase", cursor: canReg ? "pointer" : "not-allowed", background: canReg ? C.green : C.line, color: canReg ? C.bg0 : C.faint }}>
+                  {busy === "register" ? "Registering…" : canReg ? `Stake & register as T${stakeTier}` : `Need ${REQ[stakeTier].toLocaleString()} USDC for T${stakeTier}`}
+                </button>
+              </section>
+            </div>
+
+            <div className="lg:col-span-5">
+              <TierTable heading="Trust Tiers" />
+            </div>
+          </>
+        )}
+      </div>
+
+      {error && <p className="mono" style={{ color: C.red, fontSize: 12, marginTop: 18, wordBreak: "break-word" }}>{error}</p>}
+      {msg && <a href={explorerTx(msg)} target="_blank" rel="noreferrer" className="mono" style={{ color: C.green, fontSize: 12, marginTop: 18, display: "inline-block", textDecoration: "underline" }}>View transaction ↗</a>}
     </div>
   );
 }
