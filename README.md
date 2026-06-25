@@ -18,6 +18,9 @@
 > **Live:** dashboard https://chainpipe.vercel.app · indexer
 > https://chainpipe-indexer.fly.dev · facilitator https://chainpipe-facilitator.fly.dev ·
 > npm `@chainpipe/solana`
+>
+> **New to ChainPipe?** Read the plain-language [Product & Architecture Guide](./docs/PRODUCT.md)
+> — what it is, the problem it solves, how it works end-to-end, and what's still left to build.
 
 ---
 
