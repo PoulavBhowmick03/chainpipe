@@ -37,7 +37,7 @@ export default function AgentPage() {
     <div className="cp-in" style={{ padding: "28px 0 80px" }}>
       <Link href="/bazaar" className="mono" style={{ color: C.dim, fontWeight: 500, fontSize: 12, textDecoration: "none", display: "inline-block", marginBottom: 22 }}>← bazaar</Link>
       <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", marginBottom: 30 }}>
-        <span className="mono" style={{ width: 50, height: 50, border: `1px solid ${C.line2}`, borderRadius: 9, background: "linear-gradient(180deg,#12161d,#0e1217)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 19, color: C.hi, flex: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.06)" }}>{agentTitle(a)[0]?.toUpperCase()}</span>
+        <span className="mono" style={{ width: 50, height: 50, border: `1px solid ${C.line2}`, borderRadius: 9, background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 19, color: C.hi, flex: "none" }}>{agentTitle(a)[0]?.toUpperCase()}</span>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <h1 style={{ fontSize: 21, fontWeight: 600, margin: 0 }}>{agentTitle(a)}</h1>

@@ -65,7 +65,7 @@ export function CommandPalette() {
   return (
     <div
       onClick={() => setOpen(false)}
-      style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(4,6,9,.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "14vh" }}
+      style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(22,21,18,.38)", backdropFilter: "blur(3px)", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "14vh" }}
     >
       <div
         className="surface-raised cp-in"
@@ -73,7 +73,7 @@ export function CommandPalette() {
         onKeyDown={onListKey}
         role="dialog"
         aria-label="Command palette"
-        style={{ width: "min(560px, 92vw)", overflow: "hidden", boxShadow: "0 24px 64px rgba(0,0,0,.5)" }}
+        style={{ width: "min(560px, 92vw)", overflow: "hidden", boxShadow: "0 24px 64px rgba(22,21,18,.22)" }}
       >
         <input
           ref={inputRef}
@@ -92,8 +92,8 @@ export function CommandPalette() {
               onClick={c.run}
               style={{
                 width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-                padding: "11px 13px", borderRadius: 8, border: "none", cursor: "pointer", textAlign: "left",
-                background: i === active ? C.raised : "transparent", color: i === active ? C.hi : C.tx,
+                padding: "11px 13px", borderRadius: 0, border: "none", cursor: "pointer", textAlign: "left",
+                background: i === active ? C.bg : "transparent", color: i === active ? C.hi : C.tx,
               }}
             >
               <span style={{ fontSize: 13, fontWeight: 500 }}>{c.label}</span>

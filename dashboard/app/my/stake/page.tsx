@@ -110,7 +110,7 @@ export default function StakePage() {
           <div className="surface" style={{ overflow: "hidden", padding: 0, marginBottom: 16 }}>
             <div className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".12em", color: C.dim, padding: "13px 16px", borderBottom: `1px solid ${C.line}` }}>TRUST TIERS</div>
             {[3, 2, 1].map((t) => (
-              <div key={t} style={{ display: "flex", alignItems: "center", gap: 16, padding: "15px 16px", borderBottom: t === 1 ? "none" : `1px solid #14181f` }}>
+              <div key={t} style={{ display: "flex", alignItems: "center", gap: 16, padding: "15px 16px", borderBottom: t === 1 ? "none" : `1px solid ${C.line}` }}>
                 <TierBadge tier={t} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 500 }}>Tier {t}</div>
@@ -177,13 +177,13 @@ export default function StakePage() {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div className="surface" style={{ padding: 18, borderColor: bal > 0 ? "#1d3a2c" : undefined }}>
+          <div className="surface" style={{ padding: 18, borderColor: bal > 0 ? C.green : undefined }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
               <div style={badge(true)}>1</div>
               <div style={{ flex: 1 }}><div style={{ fontWeight: 500, fontSize: 13 }}>Get test USDC</div><div className="mono" style={{ fontSize: 11, color: C.dim }}>devnet faucet — testing only</div></div>
               <div style={{ textAlign: "right" }}><div className="mono" style={{ fontWeight: 500, fontSize: 10, color: C.dim }}>BALANCE</div><div className="mono" style={{ fontWeight: 500, fontSize: 15 }}>{usd(usdcBal ?? 0, 2)}</div></div>
             </div>
-            <button onClick={faucet} disabled={busy !== null} className="lift" style={{ width: "100%", padding: 11, borderRadius: 7, border: `1px solid ${bal > 0 ? "#1d3a2c" : C.line2}`, background: bal > 0 ? "#0c1712" : C.raised, color: bal > 0 ? C.green : C.hi, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>{busy === "faucet" ? "Requesting…" : bal > 0 ? "✓ received — request more" : "Request 100 test USDC"}</button>
+            <button onClick={faucet} disabled={busy !== null} className="lift" style={{ width: "100%", padding: 11, borderRadius: 0, border: `1px solid ${bal > 0 ? C.green : C.line2}`, background: bal > 0 ? "#FBEFEE" : C.raised, color: bal > 0 ? C.green : C.hi, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>{busy === "faucet" ? "Requesting…" : bal > 0 ? "✓ received — request more" : "Request 100 test USDC"}</button>
           </div>
 
           <div className="surface" style={{ padding: 18, opacity: bal > 0 ? 1 : 0.5 }}>
@@ -199,7 +199,7 @@ export default function StakePage() {
                 </button>
               ))}
             </div>
-            <button onClick={() => act("register")} disabled={busy !== null || !canReg} className="lift" style={{ width: "100%", padding: 12, borderRadius: 8, border: `1px solid ${canReg ? C.hi : C.line}`, fontWeight: 600, fontSize: 13, cursor: canReg ? "pointer" : "not-allowed", background: canReg ? C.hi : "transparent", color: canReg ? C.bg0 : C.faint, boxShadow: canReg ? "0 0 18px rgba(20,241,149,.12)" : "none" }}>
+            <button onClick={() => act("register")} disabled={busy !== null || !canReg} className="lift" style={{ width: "100%", padding: 12, borderRadius: 0, border: `1px solid ${canReg ? C.green : C.line}`, fontWeight: 600, fontSize: 13, cursor: canReg ? "pointer" : "not-allowed", background: canReg ? C.green : "transparent", color: canReg ? C.bg0 : C.faint }}>
               {busy === "register" ? "Registering…" : canReg ? `Stake & register as T${stakeTier}` : `Need ${REQ[stakeTier].toLocaleString()} USDC for T${stakeTier}`}
             </button>
           </div>

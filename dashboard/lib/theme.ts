@@ -1,19 +1,29 @@
-// v2 design tokens + formatting helpers (ported from ChainPipe v2.dc.html).
+// Settlement Broadsheet design tokens. Semantic slots are unchanged so every inline
+// `C.*` reference across the app remaps in place; the values are now "Paper & Ink".
+//   bg0  = linen page base (and light text on ink/oxblood buttons)
+//   bg   = paper-dim inset (table headers, chips)
+//   panel/raised = paper surfaces
+//   line/line2   = mist hairlines
+//   hi   = obsidian ink (primary text + solid-button fill)
+//   tx/dim/faint = warm-gray metadata, descending
+//   green = oxblood — THE accent (value, active, settled, primary CTA)
+//   blue  = tertiary teal (claimed / in-progress)
+//   red   = true error (expired / dispute)   amber = muted ochre (refunded / warning)
 export const C = {
-  bg0: "#07090d",
-  bg: "#0a0d12",
-  panel: "#0e1217",
-  raised: "#12161d",
-  line: "#1b212b",
-  line2: "#262d39",
-  hi: "#e8ebf0",
-  tx: "#aab2c0",
-  dim: "#6b7689",
-  faint: "#454e5e",
-  green: "#14f195",
-  blue: "#4d9fff",
-  red: "#ff5b5b",
-  amber: "#f5a623",
+  bg0: "#F4F1EA",
+  bg: "#ECE8DE",
+  panel: "#FBF9F4",
+  raised: "#FFFFFF",
+  line: "#D8D3C7",
+  line2: "#C4BDAD",
+  hi: "#161512",
+  tx: "#3A352D",
+  dim: "#6A655B",
+  faint: "#9C968A",
+  green: "#6B1F23",
+  blue: "#1F5A4C",
+  red: "#BA1A1A",
+  amber: "#9A6A2E",
 } as const;
 
 /** USDC from 6-decimal base units → "$x.xx" / "$x,xxx". */

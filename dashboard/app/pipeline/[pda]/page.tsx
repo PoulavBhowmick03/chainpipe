@@ -85,7 +85,7 @@ export default function PipelinePage() {
         </div>
 
         <div style={{ flex: "1 1 300px", minWidth: 280, display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ border: `1px solid #2a2018`, borderRadius: 10, padding: 15, background: "#120d07" }}>
+          <div style={{ border: `1px solid #E0D2B8`, padding: 15, background: "#F8F2E6" }}>
             <div className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".1em", color: C.amber, marginBottom: 8 }}>CASCADE REFUND</div>
             <div style={{ fontSize: 12, color: C.tx, lineHeight: 1.55 }}>
               {resolved ? "All nodes resolved. The escrow is fully settled or refunded." : "If a claimed or pending node misses its deadline, anyone can expire it — the refund cascades atomically to every downstream node and back to the consumer."}
@@ -96,9 +96,8 @@ export default function PipelinePage() {
             {p.nodes.map((n) => {
               const st = statusKey(n.status);
               const assigned = n.agent && n.agent !== "11111111111111111111111111111111";
-              const litRail = st === "settled" || st === "claimed";
               return (
-                <div key={n.nodeIndex} style={{ padding: "13px 15px", borderBottom: `1px solid #14181f`, borderLeft: `2px solid ${statusColor(st)}`, boxShadow: litRail ? `inset 3px 0 8px -3px ${statusColor(st)}` : "none" }}>
+                <div key={n.nodeIndex} style={{ padding: "13px 15px", borderBottom: `1px solid ${C.line}`, borderLeft: `2px solid ${statusColor(st)}` }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
                     <span style={{ fontSize: 12, fontWeight: 500 }}>N{n.nodeIndex} · node {n.nodeIndex}</span>
                     <span className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".05em", textTransform: "uppercase", color: statusColor(st) }}>{st}</span>

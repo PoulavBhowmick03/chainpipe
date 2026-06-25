@@ -88,16 +88,16 @@ export function DagCanvas({
       const srcSettled = byId[d].status === "settled";
       const tgtBad = n.status === "expired" || n.status === "refunded";
       const live = srcSettled && !tgtBad;
-      const col = tgtBad ? C.red : srcSettled ? C.green : C.line2;
-      // physical conduit: a darker rounded pipe…
-      edges.push(<path key={`${d}-${n.id}p`} d={path} fill="none" stroke={tgtBad ? "rgba(255,91,91,.22)" : live ? "rgba(20,241,149,.18)" : C.line} strokeWidth={5} strokeLinecap="round" />);
+      const col = tgtBad ? C.red : srcSettled ? C.green : C.hi;
+      // physical conduit: a faint rounded pipe…
+      edges.push(<path key={`${d}-${n.id}p`} d={path} fill="none" stroke={tgtBad ? "rgba(186,26,26,.14)" : live ? "rgba(107,31,35,.12)" : C.line} strokeWidth={5} strokeLinecap="round" />);
       // …with the conducting line inside…
-      edges.push(<path key={`${d}-${n.id}b`} d={path} fill="none" stroke={col} strokeWidth={1.5} opacity={tgtBad ? 0.75 : 1} filter={live ? "url(#cpGlow)" : undefined} />);
-      // …and value flowing through it (forward green on settle, reverse red on cascade).
+      edges.push(<path key={`${d}-${n.id}b`} d={path} fill="none" stroke={col} strokeWidth={1.25} opacity={tgtBad ? 0.8 : srcSettled ? 1 : 0.7} />);
+      // …and value flowing through it (forward oxblood on settle, reverse red on cascade).
       if (live)
         edges.push(<path key={`${d}-${n.id}f`} className="cp-flow" d={path} fill="none" stroke="url(#cpFlowG)" strokeWidth={2} strokeDasharray="4 10" strokeLinecap="round" />);
       if (tgtBad)
-        edges.push(<path key={`${d}-${n.id}r`} className="cp-flow" d={path} fill="none" stroke="#ff9a9a" strokeWidth={1.5} strokeDasharray="4 8" style={{ animationDirection: "reverse" }} />);
+        edges.push(<path key={`${d}-${n.id}r`} className="cp-flow" d={path} fill="none" stroke="#C98A8A" strokeWidth={1.5} strokeDasharray="4 8" style={{ animationDirection: "reverse" }} />);
       edges.push(<circle key={`${d}-${n.id}d`} cx={x2} cy={y2} r={2.5} fill={col} />);
     })
   );
@@ -120,9 +120,9 @@ export function DagCanvas({
         <svg width={W} height={H} style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}>
           <defs>
             <linearGradient id="cpFlowG" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stopColor="#14f195" stopOpacity="0.15" />
-              <stop offset="0.5" stopColor="#14f195" stopOpacity="1" />
-              <stop offset="1" stopColor="#14f195" stopOpacity="0.4" />
+              <stop offset="0" stopColor="#6B1F23" stopOpacity="0.15" />
+              <stop offset="0.5" stopColor="#6B1F23" stopOpacity="1" />
+              <stop offset="1" stopColor="#6B1F23" stopOpacity="0.4" />
             </linearGradient>
             <filter id="cpGlow" x="-40%" y="-40%" width="180%" height="180%">
               <feGaussianBlur stdDeviation="2.2" result="b" />
@@ -135,25 +135,21 @@ export function DagCanvas({
           const p = pos[n.id], c = statusColor(n.status);
           const sel = selId === n.id, conn = connectFrom === n.id;
           const settled = n.status === "settled";
-          const claimed = n.status === "claimed";
-          const border = conn ? C.green : sel ? C.hi : settled ? "rgba(20,241,149,.4)" : C.line2;
-          const glow = settled ? "0 0 22px rgba(20,241,149,.10)" : claimed ? "0 0 22px rgba(77,159,255,.08)" : "none";
+          const border = conn ? C.green : sel ? C.green : settled ? C.green : C.hi;
           return (
             <div
               key={n.id}
               onClick={onNodeClick ? () => onNodeClick(n.id) : undefined}
               style={{
                 position: "absolute", left: p.x, top: p.y, width: NW, height: NH, boxSizing: "border-box",
-                borderRadius: 9, padding: "9px 11px 9px 13px",
-                background: "linear-gradient(180deg,#12161d,#0e1217)", border: `1px solid ${border}`,
+                borderRadius: 2, padding: "9px 11px 9px 13px",
+                background: sel || conn ? C.bg : C.panel, border: `1px solid ${border}`,
                 cursor: onNodeClick ? "pointer" : "default", display: "flex", flexDirection: "column", justifyContent: "space-between",
-                boxShadow: sel || conn
-                  ? `inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 3px ${conn ? "rgba(20,241,149,.16)" : "rgba(232,235,240,.10)"}`
-                  : `inset 0 1px 0 rgba(255,255,255,.05), ${glow}`,
-                transition: "border-color .15s, box-shadow .15s, transform .15s",
+                boxShadow: sel || conn ? `0 0 0 2px ${conn ? "rgba(107,31,35,.18)" : "rgba(107,31,35,.14)"}` : "none",
+                transition: "border-color .15s, box-shadow .15s, background .15s",
               }}
             >
-              <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 2, background: c, borderRadius: "9px 0 0 9px", boxShadow: settled || claimed ? `0 0 8px ${c}` : "none" }} />
+              <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 2, background: c }} />
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ fontWeight: 500, fontSize: 12, color: C.hi, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0, flex: 1 }}>{n.title}</span>
                 <span className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 500, fontSize: 9, letterSpacing: ".06em", color: c, flex: "none", marginLeft: 6 }}>
