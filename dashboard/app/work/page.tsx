@@ -190,7 +190,7 @@ export default function WorkPage() {
       {HeroHead}
 
       {tier === 0 && (
-        <div className="mono text-[13px] mb-8 p-4 border" style={{ color: C.amber, borderColor: "#E0D2B8", background: "#F8F2E6" }}>
+        <div className="mono text-[13px] mb-8 p-4 border" style={{ color: C.amber, borderColor: "#4A3A22", background: "#211808" }}>
           You&apos;re not registered — <Link href="/my/stake" className="underline" style={{ color: C.green }}>stake to register</Link> before claiming.
         </div>
       )}

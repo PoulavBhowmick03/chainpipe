@@ -22,7 +22,7 @@ function Chip({ k }: { k: string }) {
       className="mono"
       style={{
         display: "inline-block", padding: "4px 8px", fontSize: 12, letterSpacing: ".06em", textTransform: "uppercase",
-        border: `1px solid ${alert ? "#4D1518" : "#161512"}`, color: alert ? "#4D1518" : "#161512",
+        border: `1px solid ${alert ? "#E5574E" : "#3C322D"}`, color: alert ? "#E5574E" : "#F1ECE5",
         fontWeight: alert ? 700 : 400, whiteSpace: "nowrap",
       }}
     >
@@ -101,7 +101,7 @@ export default function MyPipelinesPage() {
             return (
               <Link key={p.address} href={`/pipeline/${p.address}`} className="grid grid-cols-1 md:grid-cols-12 gap-gutter py-6 border-b border-mist group hover:bg-paper-dim transition-colors no-underline">
                 <div className="col-span-2 hidden md:flex items-center">
-                  <div className="w-full border border-mist p-3 flex flex-col gap-2" style={{ background: "#FBF9F4" }}>
+                  <div className="w-full border border-mist p-3 flex flex-col gap-2" style={{ background: "#17110F" }}>
                     <SegBar statuses={nodeStatuses(p)} />
                     <span className="mono text-[10px] text-slate-dim">{p.totalNodes} nodes</span>
                   </div>

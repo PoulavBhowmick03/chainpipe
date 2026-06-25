@@ -66,7 +66,14 @@ export function NavBar() {
   }, [connection]);
 
   const isActive = (m: string[]) =>
-    m.some((p) => (p === "/" || p === "/pipeline/create" ? pathname === p : pathname === p || pathname.startsWith(p)));
+    m.some((p) => {
+      // Exact-match routes (avoid "/" or "/pipeline/create" matching everything by prefix).
+      if (p === "/" || p === "/pipeline/create") return pathname === p;
+      // The Pipelines link claims /pipeline/* (detail pages) but NOT /pipeline/create,
+      // which belongs to Create — otherwise both light up on the create page.
+      if (p === "/pipeline/") return pathname.startsWith("/pipeline/") && pathname !== "/pipeline/create";
+      return pathname === p || pathname.startsWith(p);
+    });
 
   const Wordmark = (
     <Link href="/" style={{ textDecoration: "none", flex: "none", display: "inline-flex", alignItems: "baseline", gap: 8 }}>

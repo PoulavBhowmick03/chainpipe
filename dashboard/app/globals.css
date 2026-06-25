@@ -9,22 +9,22 @@
    0px corners everywhere; a 2px softening is the only interactive exception.
    ────────────────────────────────────────────────────────────────────────── */
 :root {
-  color-scheme: light;
-  --linen: #f4f1ea;
-  --paper: #fbf9f4;
-  --ink: #161512;
-  --slate: #6a655b;
-  --mist: #d8d3c7;
-  --mist-2: #c4bdad;
-  --oxblood: #6b1f23;
-  --oxblood-deep: #4d1518;
+  color-scheme: dark;
+  --linen: #100c0c;
+  --paper: #17110f;
+  --ink: #f1ece5;
+  --slate: #9e9389;
+  --mist: #2c2421;
+  --mist-2: #3c322d;
+  --oxblood: #cb5a60;
+  --oxblood-deep: #c24e54;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --dur-1: 160ms;
   /* height of the revealed back-page footer (content reserves this much below it) */
   --footer-h: clamp(460px, 64vh, 720px);
   /* legacy hooks still referenced by some inline styles */
-  --hair: #d8d3c7;
-  --hair-2: #c4bdad;
+  --hair: #2c2421;
+  --hair-2: #3c322d;
 }
 @media (max-width: 700px) {
   :root {
@@ -44,10 +44,17 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* ATMOSPHERE, not decoration: one large warm-red glow anchored top-left where the
+     billboard sits, fading to near-black. A second faint ember bottom-right for depth. */
+  background-color: #100c0c;
+  background-image:
+    radial-gradient(120% 80% at 8% -8%, rgba(203, 90, 96, 0.16), transparent 60%),
+    radial-gradient(90% 70% at 100% 108%, rgba(120, 28, 33, 0.14), transparent 62%);
+  background-attachment: fixed;
 }
 ::selection {
   background: var(--oxblood-deep);
-  color: var(--linen);
+  color: #100c0c;
 }
 ::-webkit-scrollbar {
   height: 8px;

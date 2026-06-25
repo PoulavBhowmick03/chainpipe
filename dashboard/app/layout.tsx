@@ -36,7 +36,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           {/* Opaque content plane sits above the fixed footer and reserves space below
               itself (margin = footer height) so the footer is revealed as you reach the end. */}
-          <div className="relative z-10 bg-linen flex flex-col min-h-screen" style={{ marginBottom: "var(--footer-h)" }}>
+          <div
+            className="relative z-10 bg-linen flex flex-col min-h-screen"
+            style={{
+              marginBottom: "var(--footer-h)",
+              backgroundColor: "#100c0c",
+              backgroundImage:
+                "radial-gradient(115% 75% at 6% -4%, rgba(203,90,96,0.16), transparent 58%), radial-gradient(80% 55% at 102% 102%, rgba(120,28,33,0.12), transparent 60%)",
+            }}
+          >
             <NavBar />
             <main className="flex-grow w-full max-w-[1440px] mx-auto px-4 md:px-16">{children}</main>
           </div>
