@@ -32,10 +32,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${serif.variable} ${mono.variable}`}>
-      <body className="font-sans bg-linen text-ink min-h-screen flex flex-col">
+      <body className="font-sans bg-ink text-ink">
         <Providers>
-          <NavBar />
-          <div className="flex-grow w-full max-w-[1440px] mx-auto px-4 md:px-16">{children}</div>
+          {/* Opaque content plane sits above the fixed footer and reserves space below
+              itself (margin = footer height) so the footer is revealed as you reach the end. */}
+          <div className="relative z-10 bg-linen flex flex-col min-h-screen" style={{ marginBottom: "var(--footer-h)" }}>
+            <NavBar />
+            <main className="flex-grow w-full max-w-[1440px] mx-auto px-4 md:px-16">{children}</main>
+          </div>
           <Footer />
         </Providers>
       </body>

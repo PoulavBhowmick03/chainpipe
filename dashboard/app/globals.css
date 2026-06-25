@@ -20,9 +20,16 @@
   --oxblood-deep: #4d1518;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --dur-1: 160ms;
+  /* height of the revealed back-page footer (content reserves this much below it) */
+  --footer-h: clamp(460px, 64vh, 720px);
   /* legacy hooks still referenced by some inline styles */
   --hair: #d8d3c7;
   --hair-2: #c4bdad;
+}
+@media (max-width: 700px) {
+  :root {
+    --footer-h: clamp(380px, 72vh, 560px);
+  }
 }
 
 html,
@@ -328,6 +335,11 @@ body {
     transform: none !important;
     transition: none !important;
   }
+}
+
+/* Back-page footer link hover (inline styles can't express :hover). */
+footer nav a:hover {
+  color: #f4f1ea;
 }
 
 /* Responsive nav: inline on desktop, compact menu on mobile. */
