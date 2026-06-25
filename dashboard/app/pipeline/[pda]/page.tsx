@@ -85,7 +85,7 @@ export default function PipelinePage() {
         </div>
 
         <div style={{ flex: "1 1 300px", minWidth: 280, display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ border: `1px solid #E0D2B8`, padding: 15, background: "#F8F2E6" }}>
+          <div style={{ border: `1px solid #4A3A22`, padding: 15, background: "#211808" }}>
             <div className="mono" style={{ fontWeight: 500, fontSize: 10, letterSpacing: ".1em", color: C.amber, marginBottom: 8 }}>CASCADE REFUND</div>
             <div style={{ fontSize: 12, color: C.tx, lineHeight: 1.55 }}>
               {resolved ? "All nodes resolved. The escrow is fully settled or refunded." : "If a claimed or pending node misses its deadline, anyone can expire it — the refund cascades atomically to every downstream node and back to the consumer."}

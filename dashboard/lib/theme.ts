@@ -10,20 +10,20 @@
 //   blue  = tertiary teal (claimed / in-progress)
 //   red   = true error (expired / dispute)   amber = muted ochre (refunded / warning)
 export const C = {
-  bg0: "#F4F1EA",
-  bg: "#ECE8DE",
-  panel: "#FBF9F4",
-  raised: "#FFFFFF",
-  line: "#D8D3C7",
-  line2: "#C4BDAD",
-  hi: "#161512",
-  tx: "#3A352D",
-  dim: "#6A655B",
-  faint: "#9C968A",
-  green: "#6B1F23",
-  blue: "#1F5A4C",
-  red: "#BA1A1A",
-  amber: "#9A6A2E",
+  bg0: "#100C0C",
+  bg: "#1B1413",
+  panel: "#17110F",
+  raised: "#211917",
+  line: "#2C2421",
+  line2: "#3C322D",
+  hi: "#F1ECE5",
+  tx: "#D8D0C6",
+  dim: "#ADA298",
+  faint: "#857C72",
+  green: "#CB5A60",
+  blue: "#5BA89A",
+  red: "#E5574E",
+  amber: "#D69A4E",
 } as const;
 
 /** USDC from 6-decimal base units → "$x.xx" / "$x,xxx". */

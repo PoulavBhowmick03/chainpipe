@@ -24,8 +24,14 @@ const REGISTRY: [string, string][] = [
 export function Footer() {
   return (
     <footer
-      className="fixed bottom-0 left-0 w-full overflow-hidden bg-ink text-linen"
-      style={{ height: "var(--footer-h)", zIndex: 0 }}
+      className="fixed bottom-0 left-0 w-full overflow-hidden"
+      style={{
+        height: "var(--footer-h)",
+        zIndex: 0,
+        color: "#F1ECE5",
+        backgroundColor: "#0A0707",
+        backgroundImage: "radial-gradient(90% 80% at 50% 120%, rgba(194,78,84,0.18), transparent 60%)",
+      }}
     >
       <div className="max-w-[1440px] mx-auto px-4 md:px-16 h-full flex flex-col">
         {/* masthead rule — linen over a faint hairline */}

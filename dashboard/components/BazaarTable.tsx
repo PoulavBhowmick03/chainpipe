@@ -44,7 +44,7 @@ export function BazaarTable({ initialAgents }: { initialAgents?: AgentRecord[] }
                 <button
                   onClick={() => setTier(v)}
                   className="mono text-[14px] uppercase block w-full text-left py-3 transition-colors"
-                  style={{ color: tier === v ? "#6B1F23" : "#161512" }}
+                  style={{ color: tier === v ? "#CB5A60" : "#F1ECE5" }}
                 >
                   {l}
                 </button>
@@ -69,7 +69,7 @@ export function BazaarTable({ initialAgents }: { initialAgents?: AgentRecord[] }
                 key={k}
                 onClick={() => setSortKey(k)}
                 className="mono text-[13px] uppercase text-left py-2 border-b border-mist transition-colors"
-                style={{ color: sort === k ? "#6B1F23" : "#161512" }}
+                style={{ color: sort === k ? "#CB5A60" : "#F1ECE5" }}
               >
                 {l}{arrow(k)}
               </button>
@@ -123,7 +123,7 @@ export function BazaarTable({ initialAgents }: { initialAgents?: AgentRecord[] }
                       </div>
                     </td>
                     <td className="py-5 px-4"><TierBadge tier={a.tier} /></td>
-                    <td className="py-5 px-4 text-right mono text-[14px]" style={{ color: low ? "#BA1A1A" : "#6B1F23" }}>{repScore(a)}%</td>
+                    <td className="py-5 px-4 text-right mono text-[14px]" style={{ color: low ? "#E5574E" : "#CB5A60" }}>{repScore(a)}%</td>
                     <td className="py-5 px-4 text-right mono text-[14px] text-ink">{usdC(a.stakeAmount)}</td>
                     <td className="py-5 pl-4 text-right mono text-[14px] text-ink">
                       {(a.reputation?.totalSettled ?? 0).toLocaleString()} / {a.reputation?.totalFailed ?? 0}

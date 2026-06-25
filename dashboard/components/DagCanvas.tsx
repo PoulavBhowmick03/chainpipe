@@ -120,9 +120,9 @@ export function DagCanvas({
         <svg width={W} height={H} style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}>
           <defs>
             <linearGradient id="cpFlowG" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stopColor="#6B1F23" stopOpacity="0.15" />
-              <stop offset="0.5" stopColor="#6B1F23" stopOpacity="1" />
-              <stop offset="1" stopColor="#6B1F23" stopOpacity="0.4" />
+              <stop offset="0" stopColor="#CB5A60" stopOpacity="0.15" />
+              <stop offset="0.5" stopColor="#CB5A60" stopOpacity="1" />
+              <stop offset="1" stopColor="#CB5A60" stopOpacity="0.4" />
             </linearGradient>
             <filter id="cpGlow" x="-40%" y="-40%" width="180%" height="180%">
               <feGaussianBlur stdDeviation="2.2" result="b" />
