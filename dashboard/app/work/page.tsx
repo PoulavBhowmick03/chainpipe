@@ -20,6 +20,21 @@ const SYSTEM = "11111111111111111111111111111111";
 const depsSettled = (p: PipelineRecord, n: NodeRecord) =>
   depsOf(n.dependencyMask).every((i) => statusKey(p.nodes[i]?.status) === "settled");
 
+const gateway = (u: string) => (u.startsWith("ipfs://") ? "https://ipfs.io/ipfs/" + u.slice(7) : u);
+
+/** The job spec an agent needs to actually do the work: what to build + input data. */
+function SpecBlock({ n }: { n: NodeRecord }) {
+  if (!n.description && !n.inputUri) {
+    return <div className="mono" style={{ fontSize: 12, color: C.faint, fontStyle: "italic", margin: "2px 0 12px", paddingLeft: 12, borderLeft: `2px solid ${C.line}` }}>No task spec published for this node.</div>;
+  }
+  return (
+    <div className="mono" style={{ fontSize: 12, color: C.tx, lineHeight: 1.5, margin: "2px 0 12px", paddingLeft: 12, borderLeft: `2px solid ${C.line2}` }}>
+      {n.description && <div style={{ marginBottom: n.inputUri ? 6 : 0 }}>{n.description}</div>}
+      {n.inputUri && <a href={gateway(n.inputUri)} target="_blank" rel="noreferrer" style={{ color: C.green, textDecoration: "underline" }}>input data ↗</a>}
+    </div>
+  );
+}
+
 export default function WorkPage() {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
@@ -113,115 +128,192 @@ export default function WorkPage() {
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(null); }
   }
 
-  if (!wallet) return (
-    <div className="cp-in" style={{ padding: "28px 0 80px" }}>
-      <div className="mono" style={{ fontWeight: 500, fontSize: 11, letterSpacing: ".14em", color: C.dim, marginBottom: 6 }}>/work · AGENT CONSOLE</div>
-      <h1 className="display" style={{ fontSize: 24, margin: "0 0 6px" }}>Claim work, get paid on proof</h1>
-      <p style={{ color: C.dim, fontSize: 13, margin: "0 0 24px", lineHeight: 1.55, maxWidth: 520 }}>Staked agents claim open pipeline nodes, deliver, and submit content-addressed proof. Payment settles after a dispute window unless the consumer challenges.</p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
-        <div style={{ flex: "1 1 440px", minWidth: 320 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
-            {[
-              ["01", "Claim", "Take an open node your tier qualifies for; your stake backs it."],
-              ["02", "Deliver + proof", "Submit the output URL; its sha256 is committed on-chain."],
-              ["03", "Dispute window", "Anyone can verify the hash and challenge a bad delivery."],
-              ["04", "Settled", "No dispute → finalize pays you, minus the protocol fee."],
-            ].map(([n, t, d]) => (
-              <div key={n} className="surface" style={{ padding: 16 }}>
-                <div className="mono" style={{ fontSize: 11, color: C.green, marginBottom: 8 }}>{n}</div>
-                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 5 }}>{t}</div>
-                <div className="mono" style={{ fontSize: 10.5, color: C.dim, lineHeight: 1.5 }}>{d}</div>
-              </div>
-            ))}
+  const HeroHead = (
+    <header className="mb-12 md:mb-section-gap grid grid-cols-1 md:grid-cols-12 gap-gutter items-end pt-12">
+      <div className="md:col-span-9">
+        <div className="masthead-rule w-full mb-4" />
+        <h1 className="text-billboard uppercase text-ink break-words leading-none m-0">Work Queue</h1>
+      </div>
+      <div className="md:col-span-3 flex flex-col gap-4 pb-2">
+        <div className="border-t border-mist pt-2">
+          <div className="mono text-[12px] text-slate uppercase mb-1">System Status</div>
+          <div className="mono text-[14px] text-ink flex items-center gap-2">
+            <span className="w-2 h-2 bg-oxblood-deep block" /> Nominal / Settling
           </div>
-          <button onClick={() => setVisible(true)} className="lift" style={{ padding: "11px 18px", borderRadius: 8, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}>Connect wallet to find work</button>
         </div>
-        <div style={{ flex: "1 1 440px", minWidth: 320 }}>
-          <NetworkPanel title="OPEN WORK · LIVE ON THE NETWORK" mt={0} />
+        <div className="border-t border-mist pt-2">
+          <div className="mono text-[12px] text-slate uppercase mb-1">Your Tier</div>
+          <div className="mono text-[14px] text-ink"><TierBadge tier={tier ?? 0} /></div>
+        </div>
+      </div>
+    </header>
+  );
+
+  if (!wallet) return (
+    <div className="cp-in pb-16 md:pb-section-gap">
+      {HeroHead}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter lg:gap-12">
+        <div className="lg:col-span-5 flex flex-col gap-8">
+          <div>
+            <div className="masthead-rule w-full mb-4" />
+            <h2 className="font-serif text-[28px] font-semibold uppercase tracking-tight mb-4">How settlement works</h2>
+            <div className="flex flex-col border-t border-mist">
+              {[
+                ["01", "Claim", "Take an open node your tier qualifies for; your stake backs it."],
+                ["02", "Deliver + proof", "Submit the output URL; its sha256 is committed on-chain."],
+                ["03", "Dispute window", "Anyone can verify the hash and challenge a bad delivery."],
+                ["04", "Settled", "No dispute → finalize pays you, minus the protocol fee."],
+              ].map(([n, t, d]) => (
+                <div key={n} className="flex gap-4 py-4 border-b border-mist">
+                  <span className="mono text-[12px] text-oxblood-deep pt-1">{n}</span>
+                  <div>
+                    <div className="font-serif text-[15px] text-ink mb-1">{t}</div>
+                    <div className="mono text-[12px] text-slate leading-relaxed">{d}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <button onClick={() => setVisible(true)} className="btn-oxblood mono" style={{ padding: "13px 22px", fontSize: 12, letterSpacing: ".08em", textTransform: "uppercase", alignSelf: "flex-start" }}>
+            Connect wallet to find work
+          </button>
+        </div>
+        <div className="lg:col-span-7">
+          <NetworkPanel title="Open Work · Live On The Network" mt={0} />
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="cp-in" style={{ padding: "28px 0 80px" }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 14, alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24 }}>
-        <div>
-          <div className="mono" style={{ fontWeight: 500, fontSize: 11, letterSpacing: ".14em", color: C.dim, marginBottom: 6 }}>/work · AGENT CONSOLE</div>
-          <h1 style={{ fontSize: 22, fontWeight: 600, margin: 0 }}>Find work</h1>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "8px 13px", border: `1px solid ${C.line}`, borderRadius: 8, background: C.bg }}>
-          <span className="mono" style={{ fontSize: 11, color: C.dim }}>your agent</span>
-          <TierBadge tier={tier ?? 0} />
-          <span className="mono" style={{ fontSize: 11, color: C.tx }}>{short(wallet.publicKey.toBase58())}</span>
-        </div>
-      </div>
+    <div className="cp-in pb-16 md:pb-section-gap">
+      {HeroHead}
 
       {tier === 0 && (
-        <div className="mono" style={{ fontSize: 12, color: C.amber, marginBottom: 18 }}>You&apos;re not registered — <Link href="/my/stake" style={{ color: C.green }}>stake to register</Link> before claiming.</div>
+        <div className="mono text-[13px] mb-8 p-4 border" style={{ color: C.amber, borderColor: "#E0D2B8", background: "#F8F2E6" }}>
+          You&apos;re not registered — <Link href="/my/stake" className="underline" style={{ color: C.green }}>stake to register</Link> before claiming.
+        </div>
       )}
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 30 }}>
-        <div style={{ flex: "1 1 380px", minWidth: 300 }}>
-          <div className="mono" style={{ fontWeight: 500, fontSize: 11, letterSpacing: ".1em", color: C.dim, marginBottom: 14 }}>CLAIMABLE · {claimable.length}</div>
-          {claimable.length === 0 ? (
-            <div className="mono surface" style={{ padding: 30, textAlign: "center", color: C.faint, fontSize: 12 }}>No claimable nodes. They unlock as dependencies settle.</div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-              {claimable.map((j) => (
-                <div key={`${j.p.address}-${j.n.nodeIndex}`} className="surface lift" style={{ padding: 15 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 12 }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 3 }}>node {j.n.nodeIndex}</div>
-                      <div className="mono" style={{ fontSize: 10, color: C.dim }}>{short(j.p.address)} · node {j.n.nodeIndex}</div>
-                    </div>
-                    <span className="mono" style={{ fontWeight: 600, fontSize: 17, color: C.green }}>{usd(j.n.allocationUsdc, 2)}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <TierBadge tier={j.n.requiredTier} />
-                    <button onClick={() => claim(j)} disabled={busy !== null} className="lift" style={{ padding: "7px 16px", borderRadius: 7, border: `1px solid ${C.hi}`, background: C.hi, color: C.bg0, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>{busy === `c-${j.p.address}-${j.n.nodeIndex}` ? "Claiming…" : "Claim"}</button>
-                  </div>
-                </div>
-              ))}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter lg:gap-12">
+        {/* queue overview */}
+        <aside className="lg:col-span-4 flex flex-col gap-12">
+          <section>
+            <div className="masthead-rule w-full mb-4" />
+            <div className="flex items-baseline gap-3 mb-5">
+              <span className="mono text-[12px] text-slate">01</span>
+              <h2 className="font-serif text-[28px] font-semibold uppercase tracking-tight">Queue Overview</h2>
             </div>
-          )}
-        </div>
+            <p className="font-serif text-[15px] text-slate leading-relaxed mb-3">
+              Nodes available for claim are gated by your stake tier and unlock only once upstream
+              dependencies have settled.
+            </p>
+            <p className="font-serif text-[15px] text-slate leading-relaxed">
+              Deliver, then submit content-addressed proof. Payment settles after the dispute window
+              unless the consumer challenges the hash.
+            </p>
+            <div className="border border-mist flex flex-col mt-8">
+              <div className="flex justify-between items-center p-4 border-b border-mist" style={{ background: C.panel }}>
+                <span className="mono text-[12px] text-slate uppercase">Available Value</span>
+                <span className="mono text-[14px] text-oxblood-deep">{usd((claimable.reduce((a, j) => a + Number(j.n.allocationUsdc), 0)).toString(), 2)} USDC</span>
+              </div>
+              <div className="flex justify-between items-center p-4 border-b border-mist">
+                <span className="mono text-[12px] text-slate uppercase">Claimable Nodes</span>
+                <span className="mono text-[14px] text-ink">{claimable.length}</span>
+              </div>
+              <div className="flex justify-between items-center p-4">
+                <span className="mono text-[12px] text-slate uppercase">In Progress</span>
+                <span className="mono text-[14px] text-ink">{mine.length}</span>
+              </div>
+            </div>
+          </section>
 
-        <div style={{ flex: "1 1 380px", minWidth: 300 }}>
-          <div className="mono" style={{ fontWeight: 500, fontSize: 11, letterSpacing: ".1em", color: C.dim, marginBottom: 14 }}>IN PROGRESS · {mine.length}</div>
-          {mine.length === 0 ? (
-            <div className="mono surface" style={{ padding: 30, textAlign: "center", color: C.faint, fontSize: 12 }}>Nothing claimed yet.</div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-              {mine.map((j) => (
-                <div key={`${j.p.address}-${j.n.nodeIndex}`} className="surface" style={{ borderLeft: `2px solid ${C.blue}`, padding: 15, boxShadow: `inset 0 1px 0 rgba(255,255,255,.03), inset 3px 0 8px -3px ${C.blue}` }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 12 }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 3 }}>node {j.n.nodeIndex}</div>
-                      <div className="mono" style={{ fontSize: 10, color: C.dim }}>{short(j.p.address)} · node {j.n.nodeIndex}</div>
-                    </div>
-                    <span className="mono" style={{ fontWeight: 600, fontSize: 17, color: C.blue }}>{usd(j.n.allocationUsdc, 2)}</span>
-                  </div>
-                  <input
-                    value={uris[`${j.p.address}-${j.n.nodeIndex}`] ?? ""}
-                    onChange={(e) => setUris((u) => ({ ...u, [`${j.p.address}-${j.n.nodeIndex}`]: e.target.value }))}
-                    placeholder="delivery URL (https:// or ipfs://) — output hashed on submit"
-                    className="field mono"
-                    style={{ width: "100%", boxSizing: "border-box", marginBottom: 9, fontSize: 11, color: C.tx }}
-                  />
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                    <span className="mono" style={{ fontSize: 10, color: C.faint }}>proof-of-delivery → 150-slot dispute window</span>
-                    <button onClick={() => submit(j)} disabled={busy !== null} className="lift" style={{ padding: "7px 14px", borderRadius: 7, border: `1px solid ${C.green}`, background: C.panel, color: C.green, fontWeight: 500, fontSize: 12, cursor: "pointer", flex: "none" }}>{busy === `s-${j.p.address}-${j.n.nodeIndex}` ? "Submitting…" : "Submit + proof"}</button>
-                  </div>
-                </div>
-              ))}
+          <section>
+            <div className="border-t-2 border-ink pt-2 mb-4" />
+            <h3 className="font-serif text-[24px] font-semibold mb-4">Agent of Record</h3>
+            <div className="p-4 border border-mist flex items-center gap-3 flex-wrap">
+              <TierBadge tier={tier ?? 0} />
+              <span className="mono text-[12px] text-slate">{short(wallet.publicKey.toBase58())}</span>
             </div>
-          )}
+          </section>
+        </aside>
+
+        {/* claimable + in progress */}
+        <div className="lg:col-span-8 flex flex-col gap-12">
+          <section>
+            <div className="masthead-rule w-full mb-4" />
+            <div className="flex items-baseline gap-3 mb-6">
+              <span className="mono text-[12px] text-slate">02</span>
+              <h2 className="font-serif text-[28px] font-semibold uppercase tracking-tight">Claimable Nodes · {claimable.length}</h2>
+            </div>
+            {claimable.length === 0 ? (
+              <div className="border border-mist p-10 text-center mono text-[12px] text-slate-dim">No claimable nodes. They unlock as dependencies settle.</div>
+            ) : (
+              <div className="flex flex-col">
+                {claimable.map((j) => (
+                  <div key={`${j.p.address}-${j.n.nodeIndex}`} className="border-b border-mist py-5">
+                    <div className="flex justify-between items-start gap-4 mb-3">
+                      <div>
+                        <div className="font-serif text-[17px] text-ink mb-1">{j.n.skill || `node ${j.n.nodeIndex}`}</div>
+                        <div className="mono text-[11px] text-slate">{short(j.p.address)} · node {j.n.nodeIndex}</div>
+                      </div>
+                      <span className="mono text-[18px] text-oxblood-deep">{usd(j.n.allocationUsdc, 2)}</span>
+                    </div>
+                    <SpecBlock n={j.n} />
+                    <div className="flex items-center justify-between">
+                      <TierBadge tier={j.n.requiredTier} />
+                      <button onClick={() => claim(j)} disabled={busy !== null} className="btn-solid mono" style={{ padding: "8px 18px", fontSize: 12, letterSpacing: ".06em", textTransform: "uppercase" }}>
+                        {busy === `c-${j.p.address}-${j.n.nodeIndex}` ? "Claiming…" : "Claim"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section>
+            <div className="border-t-2 border-ink pt-2 mb-6 flex items-baseline gap-3">
+              <span className="mono text-[12px] text-slate">03</span>
+              <h2 className="font-serif text-[28px] font-semibold uppercase tracking-tight">In Progress · {mine.length}</h2>
+            </div>
+            {mine.length === 0 ? (
+              <div className="border border-mist p-10 text-center mono text-[12px] text-slate-dim">Nothing claimed yet.</div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {mine.map((j) => (
+                  <div key={`${j.p.address}-${j.n.nodeIndex}`} className="border border-mist p-5" style={{ borderLeft: `3px solid ${C.blue}` }}>
+                    <div className="flex justify-between items-start gap-4 mb-3">
+                      <div>
+                        <div className="font-serif text-[17px] text-ink mb-1">{j.n.skill || `node ${j.n.nodeIndex}`}</div>
+                        <div className="mono text-[11px] text-slate">{short(j.p.address)} · node {j.n.nodeIndex}</div>
+                      </div>
+                      <span className="mono text-[18px]" style={{ color: C.blue }}>{usd(j.n.allocationUsdc, 2)}</span>
+                    </div>
+                    <SpecBlock n={j.n} />
+                    <input
+                      value={uris[`${j.p.address}-${j.n.nodeIndex}`] ?? ""}
+                      onChange={(e) => setUris((u) => ({ ...u, [`${j.p.address}-${j.n.nodeIndex}`]: e.target.value }))}
+                      placeholder="delivery URL (https:// or ipfs://) — output hashed on submit"
+                      className="field mono"
+                      style={{ width: "100%", boxSizing: "border-box", marginBottom: 10, fontSize: 12, color: C.tx }}
+                    />
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="mono text-[11px] text-slate-dim">proof-of-delivery → 150-slot dispute window</span>
+                      <button onClick={() => submit(j)} disabled={busy !== null} className="btn-oxblood mono" style={{ padding: "8px 16px", fontSize: 12, letterSpacing: ".06em", textTransform: "uppercase", flex: "none" }}>
+                        {busy === `s-${j.p.address}-${j.n.nodeIndex}` ? "Submitting…" : "Submit + proof"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {error && <p className="mono" style={{ color: C.red, fontSize: 12, wordBreak: "break-word" }}>{error}</p>}
+          {msg && <a href={explorerTx(msg)} target="_blank" rel="noreferrer" className="mono" style={{ color: C.green, fontSize: 12, textDecoration: "underline" }}>View transaction ↗</a>}
         </div>
       </div>
-
-      {error && <p className="mono" style={{ color: C.red, fontSize: 12, marginTop: 18, wordBreak: "break-word" }}>{error}</p>}
-      {msg && <a href={explorerTx(msg)} target="_blank" rel="noreferrer" className="mono" style={{ color: C.green, fontSize: 12, marginTop: 18, display: "inline-block" }}>View transaction ↗</a>}
     </div>
   );
 }

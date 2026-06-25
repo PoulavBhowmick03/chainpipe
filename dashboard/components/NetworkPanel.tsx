@@ -50,7 +50,7 @@ export function NetworkPanel({ title = "LIVE ON THE NETWORK", mt = 26 }: { title
           {pipes.map((p) => {
             const k = Object.keys(p.status)[0] || "active";
             return (
-              <Link key={p.address} href={`/pipeline/${p.address}`} className="lift" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "center", padding: "11px 14px", borderBottom: `1px solid #14181f`, textDecoration: "none", color: C.hi }}>
+              <Link key={p.address} href={`/pipeline/${p.address}`} className="lift" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "center", padding: "11px 14px", borderBottom: `1px solid ${C.line}`, textDecoration: "none", color: C.hi }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
                     <span style={{ width: 6, height: 6, borderRadius: 1, background: pipelineColor(k) }} />
@@ -68,7 +68,7 @@ export function NetworkPanel({ title = "LIVE ON THE NETWORK", mt = 26 }: { title
           <div className="mono" style={{ fontSize: 10, letterSpacing: ".1em", color: C.dim, padding: "11px 14px", borderBottom: `1px solid ${C.line}` }}>TOP AGENTS</div>
           {agents.length === 0 && <div className="mono" style={{ padding: 14, fontSize: 11, color: C.faint }}>—</div>}
           {agents.map((a) => (
-            <Link key={a.agent} href={`/agent/${a.agent}`} className="lift" style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 12, alignItems: "center", padding: "11px 14px", borderBottom: `1px solid #14181f`, textDecoration: "none", color: C.hi }}>
+            <Link key={a.agent} href={`/agent/${a.agent}`} className="lift" style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 12, alignItems: "center", padding: "11px 14px", borderBottom: `1px solid ${C.line}`, textDecoration: "none", color: C.hi }}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{agentTitle(a)}</div>
                 <div className="mono" style={{ fontSize: 10, color: C.dim }}>{short(a.agent)}</div>

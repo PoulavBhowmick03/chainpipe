@@ -15,7 +15,8 @@
     "bn.js": "^5.2.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
-    "express": "^4.19.0"
+    "express": "^4.19.0",
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
