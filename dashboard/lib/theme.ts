@@ -20,9 +20,9 @@ export const C = {
   tx: "#D8D0C6",
   dim: "#ADA298",
   faint: "#857C72",
-  green: "#CB5A60",
-  blue: "#5BA89A",
-  red: "#E5574E",
+  green: "#14F195",
+  blue: "#B07CFF",
+  red: "#F2555A",
   amber: "#D69A4E",
 } as const;
 

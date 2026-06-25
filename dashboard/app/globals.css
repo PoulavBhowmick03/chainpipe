@@ -16,8 +16,8 @@
   --slate: #9e9389;
   --mist: #2c2421;
   --mist-2: #3c322d;
-  --oxblood: #cb5a60;
-  --oxblood-deep: #c24e54;
+  --oxblood: #3df2a8;
+  --oxblood-deep: #14f195;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --dur-1: 160ms;
   /* height of the revealed back-page footer (content reserves this much below it) */
@@ -83,7 +83,7 @@ input[type="range"]::-webkit-slider-thumb {
 /* Keyboard-native focus: a precise oxblood ring, sharp. */
 *:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 1px var(--linen), 0 0 0 3px rgba(107, 31, 35, 0.55);
+  box-shadow: 0 0 0 1px var(--linen), 0 0 0 3px rgba(20, 241, 149, 0.55);
 }
 
 /* ── motion (kept from v3; DAG edges + live dots reference these) ── */
@@ -328,7 +328,7 @@ body {
   transition: transform 180ms var(--ease);
 }
 .px-grid {
-  background-image: radial-gradient(circle at 1px 1px, rgba(107, 31, 35, 0.12) 1px, transparent 0);
+  background-image: radial-gradient(circle at 1px 1px, rgba(153, 69, 255, 0.14) 1px, transparent 0);
   background-size: 30px 30px;
 }
 @media (prefers-reduced-motion: reduce) {

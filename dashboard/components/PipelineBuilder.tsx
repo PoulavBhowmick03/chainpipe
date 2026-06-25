@@ -122,7 +122,7 @@ export function PipelineBuilder() {
           </button>
           {error && <div className="mono" style={{ fontSize: 11, color: C.red, wordBreak: "break-word" }}>{error}</div>}
           {result && (
-            <div style={{ border: `1px solid ${C.green}`, padding: 14, background: "rgba(203,90,96,0.12)" }}>
+            <div style={{ border: `1px solid ${C.green}`, padding: 14, background: "rgba(20,241,149,0.10)" }}>
               <div className="mono" style={{ color: C.green, fontSize: 12, marginBottom: 4 }}>Pipeline created.</div>
               <div className="mono" style={{ fontSize: 11, color: C.tx, wordBreak: "break-all", marginBottom: 6 }}>{result.pda}</div>
               <a href={explorerTx(result.sig)} target="_blank" rel="noreferrer" className="mono" style={{ color: C.green, fontSize: 11, textDecoration: "underline" }}>View transaction ↗</a>
@@ -179,7 +179,7 @@ export function PipelineBuilder() {
                   {earlier.map((e, i) => {
                     const on = selNode.deps.includes(e.id);
                     return (
-                      <button key={e.id} onClick={() => toggleDep(selNode.id, e.id)} className="mono" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 10px", borderTop: i > 0 ? `1px solid ${C.line}` : "none", fontSize: 12, cursor: "pointer", border: "none", background: on ? "rgba(203,90,96,0.12)" : "transparent", color: on ? C.green : C.tx }}>
+                      <button key={e.id} onClick={() => toggleDep(selNode.id, e.id)} className="mono" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 10px", borderTop: i > 0 ? `1px solid ${C.line}` : "none", fontSize: 12, cursor: "pointer", border: "none", background: on ? "rgba(20,241,149,0.10)" : "transparent", color: on ? C.green : C.tx }}>
                         <span>Node {idx(e.id)} · {e.skill}</span><span>{on ? "✓" : "+"}</span>
                       </button>
                     );

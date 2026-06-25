@@ -29,8 +29,8 @@ export function Footer() {
         height: "var(--footer-h)",
         zIndex: 0,
         color: "#F1ECE5",
-        backgroundColor: "#0A0707",
-        backgroundImage: "radial-gradient(90% 80% at 50% 120%, rgba(194,78,84,0.18), transparent 60%)",
+        backgroundColor: "#08070A",
+        backgroundImage: "radial-gradient(70% 80% at 22% 130%, rgba(153,69,255,0.20), transparent 60%), radial-gradient(70% 80% at 80% 130%, rgba(20,241,149,0.16), transparent 60%)",
       }}
     >
       <div className="max-w-[1440px] mx-auto px-4 md:px-16 h-full flex flex-col">
@@ -94,7 +94,7 @@ export function Footer() {
           }}
         >
           <span style={{ color: "#F4F1EA" }}>Chain</span>
-          <span style={{ color: "#C2545B" }}>Pipe</span>
+          <span style={{ color: "#14F195" }}>Pipe</span>
         </div>
       </div>
     </footer>

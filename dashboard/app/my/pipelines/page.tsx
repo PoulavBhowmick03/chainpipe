@@ -22,7 +22,7 @@ function Chip({ k }: { k: string }) {
       className="mono"
       style={{
         display: "inline-block", padding: "4px 8px", fontSize: 12, letterSpacing: ".06em", textTransform: "uppercase",
-        border: `1px solid ${alert ? "#E5574E" : "#3C322D"}`, color: alert ? "#E5574E" : "#F1ECE5",
+        border: `1px solid ${alert ? "#F2555A" : "#3C322D"}`, color: alert ? "#F2555A" : "#F1ECE5",
         fontWeight: alert ? 700 : 400, whiteSpace: "nowrap",
       }}
     >

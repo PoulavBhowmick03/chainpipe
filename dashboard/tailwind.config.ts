@@ -22,9 +22,9 @@ const config: Config = {
         "slate-dim": "#857C72", // faintest text / ticks
         mist: "#2C2421", // hairline
         "mist-2": "#3C322D", // stronger hairline
-        // the single accent (luminous on dark)
-        oxblood: "#CB5A60",
-        "oxblood-deep": "#C24E54",
+        // Solana accents on dark: green primary, purple secondary
+        oxblood: "#3DF2A8",
+        "oxblood-deep": "#14F195",
         // legacy aliases kept so existing className references don't break
         bg0: "#100C0C",
         bg: "#1B1413",
@@ -36,9 +36,9 @@ const config: Config = {
         tx: "#D8D0C6",
         dim: "#ADA298",
         faint: "#857C72",
-        green: "#CB5A60",
-        blue: "#5BA89A",
-        red: "#E5574E",
+        green: "#14F195",
+        blue: "#B07CFF",
+        red: "#F2555A",
         amber: "#D69A4E",
       },
       fontFamily: {
