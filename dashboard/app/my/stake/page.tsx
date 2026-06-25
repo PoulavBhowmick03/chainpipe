@@ -242,7 +242,7 @@ export default function StakePage() {
                   </div>
                 </div>
                 <p className="font-serif text-[15px] text-slate leading-relaxed mb-5">Devnet faucet — testing only. Request test USDC to bond against a trust tier.</p>
-                <button onClick={faucet} disabled={busy !== null} className="mono" style={{ width: "100%", padding: "13px 0", border: `1px solid ${bal > 0 ? C.green : C.hi}`, background: bal > 0 ? "rgba(203,90,96,0.12)" : "transparent", color: bal > 0 ? C.green : C.hi, fontWeight: 600, fontSize: 12, letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
+                <button onClick={faucet} disabled={busy !== null} className="mono" style={{ width: "100%", padding: "13px 0", border: `1px solid ${bal > 0 ? C.green : C.hi}`, background: bal > 0 ? "rgba(20,241,149,0.10)" : "transparent", color: bal > 0 ? C.green : C.hi, fontWeight: 600, fontSize: 12, letterSpacing: ".06em", textTransform: "uppercase", cursor: "pointer" }}>
                   {busy === "faucet" ? "Requesting…" : bal > 0 ? "✓ Received — request more" : "Request 100 test USDC"}
                 </button>
               </section>

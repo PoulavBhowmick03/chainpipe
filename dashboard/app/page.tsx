@@ -18,9 +18,9 @@ function Chip({ label, alert = false }: { label: string; alert?: boolean }) {
       style={{
         display: "inline-block",
         padding: "3px 8px",
-        border: `1px solid ${alert ? "#E5574E" : "#3C322D"}`,
-        background: alert ? "rgba(229,87,78,0.12)" : "transparent",
-        color: alert ? "#E5574E" : "#ADA298",
+        border: `1px solid ${alert ? "#F2555A" : "#3C322D"}`,
+        background: alert ? "rgba(242,85,90,0.12)" : "transparent",
+        color: alert ? "#F2555A" : "#ADA298",
         fontSize: 11,
         letterSpacing: ".08em",
         textTransform: "uppercase",
@@ -279,7 +279,7 @@ export default async function Home() {
                   <div className="font-serif text-[14px] text-ink group-hover:text-oxblood-deep transition-colors leading-snug">
                     Budget locked across {p.totalNodes}-node DAG
                   </div>
-                  <div className="mono text-[12px] mt-2" style={{ color: alert ? "#E5574E" : "#CB5A60" }}>
+                  <div className="mono text-[12px] mt-2" style={{ color: alert ? "#F2555A" : "#14F195" }}>
                     {alert ? "Refund cascaded" : "Locked"}: {usd(p.totalUsdcLocked, 2)}
                   </div>
                 </Link>

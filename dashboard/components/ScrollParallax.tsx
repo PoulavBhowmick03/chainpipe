@@ -36,11 +36,11 @@ export function ScrollParallax() {
   // spaced ~one viewport apart so something is always entering from below — combined with
   // the viewport-fixed ambient on the content plane, the page never shows a dark band.
   const embers: { top: string; x: string; size: string; speed: string; color: string }[] = [
-    { top: "-15%", x: "left:-10%", size: "60vw", speed: "0.20", color: "rgba(203,90,96,0.26)" },
-    { top: "32%", x: "right:-14%", size: "54vw", speed: "0.45", color: "rgba(150,40,46,0.24)" },
-    { top: "82%", x: "left:4%", size: "52vw", speed: "0.66", color: "rgba(203,90,96,0.20)" },
-    { top: "130%", x: "right:-6%", size: "50vw", speed: "0.34", color: "rgba(168,46,52,0.22)" },
-    { top: "185%", x: "left:-4%", size: "48vw", speed: "0.55", color: "rgba(120,28,33,0.20)" },
+    { top: "-15%", x: "left:-10%", size: "60vw", speed: "0.20", color: "rgba(153,69,255,0.26)" },
+    { top: "32%", x: "right:-14%", size: "54vw", speed: "0.45", color: "rgba(20,241,149,0.20)" },
+    { top: "82%", x: "left:4%", size: "52vw", speed: "0.66", color: "rgba(153,69,255,0.22)" },
+    { top: "130%", x: "right:-6%", size: "50vw", speed: "0.34", color: "rgba(20,241,149,0.16)" },
+    { top: "185%", x: "left:-4%", size: "48vw", speed: "0.55", color: "rgba(153,69,255,0.20)" },
   ];
   return (
     <div ref={ref} aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden" style={{ zIndex: 0 }}>

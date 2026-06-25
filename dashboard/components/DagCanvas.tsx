@@ -90,7 +90,7 @@ export function DagCanvas({
       const live = srcSettled && !tgtBad;
       const col = tgtBad ? C.red : srcSettled ? C.green : C.hi;
       // physical conduit: a faint rounded pipe…
-      edges.push(<path key={`${d}-${n.id}p`} d={path} fill="none" stroke={tgtBad ? "rgba(186,26,26,.14)" : live ? "rgba(107,31,35,.12)" : C.line} strokeWidth={5} strokeLinecap="round" />);
+      edges.push(<path key={`${d}-${n.id}p`} d={path} fill="none" stroke={tgtBad ? "rgba(242,85,90,.16)" : live ? "rgba(20,241,149,.14)" : C.line} strokeWidth={5} strokeLinecap="round" />);
       // …with the conducting line inside…
       edges.push(<path key={`${d}-${n.id}b`} d={path} fill="none" stroke={col} strokeWidth={1.25} opacity={tgtBad ? 0.8 : srcSettled ? 1 : 0.7} />);
       // …and value flowing through it (forward oxblood on settle, reverse red on cascade).
@@ -120,9 +120,9 @@ export function DagCanvas({
         <svg width={W} height={H} style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}>
           <defs>
             <linearGradient id="cpFlowG" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stopColor="#CB5A60" stopOpacity="0.15" />
-              <stop offset="0.5" stopColor="#CB5A60" stopOpacity="1" />
-              <stop offset="1" stopColor="#CB5A60" stopOpacity="0.4" />
+              <stop offset="0" stopColor="#14F195" stopOpacity="0.15" />
+              <stop offset="0.5" stopColor="#14F195" stopOpacity="1" />
+              <stop offset="1" stopColor="#14F195" stopOpacity="0.4" />
             </linearGradient>
             <filter id="cpGlow" x="-40%" y="-40%" width="180%" height="180%">
               <feGaussianBlur stdDeviation="2.2" result="b" />
@@ -145,7 +145,7 @@ export function DagCanvas({
                 borderRadius: 2, padding: "9px 11px 9px 13px",
                 background: sel || conn ? C.bg : C.panel, border: `1px solid ${border}`,
                 cursor: onNodeClick ? "pointer" : "default", display: "flex", flexDirection: "column", justifyContent: "space-between",
-                boxShadow: sel || conn ? `0 0 0 2px ${conn ? "rgba(107,31,35,.18)" : "rgba(107,31,35,.14)"}` : "none",
+                boxShadow: sel || conn ? `0 0 0 2px ${conn ? "rgba(20,241,149,.22)" : "rgba(20,241,149,.16)"}` : "none",
                 transition: "border-color .15s, box-shadow .15s, background .15s",
               }}
             >

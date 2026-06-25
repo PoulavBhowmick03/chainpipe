@@ -44,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               marginBottom: "var(--footer-h)",
               backgroundColor: "#100c0c",
               backgroundImage:
-                "radial-gradient(130% 95% at 50% -8%, rgba(203,90,96,0.13), rgba(120,28,33,0.05) 42%, transparent 72%)",
+                "radial-gradient(120% 90% at 50% -10%, rgba(153,69,255,0.13), rgba(20,241,149,0.06) 46%, transparent 74%)",
               backgroundAttachment: "fixed",
             }}
           >
