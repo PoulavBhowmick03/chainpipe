@@ -25,6 +25,7 @@ const links: { href: string; label: string; match: string[]; roles: Role[] }[] =
   { href: "/pipeline/create", label: "Create", match: ["/pipeline/create"], roles: ["consumer"] },
   { href: "/my/pipelines", label: "Pipelines", match: ["/my/pipelines", "/pipeline/"], roles: ["consumer"] },
   { href: "/my/stake", label: "Stake", match: ["/my/stake"], roles: ["agent"] },
+  { href: "/docs", label: "Docs", match: ["/docs"], roles: ["consumer", "agent"] },
 ];
 
 const ROLE_HOME: Record<Role, string> = { consumer: "/my/pipelines", agent: "/work" };
