@@ -2,6 +2,7 @@
 
 * [ChainPipe docs](README.md)
 * [Product & Architecture Guide](PRODUCT.md)
+* [Roadmap — what's left to build](ROADMAP.md)
 
 ## Engineering audit
 
