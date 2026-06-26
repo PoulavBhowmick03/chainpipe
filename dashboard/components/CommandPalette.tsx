@@ -72,6 +72,7 @@ export function CommandPalette() {
         onClick={(e) => e.stopPropagation()}
         onKeyDown={onListKey}
         role="dialog"
+        aria-modal="true"
         aria-label="Command palette"
         style={{ width: "min(560px, 92vw)", overflow: "hidden", boxShadow: "0 24px 64px rgba(22,21,18,.22)" }}
       >
@@ -80,6 +81,7 @@ export function CommandPalette() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Jump to…"
+          aria-label="Search commands"
           className="mono"
           style={{ width: "100%", boxSizing: "border-box", padding: "16px 18px", background: "transparent", border: "none", borderBottom: `1px solid ${C.line}`, color: C.hi, fontSize: 15, outline: "none" }}
         />

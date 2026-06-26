@@ -103,7 +103,7 @@ export function PipelineBuilder() {
             <span className="mono text-[12px] text-slate uppercase">Budget Locked</span>
             <div className="flex items-center gap-1">
               <span className="mono text-[13px] text-slate">$</span>
-              <input type="number" value={budget} onChange={(e) => setBudget(Math.max(0, Number(e.target.value) || 0))} className="field mono" style={{ width: 84, fontWeight: 500, fontSize: 14, textAlign: "right" }} />
+              <input type="number" aria-label="Budget locked, in USDC" value={budget} onChange={(e) => setBudget(Math.max(0, Number(e.target.value) || 0))} className="field mono" style={{ width: 84, fontWeight: 500, fontSize: 14, textAlign: "right" }} />
             </div>
           </div>
           <div>
@@ -140,12 +140,13 @@ export function PipelineBuilder() {
                 <span className="mono text-[12px] text-slate uppercase tracking-wider">Node {idx(selNode.id)}</span>
                 <button onClick={() => removeNode(selNode.id)} className="mono" style={{ background: "none", border: "none", color: C.red, fontWeight: 500, fontSize: 11, cursor: "pointer", textTransform: "uppercase", letterSpacing: ".05em" }}>Purge</button>
               </div>
-              <label style={lbl}>Skill</label>
-              <select value={selNode.skill} onChange={(e) => upd(selNode.id, "skill", e.target.value)} className="field" style={{ width: "100%", fontFamily: "var(--font-geist-mono)", fontSize: 13, marginBottom: 16 }}>
+              <label style={lbl} htmlFor="node-skill">Skill</label>
+              <select id="node-skill" value={selNode.skill} onChange={(e) => upd(selNode.id, "skill", e.target.value)} className="field" style={{ width: "100%", fontFamily: "var(--font-geist-mono)", fontSize: 13, marginBottom: 16 }}>
                 {SKILLS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
-              <label style={lbl}>Task · what the agent must deliver</label>
+              <label style={lbl} htmlFor="node-task">Task · what the agent must deliver</label>
               <textarea
+                id="node-task"
                 value={selNode.description}
                 onChange={(e) => upd(selNode.id, "description", e.target.value)}
                 placeholder="e.g. Transcribe the audio at the input URL to a clean .txt; output the transcript file."
@@ -153,8 +154,9 @@ export function PipelineBuilder() {
                 className="field mono"
                 style={{ width: "100%", boxSizing: "border-box", fontSize: 12, lineHeight: 1.5, color: C.tx, marginBottom: 16, resize: "vertical" }}
               />
-              <label style={lbl}>Input URL <span style={{ color: C.faint, textTransform: "none" }}>(optional — data the agent works from)</span></label>
+              <label style={lbl} htmlFor="node-input-url">Input URL <span style={{ color: C.faint, textTransform: "none" }}>(optional — data the agent works from)</span></label>
               <input
+                id="node-input-url"
                 value={selNode.inputUri}
                 onChange={(e) => upd(selNode.id, "inputUri", e.target.value)}
                 placeholder="https:// or ipfs://"
@@ -162,13 +164,13 @@ export function PipelineBuilder() {
                 style={{ width: "100%", boxSizing: "border-box", fontSize: 12, color: C.tx, marginBottom: 16 }}
               />
               <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-                <div style={{ flex: 1 }}><label style={lbl}>Alloc USDC</label><input type="number" value={selNode.alloc} onChange={(e) => upd(selNode.id, "alloc", Math.max(0, Number(e.target.value) || 0))} className="field mono" style={{ width: "100%", fontWeight: 500, fontSize: 13 }} /></div>
-                <div style={{ flex: 1 }}><label style={lbl}>Deadline H</label><input type="number" value={selNode.deadline} onChange={(e) => upd(selNode.id, "deadline", Math.max(1, Number(e.target.value) || 1))} className="field mono" style={{ width: "100%", fontWeight: 500, fontSize: 13 }} /></div>
+                <div style={{ flex: 1 }}><label style={lbl} htmlFor="node-alloc">Alloc USDC</label><input id="node-alloc" type="number" value={selNode.alloc} onChange={(e) => upd(selNode.id, "alloc", Math.max(0, Number(e.target.value) || 0))} className="field mono" style={{ width: "100%", fontWeight: 500, fontSize: 13 }} /></div>
+                <div style={{ flex: 1 }}><label style={lbl} htmlFor="node-deadline">Deadline H</label><input id="node-deadline" type="number" value={selNode.deadline} onChange={(e) => upd(selNode.id, "deadline", Math.max(1, Number(e.target.value) || 1))} className="field mono" style={{ width: "100%", fontWeight: 500, fontSize: 13 }} /></div>
               </div>
-              <label style={lbl}>Required Tier</label>
-              <div style={{ display: "flex", gap: 0, marginBottom: 16, border: `1px solid ${C.line}` }}>
+              <label style={lbl} id="required-tier-label">Required Tier</label>
+              <div role="group" aria-labelledby="required-tier-label" style={{ display: "flex", gap: 0, marginBottom: 16, border: `1px solid ${C.line}` }}>
                 {[1, 2, 3].map((tv) => (
-                  <button key={tv} onClick={() => upd(selNode.id, "tier", tv)} className="mono" style={{ flex: 1, padding: 8, border: "none", borderLeft: tv > 1 ? `1px solid ${C.line}` : "none", fontWeight: 500, fontSize: 12, cursor: "pointer", background: selNode.tier === tv ? C.hi : "transparent", color: selNode.tier === tv ? C.bg0 : C.dim }}>T{tv}</button>
+                  <button key={tv} aria-label={`Required tier ${tv}`} aria-pressed={selNode.tier === tv} onClick={() => upd(selNode.id, "tier", tv)} className="mono" style={{ flex: 1, padding: 8, border: "none", borderLeft: tv > 1 ? `1px solid ${C.line}` : "none", fontWeight: 500, fontSize: 12, cursor: "pointer", background: selNode.tier === tv ? C.hi : "transparent", color: selNode.tier === tv ? C.bg0 : C.dim }}>T{tv}</button>
                 ))}
               </div>
               <label style={lbl}>Depends On</label>
@@ -179,7 +181,7 @@ export function PipelineBuilder() {
                   {earlier.map((e, i) => {
                     const on = selNode.deps.includes(e.id);
                     return (
-                      <button key={e.id} onClick={() => toggleDep(selNode.id, e.id)} className="mono" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 10px", borderTop: i > 0 ? `1px solid ${C.line}` : "none", fontSize: 12, cursor: "pointer", border: "none", background: on ? "rgba(20,241,149,0.10)" : "transparent", color: on ? C.green : C.tx }}>
+                      <button key={e.id} aria-pressed={on} aria-label={`Depend on node ${idx(e.id)}, ${e.skill}`} onClick={() => toggleDep(selNode.id, e.id)} className="mono" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 10px", borderTop: i > 0 ? `1px solid ${C.line}` : "none", fontSize: 12, cursor: "pointer", border: "none", background: on ? "rgba(20,241,149,0.10)" : "transparent", color: on ? C.green : C.tx }}>
                         <span>Node {idx(e.id)} · {e.skill}</span><span>{on ? "✓" : "+"}</span>
                       </button>
                     );
