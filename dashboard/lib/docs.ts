@@ -13,9 +13,14 @@ export interface DocEntry {
   group: string | null;
 }
 
-/** Find the repo docs/ dir. dashboard is the Vercel root, so docs/ sits one level up. */
+/**
+ * Locate the docs markdown. The Vercel build is standalone (only the dashboard dir is
+ * uploaded), so the build reads the VENDORED copy at content/docs (kept in sync by
+ * scripts/sync-docs.mjs). The `../docs` fallbacks cover running from a full checkout.
+ */
 function docsDir(): string {
   const candidates = [
+    path.join(process.cwd(), "content", "docs"),
     path.join(process.cwd(), "..", "docs"),
     path.join(process.cwd(), "docs"),
   ];
