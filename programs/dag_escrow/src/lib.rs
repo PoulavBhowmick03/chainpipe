@@ -335,6 +335,7 @@ pub mod dag_escrow {
             require!(node.agent == ctx.accounts.agent.key(), DagError::AgentMismatch);
             (node.allocation_usdc, node.job_id, node.agent)
         };
+        require!(ctx.accounts.agent_stake.agent == agent_key, DagError::AgentMismatch);
 
         let fee_bps = ctx.accounts.pipeline_config.fee_bps as u64;
         let fee = (allocation as u128 * fee_bps as u128 / 10_000) as u64;
@@ -803,6 +804,9 @@ pub mod dag_escrow {
                 .agent_stake
                 .as_ref()
                 .ok_or(DagError::MissingSlashAccounts)?;
+            // Bind the slashed stake to the node's actual agent — expire_node is
+            // permissionless, so without this a caller could redirect the slash to any agent.
+            require!(agent_stake.agent == agent_key, DagError::AgentMismatch);
             let agent_stake_vault = ctx
                 .accounts
                 .agent_stake_vault
@@ -872,6 +876,8 @@ pub mod dag_escrow {
                 .agent
                 .as_ref()
                 .ok_or(DagError::MissingSlashAccounts)?;
+            // Same binding for the reputation-failure target.
+            require!(agent.key() == agent_key, DagError::AgentMismatch);
             let rb_program = ctx
                 .accounts
                 .reputation_bridge_program
@@ -1220,7 +1226,7 @@ pub struct CompleteNode<'info> {
     pub stake_mint: Account<'info, Mint>,
     /// CHECK: agent identity; verified against node.agent.
     pub agent: UncheckedAccount<'info>,
-    #[account(mut)]
+    #[account(mut, constraint = agent_token_account.owner == node.agent @ DagError::InvalidAgentAccount)]
     pub agent_token_account: Account<'info, TokenAccount>,
     #[account(
         mut,
@@ -1298,7 +1304,7 @@ pub struct FinalizeNode<'info> {
     pub stake_mint: Box<Account<'info, Mint>>,
     /// CHECK: agent identity; verified against node.agent.
     pub agent: UncheckedAccount<'info>,
-    #[account(mut)]
+    #[account(mut, constraint = agent_token_account.owner == node.agent @ DagError::InvalidAgentAccount)]
     pub agent_token_account: Box<Account<'info, TokenAccount>>,
     #[account(mut, constraint = operator_treasury.owner == pipeline_config.operator @ DagError::InvalidTreasury)]
     pub operator_treasury: Box<Account<'info, TokenAccount>>,
@@ -1307,7 +1313,7 @@ pub struct FinalizeNode<'info> {
     pub dag_authority: UncheckedAccount<'info>,
     #[account(mut)]
     pub registry_config: Box<Account<'info, bonded_registry::RegistryConfig>>,
-    #[account(mut)]
+    #[account(mut, constraint = agent_stake.agent == node.agent @ DagError::AgentMismatch)]
     pub agent_stake: Box<Account<'info, bonded_registry::AgentStake>>,
     pub bonded_registry_program: Program<'info, BondedRegistry>,
     /// CHECK: bridge config, validated by reputation_bridge CPI.
@@ -1342,7 +1348,7 @@ pub struct ResolveDispute<'info> {
     pub stake_mint: Box<Account<'info, Mint>>,
     /// CHECK: agent identity; verified against node.agent.
     pub agent: UncheckedAccount<'info>,
-    #[account(mut)]
+    #[account(mut, constraint = agent_token_account.owner == node.agent @ DagError::InvalidAgentAccount)]
     pub agent_token_account: Box<Account<'info, TokenAccount>>,
     #[account(mut, constraint = operator_treasury.owner == pipeline_config.operator @ DagError::InvalidTreasury)]
     pub operator_treasury: Box<Account<'info, TokenAccount>>,
@@ -1353,7 +1359,7 @@ pub struct ResolveDispute<'info> {
     pub dag_authority: UncheckedAccount<'info>,
     #[account(mut)]
     pub registry_config: Box<Account<'info, bonded_registry::RegistryConfig>>,
-    #[account(mut)]
+    #[account(mut, constraint = agent_stake.agent == node.agent @ DagError::AgentMismatch)]
     pub agent_stake: Box<Account<'info, bonded_registry::AgentStake>>,
     #[account(mut)]
     pub agent_stake_vault: Box<Account<'info, TokenAccount>>,
@@ -1585,6 +1591,8 @@ pub enum DagError {
     InvalidTreasury,
     #[msg("Consumer token account has wrong owner")]
     InvalidConsumerAccount,
+    #[msg("Agent token account is not owned by the node's agent")]
+    InvalidAgentAccount,
     #[msg("Delivery URI length exceeds 96-byte buffer")]
     InvalidUri,
     #[msg("Protocol is paused")]
